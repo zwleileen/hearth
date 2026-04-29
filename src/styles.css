@@ -1,0 +1,532 @@
+/* Hearth — design system v3 (Apr '26)
+   ──────────────────────────────────────────────────────
+   EDITORIAL DIRECTION
+   Aesop / Frama register. Generous whitespace. Serif headlines.
+   All-caps eyebrows. Photography. Hairline rules.
+
+   THE PALETTE — six colors, no exceptions
+     Old Lace          #F9F4E6   paper / stage
+     Blush Isabelline  #F2EAE8   second paper / soft sections
+     Midnight Green    #1F4045   ink / type / dark sections
+     Ecru              #E1BE74   feature accent (warm)
+     Carolina Blue     #C9D8DA   feature accent (cool)
+     Pale Dogwood      #EBCDC2   feature accent (soft)
+
+   Color usage rule: Old Lace + Midnight Green carry every
+   screen. The other four are FEATURE ACCENTS — used as
+   full color blocks for a single section, never as
+   gradients, tints, or chrome decoration.
+
+   Botanical metaphor (sprig, leaf, fire) is RETIRED. No
+   leaves, no scatter, no fire icons in chrome. (The product
+   name is still Hearth and the wordmark sets in italic.)
+
+   Legacy CSS variables (--ember/--bloom/--meadow/etc) are
+   preserved as aliases so old screens keep working while
+   they're rewritten.
+   ────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Hygge Haven six ─────────────────────────────── */
+  --hh-lace:     #F9F4E6;   /* primary paper */
+  --hh-isabel:   #F2EAE8;   /* paper alt */
+  --hh-green:    #1F4045;   /* ink */
+  --hh-green-2:  #2d5258;   /* ink lifted */
+  --hh-green-3:  #486a6e;   /* ink secondary on light */
+  --hh-ecru:     #E1BE74;   /* feature accent — warm */
+  --hh-ecru-deep:#a8893e;   /* readable text on ecru/lace */
+  --hh-blue:     #C9D8DA;   /* feature accent — cool */
+  --hh-blue-deep:#5e8388;   /* readable text on blue/lace */
+  --hh-dogwood:  #EBCDC2;   /* feature accent — soft */
+  --hh-dogwood-deep:#9a6e5e;/* readable text on dogwood/lace */
+
+  /* ── Type ────────────────────────────────────────── */
+  --serif: 'Fraunces', 'Iowan Old Style', Georgia, serif;
+  --sans:  'Inter', -apple-system, system-ui, sans-serif;
+  --mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* ── Semantic tokens ─────────────────────────────── */
+  --paper:        var(--hh-green);     /* "ink" — body text color */
+  --paper-2:      var(--hh-green-3);
+  --paper-mute:   #6e8489;
+  --paper-faint:  #97a8ac;
+  --paper-line:   rgba(31, 64, 69, 0.16);
+  --paper-line-2: rgba(31, 64, 69, 0.08);
+
+  --night:    var(--hh-lace);          /* stage background */
+  --moss:     var(--hh-isabel);
+  --moss-2:   var(--hh-isabel);
+  --moss-line: rgba(31, 64, 69, 0.13);
+  --bark:     var(--hh-green);
+  --bark-2:   var(--hh-green-2);
+
+  /* ── Legacy accent aliases — retained so old screens
+        compile while they're being rewritten. Each
+        collapses onto one of the four feature accents. ── */
+  --ember:        var(--hh-ecru);
+  --ember-soft:   var(--hh-ecru);
+  --ember-deep:   var(--hh-ecru-deep);
+  --ember-bright: var(--hh-ecru);
+  --ember-tint:   rgba(225, 190, 116, 0.18);
+  --ember-line:   rgba(225, 190, 116, 0.45);
+  --on-ember:     var(--hh-green);
+
+  --bloom:        var(--hh-blue);
+  --bloom-soft:   var(--hh-blue);
+  --bloom-deep:   var(--hh-blue-deep);
+  --bloom-bright: var(--hh-blue);
+  --bloom-tint:   rgba(201, 216, 218, 0.30);
+  --bloom-line:   rgba(94, 131, 136, 0.40);
+  --on-bloom:     var(--hh-green);
+
+  --dogwood:      var(--hh-dogwood);
+  --dogwood-soft: var(--hh-dogwood);
+  --dogwood-deep: var(--hh-dogwood-deep);
+  --dogwood-bright: var(--hh-dogwood);
+  --dogwood-tint: rgba(235, 205, 194, 0.28);
+  --dogwood-line: rgba(154, 110, 94, 0.32);
+  --on-dogwood:   var(--hh-green);
+
+  --rose:        var(--dogwood);
+  --rose-soft:   var(--dogwood);
+  --rose-deep:   var(--dogwood-deep);
+  --rose-bright: var(--dogwood);
+  --rose-tint:   var(--dogwood-tint);
+  --rose-line:   var(--dogwood-line);
+  --on-rose:     var(--on-dogwood);
+
+  --meadow:        var(--hh-green-2);
+  --meadow-soft:   var(--hh-green-3);
+  --meadow-deep:   var(--hh-green);
+  --meadow-bright: var(--hh-green-3);
+  --meadow-tint:   rgba(45, 82, 88, 0.14);
+  --meadow-line:   rgba(45, 82, 88, 0.32);
+  --on-meadow:     var(--hh-lace);
+
+  --wisteria:        var(--hh-green);
+  --wisteria-soft:   var(--hh-green-2);
+  --wisteria-deep:   var(--hh-green);
+  --wisteria-bright: var(--hh-green-3);
+  --wisteria-tint:   rgba(31, 64, 69, 0.12);
+  --wisteria-line:   rgba(31, 64, 69, 0.30);
+  --on-wisteria:     var(--hh-lace);
+
+  --fern:        var(--meadow);
+  --fern-soft:   var(--meadow-soft);
+  --fern-deep:   var(--meadow-deep);
+  --fern-bright: var(--meadow-bright);
+  --fern-tint:   var(--meadow-tint);
+  --fern-line:   var(--meadow-line);
+  --on-fern:     var(--on-meadow);
+
+  --citron:        var(--ember);
+  --citron-soft:   var(--ember-soft);
+  --citron-deep:   var(--ember-deep);
+  --citron-bright: var(--ember-bright);
+  --citron-tint:   var(--ember-tint);
+  --citron-line:   var(--ember-line);
+  --on-citron:     var(--on-ember);
+
+  --dew:        var(--bloom);
+  --dew-soft:   var(--bloom-soft);
+  --dew-deep:   var(--bloom-deep);
+  --dew-bright: var(--bloom-bright);
+  --dew-tint:   var(--bloom-tint);
+  --dew-line:   var(--bloom-line);
+  --on-dew:     var(--on-bloom);
+
+  /* SIGNATURE — collapses to ink. Sprig system is retired,
+     but the var name is still referenced in legacy code. */
+  --sig:        var(--hh-green);
+  --sig-soft:   var(--hh-green-2);
+  --sig-deep:   var(--hh-green);
+  --sig-bright: var(--hh-green-3);
+  --sig-tint:   rgba(31, 64, 69, 0.10);
+  --sig-line:   rgba(31, 64, 69, 0.28);
+  --on-sig:     var(--hh-lace);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--sans);
+  color: var(--paper);
+  background: var(--hh-green);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ─── Typography helpers ──────────────────────────── */
+.serif { font-family: var(--serif); font-optical-sizing: auto; font-variation-settings: "SOFT" 50, "WONK" 0; }
+.sans  { font-family: var(--sans); }
+.mono  { font-family: var(--mono); }
+
+.eyebrow {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hh-green);
+  font-weight: 500;
+}
+/* legacy class aliases */
+.eyebrow-ember,
+.eyebrow-citron { color: var(--hh-ecru-deep); }
+.eyebrow-bloom,
+.eyebrow-dew    { color: var(--hh-blue-deep); }
+.eyebrow-rose   { color: var(--hh-dogwood-deep); }
+.eyebrow-wisteria,
+.eyebrow-meadow,
+.eyebrow-fern,
+.eyebrow-sig    { color: var(--hh-green); }
+
+.h-display {
+  font-family: var(--serif);
+  font-weight: 340;
+  font-size: 38px;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  color: var(--hh-green);
+}
+.h-title {
+  font-family: var(--serif);
+  font-weight: 360;
+  font-size: 26px;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--hh-green);
+}
+.h-section {
+  font-family: var(--serif);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.15;
+  color: var(--hh-green);
+}
+
+.body {
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--hh-green-3);
+  font-weight: 380;
+}
+.body-sm {
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--paper-mute);
+}
+
+/* ─── Stage ──────────────────────────────────────── */
+.hearth-stage {
+  position: absolute;
+  inset: 0;
+  background: var(--hh-lace);
+  overflow: hidden;
+}
+/* grain disabled — palette purity */
+.hearth-stage::before { display: none; }
+
+.hearth-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  z-index: 2;
+  padding-bottom: 110px;
+}
+.hearth-scroll::-webkit-scrollbar { width: 0; }
+
+/* ─── Page transitions (run on route change via key={route}) ─
+   Steady state is fully visible. Animations are forwards-only fade-ins
+   on a slight Y offset; if the document timeline is paused (e.g. hidden
+   iframe in headless capture), the steady state still renders. */
+.trans-lift,
+.trans-slide,
+.trans-reveal { opacity: 1; transform: none; }
+.trans-lift   { animation: pageLift   0.42s cubic-bezier(.22,1,.36,1); }
+.trans-slide  { animation: pageSlide  0.4s  cubic-bezier(.22,1,.36,1); }
+.trans-reveal { animation: pageReveal 0.5s  cubic-bezier(.22,1,.36,1); }
+.trans-cross  { animation: pageCross  0.32s ease-out; }
+.trans-none   { animation: none; }
+
+@keyframes pageLift {
+  from { transform: translateY(10px); }
+  to   { transform: translateY(0); }
+}
+@keyframes pageSlide {
+  from { transform: translateX(24px); }
+  to   { transform: translateX(0); }
+}
+@keyframes pageReveal {
+  from { transform: scale(1.015); }
+  to   { transform: scale(1); }
+}
+@keyframes pageCross {
+  from { opacity: 0.85; }
+  to   { opacity: 1; }
+}
+
+/* ─── Cards (used by older screens until rewritten) ─ */
+.card {
+  background: var(--hh-isabel);
+  border: 1px solid var(--paper-line-2);
+  border-radius: 0;     /* editorial — sharp corners */
+  padding: 22px;
+  position: relative;
+  overflow: hidden;
+}
+.card-soft {
+  background: var(--hh-lace);
+  border: 1px solid var(--paper-line-2);
+  border-radius: 0;
+  padding: 22px;
+}
+.card-warm,
+.card-citron {
+  background: var(--hh-ecru);
+  color: var(--hh-green);
+  border: 0; border-radius: 0; padding: 22px;
+}
+.card-meadow,
+.card-fern,
+.card-wisteria {
+  background: var(--hh-green);
+  color: var(--hh-lace);
+  border: 0; border-radius: 0; padding: 22px;
+}
+.card-bloom,
+.card-dew {
+  background: var(--hh-blue);
+  color: var(--hh-green);
+  border: 0; border-radius: 0; padding: 22px;
+}
+.card-rose {
+  background: var(--hh-dogwood);
+  color: var(--hh-green);
+  border: 0; border-radius: 0; padding: 22px;
+}
+.card-sig {
+  background: var(--hh-isabel);
+  border: 1px solid var(--paper-line-2);
+  border-radius: 0; padding: 22px;
+}
+
+.divider { height: 1px; background: rgba(31, 64, 69, 0.18); border: 0; margin: 0; }
+.divider-faint { background: rgba(31, 64, 69, 0.08); }
+
+/* ─── Buttons ─────────────────────────────────────── */
+.btn {
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 14px 22px;
+  border-radius: 0;
+  border: 0;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn:active { opacity: 0.7; }
+.btn-ember,
+.btn-citron { background: var(--hh-ecru);    color: var(--hh-green); }
+.btn-meadow,
+.btn-fern,
+.btn-wisteria,
+.btn-sig    { background: var(--hh-green);   color: var(--hh-lace); }
+.btn-bloom,
+.btn-dew    { background: var(--hh-blue);    color: var(--hh-green); }
+.btn-rose   { background: var(--hh-dogwood); color: var(--hh-green); }
+.btn-ghost {
+  background: transparent;
+  color: var(--hh-green);
+  border: 1px solid var(--hh-green);
+}
+.btn-warm   { background: var(--hh-green); color: var(--hh-lace); }
+
+/* ─── Tab bar — quiet, no pill ─────────────────────── */
+.hearth-tabbar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  z-index: 10;
+  background: var(--hh-lace);
+  border-top: 1px solid var(--paper-line-2);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  padding: 0 6px 22px;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.hearth-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  background: transparent;
+  border: 0;
+  color: var(--paper-mute);
+  font-family: var(--sans);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 0.18s ease;
+}
+.hearth-tab.active { color: var(--hh-green); }
+.hearth-tab svg { display: block; }
+
+/* ─── Topbar ──────────────────────────────────────── */
+.hearth-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 22px 8px;
+}
+.hearth-topbar .title {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  color: var(--hh-green);
+}
+.topbar-icon {
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--hh-green);
+}
+
+/* legacy: ember mark logo — never rendered now (replaced by italic h.) */
+.hearth-mark { display: none; }
+
+/* ─── Inputs ─────────────────────────────────────── */
+.hearth-input {
+  width: 100%;
+  background: var(--hh-isabel);
+  border: 0;
+  border-bottom: 1px solid var(--paper-line);
+  border-radius: 0;
+  padding: 14px 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 350;
+  color: var(--hh-green);
+  resize: none;
+  outline: none;
+  line-height: 1.5;
+}
+.hearth-input::placeholder { color: var(--paper-faint); font-style: italic; }
+
+/* ─── Chips ─────────────────────────────────────── */
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border-radius: 0;
+  border: 1px solid var(--hh-green);
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--hh-green);
+  background: transparent;
+}
+.chip-ember,
+.chip-citron { background: var(--hh-ecru);    color: var(--hh-green); border-color: transparent; }
+.chip-meadow,
+.chip-fern,
+.chip-wisteria,
+.chip-sig    { background: var(--hh-green);   color: var(--hh-lace);  border-color: transparent; }
+.chip-bloom,
+.chip-dew    { background: var(--hh-blue);    color: var(--hh-green); border-color: transparent; }
+.chip-rose,
+.chip-bark   { background: var(--hh-dogwood); color: var(--hh-green); border-color: transparent; }
+
+/* ─── Streak / dots / orb (legacy callers) ─────── */
+.streak-dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 9px; font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--paper-faint);
+  border: 1px solid var(--paper-line);
+}
+.streak-dot.lit {
+  color: var(--hh-green);
+  background: var(--hh-ecru);
+  border-color: transparent;
+}
+.streak-dot.today {
+  color: var(--hh-green);
+  border-color: var(--hh-green);
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(0.62); }
+  25%, 50% { transform: scale(1.0); }
+  75%      { transform: scale(0.62); }
+}
+.breath-orb {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: var(--hh-blue);
+  animation: breathe 16s ease-in-out infinite;
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 0.95; }
+  50%      { opacity: 1; }
+}
+.flicker { animation: flicker 3.6s ease-in-out infinite; }
+
+.mag-rule {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hh-ecru-deep);
+}
+
+.bar { height: 1px; background: var(--paper-line); border-radius: 0; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--hh-green); }
+
+/* Steady-state visible even if animation skips a frame */
+.fade-in { opacity: 1; transform: none; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn {
+  from { transform: translateY(6px); }
+  to   { transform: none; }
+}
+
+/* placeholder used by Photo() */
+.ph {
+  position: relative;
+  background: var(--hh-isabel);
+  border: 0;
+  border-radius: 0;
+  overflow: hidden;
+}
+.ph-cap {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
+  padding: 10px;
+  display: block;
+}
