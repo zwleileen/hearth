@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { getClaude, MODEL, HEARTH_VOICE, ATTUNE_SCHEMA, extractJSONFromMessage } from '../lib/claude.js';
+import { getOpenAI, MODEL, HEARTH_VOICE, ATTUNE_SCHEMA } from '../lib/ai.js';
 
 export const attune = Router();
 attune.use(requireAuth);
@@ -28,32 +28,33 @@ Return the result as JSON matching the schema.`;
 
   let client;
   try {
-    client = getClaude();
+    client = getOpenAI();
   } catch (err) {
     return res.status(503).json({ error: 'AI service not configured', detail: err.message });
   }
 
   try {
-    const stream = client.messages.stream({
+    const completion = await client.chat.completions.create({
       model: MODEL,
-      max_tokens: 8000,
-      thinking: { type: 'adaptive' },
-      system: [
-        { type: 'text', text: HEARTH_VOICE, cache_control: { type: 'ephemeral' } },
+      messages: [
+        { role: 'system', content: HEARTH_VOICE },
+        { role: 'user', content: userPrompt },
       ],
-      output_config: {
-        format: { type: 'json_schema', schema: ATTUNE_SCHEMA },
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'attune_response',
+          strict: true,
+          schema: ATTUNE_SCHEMA,
+        },
       },
-      messages: [{ role: 'user', content: userPrompt }],
     });
 
-    const message = await stream.finalMessage();
-
-    if (message.stop_reason === 'refusal') {
-      return res.status(422).json({ error: 'Claude refused the request' });
+    const text = completion.choices?.[0]?.message?.content;
+    if (!text) {
+      return res.status(502).json({ error: 'Empty response from AI service' });
     }
-
-    const data = extractJSONFromMessage(message);
+    const data = JSON.parse(text);
     res.json(data);
   } catch (err) {
     console.error('[attune]', err);

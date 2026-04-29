@@ -20,7 +20,7 @@ MERN stack with Vite.
 - **Frontend**: React 18 + Vite, JSX components as ES modules
 - **Backend**: Node.js + Express, Mongoose for MongoDB Atlas
 - **Auth**: JWT bearer tokens (stored in localStorage on the client)
-- **AI**: Anthropic Claude (Opus 4.7) for the Discover and Attune features, with the `web_search` tool for daily content curation
+- **AI**: OpenAI (GPT-5.1) for the Discover and Attune features. Discover uses the Responses API with the `web_search` built-in tool for daily content curation; Attune uses the Chat Completions API with structured outputs.
 
 ## Running locally
 
@@ -34,7 +34,7 @@ cp .env.example .env
 You will need:
 - `MONGODB_URI` — Atlas connection string
 - `JWT_SECRET` — any long random string for development
-- `ANTHROPIC_API_KEY` — required for the Discover and Attune endpoints (the rest of the app works without it)
+- `OPENAI_API_KEY` — required for the Discover and Attune endpoints (the rest of the app works without it)
 
 ### 2. Install and run
 
@@ -100,7 +100,7 @@ hearth/
 │   ├── middleware/auth.js  JWT verification
 │   ├── lib/
 │   │   ├── jwt.js          Token signing/verification
-│   │   └── claude.js       Anthropic SDK wrapper, voice prompt, schemas
+│   │   └── ai.js           OpenAI client, voice prompt, JSON schemas
 │   ├── models/             User, JournalEntry, Bookmark, DailyDiscover
 │   └── routes/             auth, journal, profile, bookmarks, discover, attune
 ├── prototype-bundle/       Original no-build artifacts

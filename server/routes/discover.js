@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { User } from '../models/User.js';
 import { DailyDiscover } from '../models/DailyDiscover.js';
 import { requireAuth } from '../middleware/auth.js';
-import { getClaude, MODEL, HEARTH_VOICE, DISCOVER_SCHEMA, extractJSONFromMessage } from '../lib/claude.js';
+import { getOpenAI, MODEL, HEARTH_VOICE, DISCOVER_SCHEMA } from '../lib/ai.js';
 
 export const discover = Router();
 discover.use(requireAuth);
@@ -39,35 +39,32 @@ Return the result as JSON matching the schema. Each item must have a real source
 
   let client;
   try {
-    client = getClaude();
+    client = getOpenAI();
   } catch (err) {
     return res.status(503).json({ error: 'AI service not configured', detail: err.message });
   }
 
   try {
-    const stream = client.messages.stream({
+    const response = await client.responses.create({
       model: MODEL,
-      max_tokens: 16000,
-      thinking: { type: 'adaptive' },
-      system: [
-        { type: 'text', text: HEARTH_VOICE, cache_control: { type: 'ephemeral' } },
-      ],
-      tools: [
-        { type: 'web_search_20260209', name: 'web_search' },
-      ],
-      output_config: {
-        format: { type: 'json_schema', schema: DISCOVER_SCHEMA },
+      instructions: HEARTH_VOICE,
+      input: userPrompt,
+      tools: [{ type: 'web_search' }],
+      text: {
+        format: {
+          type: 'json_schema',
+          name: 'discover_response',
+          strict: true,
+          schema: DISCOVER_SCHEMA,
+        },
       },
-      messages: [{ role: 'user', content: userPrompt }],
     });
 
-    const message = await stream.finalMessage();
-
-    if (message.stop_reason === 'refusal') {
-      return res.status(422).json({ error: 'Claude refused the request' });
+    const text = response.output_text;
+    if (!text) {
+      return res.status(502).json({ error: 'Empty response from AI service' });
     }
-
-    const data = extractJSONFromMessage(message);
+    const data = JSON.parse(text);
 
     await DailyDiscover.findOneAndUpdate(
       { userId: req.userId, date },

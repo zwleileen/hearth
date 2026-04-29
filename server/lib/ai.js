@@ -1,17 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 
 let _client = null;
-export function getClaude() {
+export function getOpenAI() {
   if (!_client) {
-    if (!process.env.ANTHROPIC_API_KEY) {
-      throw new Error('ANTHROPIC_API_KEY not set in .env');
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY not set in .env');
     }
-    _client = new Anthropic();
+    _client = new OpenAI();
   }
   return _client;
 }
 
-export const MODEL = 'claude-opus-4-7';
+export const MODEL = 'gpt-5.1';
 
 export const HEARTH_VOICE = `You write for Hearth, a personal app designed to feel like a safe space, a constant light. Hearth offers solace, comfort, and inspiration to people navigating life: a journal with research-backed reflection prompts, a curated daily reading room, mood-aware recommendations for songs, books, and poems.
 
@@ -83,6 +83,10 @@ You are helping someone find solace in the world today. They came to Hearth beca
 export const DISCOVER_SCHEMA = {
   type: 'object',
   properties: {
+    issueNote: {
+      type: 'string',
+      description: 'A one-sentence editorial note framing today\'s issue',
+    },
     items: {
       type: 'array',
       description: 'Curated content items, 6 to 10 in total',
@@ -94,19 +98,15 @@ export const DISCOVER_SCHEMA = {
           source: { type: 'string', description: 'Publication, author, or outlet' },
           url: { type: 'string', description: 'Direct URL when available, empty string otherwise' },
           dek: { type: 'string', description: 'One or two sentence editorial summary' },
-          reason: { type: 'string', description: 'Why this matches the user\'s interests, brief' },
+          reason: { type: 'string', description: 'Why this matches the user\'s interests' },
           readTime: { type: 'string', description: 'Estimated read time, e.g. "8 min"' },
         },
         required: ['kind', 'title', 'source', 'url', 'dek', 'reason', 'readTime'],
         additionalProperties: false,
       },
     },
-    issueNote: {
-      type: 'string',
-      description: 'A one-sentence editorial note framing today\'s issue',
-    },
   },
-  required: ['items', 'issueNote'],
+  required: ['issueNote', 'items'],
   additionalProperties: false,
 };
 
@@ -163,15 +163,3 @@ export const ATTUNE_SCHEMA = {
   required: ['moodSummary', 'songs', 'books', 'poems'],
   additionalProperties: false,
 };
-
-export function extractJSONFromMessage(message) {
-  const textBlock = message.content.find(b => b.type === 'text');
-  if (!textBlock) throw new Error('No text block in response');
-  try {
-    return JSON.parse(textBlock.text);
-  } catch (err) {
-    const match = textBlock.text.match(/\{[\s\S]*\}/);
-    if (match) return JSON.parse(match[0]);
-    throw new Error('Could not parse JSON from response');
-  }
-}
