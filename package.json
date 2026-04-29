@@ -6,14 +6,25 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "node --watch server/index.js",
+    "server:start": "node server/index.js",
+    "dev:all": "concurrently -k -n client,server -c blue,green \"npm:dev\" \"npm:server\""
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.40.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.9.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
+    "concurrently": "^9.1.2",
     "vite": "^6.0.0"
   }
 }
