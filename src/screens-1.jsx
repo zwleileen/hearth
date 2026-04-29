@@ -158,15 +158,16 @@ function HomeScreen({ go, partOfDay, user }) {
         <Kicker>From the reading room</Kicker>
         {featuredState === 'loading' && (
           <div style={{ marginTop: 18 }}>
-            <div style={{ height: 220, background: 'var(--paper-line)', opacity: 0.4 }}/>
-            <div style={{ height: 18, background: 'var(--paper-line)', opacity: 0.4, marginTop: 18, width: '70%' }}/>
+            <Rule/>
+            <div style={{ height: 22, background: 'var(--paper-line)', opacity: 0.4, marginTop: 18, width: '70%' }}/>
             <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '90%' }}/>
+            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 6, width: '60%' }}/>
           </div>
         )}
         {featuredState === 'ready' && featured && (
           <div onClick={() => featured.url && window.open(featured.url, '_blank', 'noopener,noreferrer')}
             style={{ cursor: featured.url ? 'pointer' : 'default', marginTop: 18 }}>
-            <Photo accent="dogwood" h={220}/>
+            <Rule/>
             <Headline size="title" italic style={{ marginTop: 18 }}>
               {featured.title}
             </Headline>
