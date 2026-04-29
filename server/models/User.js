@@ -4,7 +4,7 @@ const onboardingSchema = new mongoose.Schema({
   flower: { type: String, default: 'wisteria' },
   reasons: { type: [String], default: [] },
   interests: { type: [String], default: [] },
-  dailyTime: { type: String, enum: ['morning', 'afternoon', 'evening'], default: 'morning' },
+  dailyTime: { type: String, enum: ['morning', 'afternoon', 'evening', 'both', 'flexible'], default: 'morning' },
 }, { _id: false });
 
 const userSchema = new mongoose.Schema({

@@ -3,6 +3,42 @@
 import React from 'react';
 import { BackRow, ColorBlock, Eyebrow, Headline, Icon, Kicker, LeafMark, Ph, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
+import { api } from './api.js';
+
+// ─────────────────────────────────────────────────────────────
+// Helpers — format backend records for display
+// ─────────────────────────────────────────────────────────────
+const MOOD_TONE = {
+  tender: 'rose', grateful: 'meadow', heavy: 'wisteria', hopeful: 'ember',
+  raw: 'fern', restless: 'citron', quiet: 'wisteria', joyful: 'meadow',
+  anxious: 'citron', sad: 'wisteria', content: 'rose',
+};
+
+function moodTone(mood) {
+  if (!mood) return 'wisteria';
+  return MOOD_TONE[mood.toLowerCase()] || 'wisteria';
+}
+
+function formatEntryDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const sameYesterday = d.toDateString() === yesterday.toDateString();
+  const hour = d.getHours();
+  const partOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
+  if (sameDay) return `Today · ${partOfDay}`;
+  if (sameYesterday) return `Yesterday · ${partOfDay}`;
+  return `${weekday} · ${partOfDay}`;
+}
+
+function entryExcerpt(body, max = 140) {
+  if (!body) return '';
+  const flat = body.replace(/\s+/g, ' ').trim();
+  return flat.length > max ? flat.slice(0, max).trimEnd() + '…' : flat;
+}
 
 // ─────────────────────────────────────────────────────────────
 // JOURNAL — archive (search + filter + tags)
@@ -37,11 +73,56 @@ const SAMPLE_ENTRIES = [
 function JournalArchiveScreen({ go }) {
   const [q, setQ] = React.useState('');
   const [tag, setTag] = React.useState(null);
+  const [entries, setEntries] = React.useState(null);
+  const [loadError, setLoadError] = React.useState(null);
 
-  const allTags = Array.from(new Set(SAMPLE_ENTRIES.flatMap(e => e.tags)));
-  const filtered = SAMPLE_ENTRIES.filter(e => {
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { entries } = await api.journal.list();
+        if (!cancelled) setEntries(entries.map(e => ({
+          id: e.id,
+          rawDate: e.createdAt,
+          date: formatEntryDate(e.createdAt),
+          title: e.title || 'Untitled',
+          mood: e.mood,
+          shift: e.shift !== null && e.shift !== undefined ? `${e.shift > 0 ? '+' : ''}${e.shift}` : '',
+          tone: moodTone(e.mood),
+          excerpt: entryExcerpt(e.body),
+          body: e.body,
+          tags: e.tags || [],
+          lineage: e.promptLineage,
+          mode: e.mode,
+        })));
+      } catch (err) {
+        if (!cancelled) setLoadError(err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loadError && loadError.status === 401) {
+    return (
+      <div className="fade-in" style={{ padding: '40px 28px 32px', textAlign: 'center' }}>
+        <BackRow go={go} label="Journal" dest="journal"/>
+        <Eyebrow ember style={{ marginTop: 32 }}>Sign in</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+          Your archive<br/><span style={{ fontStyle: 'italic' }}>is kept private.</span>
+        </h1>
+        <p className="body" style={{ maxWidth: 280, margin: '0 auto 22px' }}>
+          Sign in to see what you've written here.
+        </p>
+        <button className="btn btn-ember" onClick={() => go('auth')}>Sign in</button>
+      </div>
+    );
+  }
+
+  const list = entries || [];
+  const allTags = Array.from(new Set(list.flatMap(e => e.tags)));
+  const filtered = list.filter(e => {
     if (tag && !e.tags.includes(tag)) return false;
-    if (q && !(e.title + ' ' + e.excerpt + ' ' + e.body).toLowerCase().includes(q.toLowerCase())) return false;
+    if (q && !((e.title || '') + ' ' + (e.excerpt || '') + ' ' + (e.body || '')).toLowerCase().includes(q.toLowerCase())) return false;
     return true;
   });
 
@@ -53,7 +134,6 @@ function JournalArchiveScreen({ go }) {
         Everything you've<br/><span style={{ fontStyle: 'italic' }}>written here.</span>
       </h1>
 
-      {/* search */}
       <div style={{ position: 'relative' }}>
         <input className="hearth-input" value={q} onChange={e => setQ(e.target.value)} placeholder="Search by word, mood, or month…"
           style={{ fontSize: 15, paddingLeft: 42 }}/>
@@ -62,45 +142,50 @@ function JournalArchiveScreen({ go }) {
         </div>
       </div>
 
-      {/* tag chips */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 14 }}>
         <button onClick={() => setTag(null)} className={`chip ${tag === null ? 'chip-ember' : ''}`}
-          style={{ cursor: 'pointer', border: tag === null ? undefined : '1px solid var(--paper-line)' }}>All · {SAMPLE_ENTRIES.length}</button>
+          style={{ cursor: 'pointer', border: tag === null ? undefined : '1px solid var(--paper-line)' }}>All · {list.length}</button>
         {allTags.map(t => (
           <button key={t} onClick={() => setTag(t === tag ? null : t)} className={`chip ${tag === t ? 'chip-meadow' : ''}`}
             style={{ cursor: 'pointer', border: tag === t ? undefined : '1px solid var(--paper-line)' }}>{t}</button>
         ))}
       </div>
 
-      {/* monthly grouping */}
       <div style={{ marginTop: 22 }}>
-        <Rule glyph="◆ november ◆"/>
-        <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.length === 0 ? (
-            <EmptyState
-              title="Nothing matches yet."
-              sub="Try a softer word, or clear the filter."/>
-          ) : filtered.map((e, i) => (
-            <div key={e.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => go('entry-detail', { entry: e })}>
-              <div aria-hidden style={{ position: 'absolute', left: 0, top: 18, bottom: 18, width: 2, background: `var(--${e.tone})`, borderRadius: 2 }}/>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className="mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: `var(--${e.tone})`, textTransform: 'uppercase' }}>
-                  {e.date}
-                </span>
-                <span className={`chip chip-${e.tone}`}>{e.mood} · {e.shift}</span>
+        {entries === null ? (
+          <LoadingShimmer lines={4}/>
+        ) : list.length === 0 ? (
+          <EmptyState
+            title="Nothing kept yet."
+            sub="Begin a first entry from the Journal screen."
+            action="Go to Journal"
+            onAction={() => go('journal')}/>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title="Nothing matches yet."
+            sub="Try a softer word, or clear the filter."/>
+        ) : (
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {filtered.map((e) => (
+              <div key={e.id} className="card" style={{ cursor: 'pointer', position: 'relative' }} onClick={() => go('entry-detail', { entry: e })}>
+                <div aria-hidden style={{ position: 'absolute', left: 0, top: 18, bottom: 18, width: 2, background: `var(--${e.tone})`, borderRadius: 2 }}/>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span className="mono" style={{ fontSize: 10, letterSpacing: '0.14em', color: `var(--${e.tone})`, textTransform: 'uppercase' }}>
+                    {e.date}
+                  </span>
+                  {e.mood && <span className={`chip chip-${e.tone}`}>{e.mood}{e.shift ? ` · ${e.shift}` : ''}</span>}
+                </div>
+                <h3 className="serif" style={{ margin: '8px 0 6px', fontSize: 18, fontStyle: 'italic', fontWeight: 380 }}>{e.title}</h3>
+                <p className="body-sm" style={{ margin: 0 }}>{e.excerpt}</p>
+                {e.tags.length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
+                    {e.tags.map(t => <span key={t} className="chip" style={{ fontSize: 10, padding: '4px 10px' }}>{t}</span>)}
+                  </div>
+                )}
               </div>
-              <h3 className="serif" style={{ margin: '8px 0 6px', fontSize: 18, fontStyle: 'italic', fontWeight: 380 }}>{e.title}</h3>
-              <p className="body-sm" style={{ margin: 0 }}>{e.excerpt}</p>
-              <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                {e.tags.map(t => <span key={t} className="chip" style={{ fontSize: 10, padding: '4px 10px' }}>{t}</span>)}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginTop: 26, textAlign: 'center' }}>
-        <button className="btn btn-ghost">Load older months</button>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -309,28 +394,94 @@ function ScienceArticle() {
 // BOOKMARKS
 // ─────────────────────────────────────────────────────────────
 function BookmarksScreen({ go }) {
-  const M = HEARTH_DATA.magazine;
-  const tones = ['ember', 'rose', 'meadow', 'wisteria', 'citron'];
+  const [bookmarks, setBookmarks] = React.useState(null);
+  const [loadError, setLoadError] = React.useState(null);
+  const [filter, setFilter] = React.useState('all');
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { bookmarks } = await api.bookmarks.list();
+        if (!cancelled) setBookmarks(bookmarks);
+      } catch (err) {
+        if (!cancelled) setLoadError(err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loadError && loadError.status === 401) {
+    return (
+      <div className="fade-in" style={{ padding: '40px 28px 32px', textAlign: 'center' }}>
+        <BackRow go={go} label="Settings" dest="settings"/>
+        <Eyebrow tone="rose" style={{ marginTop: 32 }}>Sign in</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+          Your shelf<br/><span style={{ fontStyle: 'italic' }}>is kept private.</span>
+        </h1>
+        <p className="body" style={{ maxWidth: 280, margin: '0 auto 22px' }}>
+          Sign in to see what you've saved.
+        </p>
+        <button className="btn btn-ember" onClick={() => go('auth')}>Sign in</button>
+      </div>
+    );
+  }
+
+  const KIND_TONE = { article: 'ember', essay: 'wisteria', poem: 'rose', book: 'meadow', news: 'citron', song: 'bloom' };
+  const list = bookmarks || [];
+  const visible = filter === 'all' ? list : list.filter(b => b.kind === filter);
+  const counts = list.reduce((acc, b) => { acc[b.kind] = (acc[b.kind] || 0) + 1; return acc; }, {});
+  const kinds = Object.keys(counts);
+
   return (
     <div className="fade-in" style={{ padding: '4px 22px 32px' }}>
       <BackRow go={go} label="Settings" dest="settings"/>
       <Eyebrow tone="rose" style={{ marginTop: 18 }}>Bookmarks</Eyebrow>
-      <h1 className="h-display serif" style={{ margin: '8px 0 18px', fontWeight: 350 }}>
+      <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
         On the shelf,<br/><span style={{ fontStyle: 'italic' }}>for later.</span>
       </h1>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {M.stories.map((s, i) => (
-          <div key={i} className="card" style={{ display: 'flex', gap: 12, cursor: 'pointer', position: 'relative' }} onClick={() => go('article', { story: s })}>
-            <div aria-hidden style={{ position: 'absolute', left: 0, top: 18, bottom: 18, width: 2, background: `var(--${tones[i % tones.length]})`, borderRadius: 2 }}/>
-            <div className="ph" style={{ width: 80, height: 100, flexShrink: 0 }}><span className="ph-cap">cover</span></div>
-            <div style={{ flex: 1 }}>
-              <div className="mag-rule" style={{ color: `var(--${tones[i % tones.length]})` }}>{s.kicker}</div>
-              <h3 className="serif" style={{ margin: '4px 0 4px', fontSize: 17, fontStyle: 'italic', fontWeight: 380, lineHeight: 1.15 }}>{s.title}</h3>
-              <p className="body-sm" style={{ margin: 0, color: 'var(--paper-mute)' }}>{s.readTime} · saved 3 days ago</p>
-            </div>
-          </div>
-        ))}
-      </div>
+
+      {bookmarks !== null && list.length > 0 && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 14 }}>
+          <button onClick={() => setFilter('all')} className={`chip ${filter === 'all' ? 'chip-ember' : ''}`}
+            style={{ cursor: 'pointer', border: filter === 'all' ? undefined : '1px solid var(--paper-line)' }}>All · {list.length}</button>
+          {kinds.map(k => (
+            <button key={k} onClick={() => setFilter(k)} className={`chip ${filter === k ? `chip-${KIND_TONE[k] || 'meadow'}` : ''}`}
+              style={{ cursor: 'pointer', border: filter === k ? undefined : '1px solid var(--paper-line)' }}>{k} · {counts[k]}</button>
+          ))}
+        </div>
+      )}
+
+      {bookmarks === null ? (
+        <LoadingShimmer lines={4}/>
+      ) : list.length === 0 ? (
+        <EmptyState
+          title="The shelf is empty."
+          sub="Save articles, songs, books, or poems from Discover and Attune to keep them here."
+          action="Go to Discover"
+          onAction={() => go('discover')}/>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {visible.map((b) => {
+            const tone = KIND_TONE[b.kind] || 'wisteria';
+            const open = () => {
+              if (b.url) {
+                window.open(b.url, '_blank', 'noopener,noreferrer');
+              }
+            };
+            return (
+              <div key={b.id} className="card" style={{ display: 'flex', gap: 12, cursor: b.url ? 'pointer' : 'default', position: 'relative' }} onClick={open}>
+                <div aria-hidden style={{ position: 'absolute', left: 0, top: 18, bottom: 18, width: 2, background: `var(--${tone})`, borderRadius: 2 }}/>
+                <div style={{ flex: 1 }}>
+                  <div className="mag-rule" style={{ color: `var(--${tone})` }}>{b.kind}{b.source ? ` · ${b.source}` : ''}</div>
+                  <h3 className="serif" style={{ margin: '4px 0 4px', fontSize: 17, fontStyle: 'italic', fontWeight: 380, lineHeight: 1.2 }}>{b.title}</h3>
+                  {b.excerpt && <p className="body-sm" style={{ margin: 0, color: 'var(--paper-mute)' }}>{b.excerpt}</p>}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

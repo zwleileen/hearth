@@ -22,6 +22,7 @@ import {
   BookmarksScreen, WeeklyDigestScreen, StreakBrokenScreen,
   AttuneHistoryScreen, MiniPlayer, OfflineBanner, Toast,
 } from './screens-4.jsx';
+import { api, getToken, clearToken } from './api.js';
 
 const TABS = [
   { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
@@ -72,6 +73,38 @@ function App() {
   const [route, setRoute] = useState(values.startingScreen || 'home');
   const [payload, setPayload] = useState(null);
   const [toast, setToast] = useState(null);
+  const [user, setUser] = useState(null);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  async function refreshUser() {
+    if (!getToken()) {
+      setUser(null);
+      return null;
+    }
+    try {
+      const { user } = await api.auth.me();
+      setUser(user);
+      return user;
+    } catch {
+      clearToken();
+      setUser(null);
+      return null;
+    }
+  }
+
+  function signOut() {
+    clearToken();
+    setUser(null);
+    go('onboarding', { step: 0 });
+  }
+
+  // Restore session on mount
+  useEffect(() => {
+    (async () => {
+      await refreshUser();
+      setAuthChecked(true);
+    })();
+  }, []);
 
   // Repaint --sig* whenever flower changes
   useEffect(() => { applyFlower(values.flower); }, [values.flower]);
@@ -122,8 +155,8 @@ function App() {
 
           <div id="hearth-scroll" className={`hearth-scroll trans-${values.transition || 'lift'}`} style={{ paddingTop: isFullBleed ? 50 : 110 }} key={route}>
             {/* Onboarding & auth */}
-            {route === 'onboarding' && <OnboardingScreen go={go} payload={payload}/>}
-            {route === 'auth' && <AuthScreen go={go}/>}
+            {route === 'onboarding' && <OnboardingScreen go={go} payload={payload} onAuthed={refreshUser}/>}
+            {route === 'auth' && <AuthScreen go={go} onAuthed={refreshUser}/>}
 
             {/* Main */}
             {route === 'home' && <HomeScreen go={go} partOfDay={values.partOfDay} streak={values.streak} flower={values.flower}/>}

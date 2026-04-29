@@ -5,6 +5,7 @@
 import React from 'react';
 import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
+import { api } from './api.js';
 
 const { useState: useState1, useEffect: useEffect1 } = React;
 
@@ -292,7 +293,35 @@ function JournalWriteScreen({ go, payload }) {
   const [step, setStep] = useState1('write');
   const [mood, setMood] = useState1(null);
   const [shift, setShift] = useState1(2);
+  const [saving, setSaving] = useState1(false);
+  const [saveError, setSaveError] = useState1(null);
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+
+  async function keepEntry() {
+    if (saving) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await api.journal.create({
+        mode,
+        title: prompt.title || '',
+        body: text,
+        mood,
+        shift,
+        promptTitle: prompt.title || null,
+        promptLineage: prompt.lineage || null,
+      });
+      setStep('done');
+    } catch (err) {
+      if (err.status === 401) {
+        setSaveError('Sign in to keep this entry. Your draft is still here.');
+      } else {
+        setSaveError(err.data?.error || err.message || 'Could not save. Try again.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="fade-in" style={{ padding: '4px 22px 24px' }}>
@@ -386,10 +415,19 @@ function JournalWriteScreen({ go, payload }) {
           <span>Heavier</span><span>Unchanged</span><span>Lighter</span>
         </div>
         <div style={{ marginTop: 32 }}>
-          <button className="btn btn-ember" onClick={() => setStep('done')}>
-            Keep this entry
+          <button className="btn btn-ember" disabled={saving} onClick={keepEntry}
+            style={{ opacity: saving ? 0.6 : 1 }}>
+            {saving ? 'Keeping…' : 'Keep this entry'}
           </button>
         </div>
+        {saveError && (
+          <p className="body-sm" style={{ marginTop: 14, color: 'var(--ember-deep, var(--ember))' }}>
+            {saveError}
+            {saveError.includes('Sign in') && (
+              <> <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Sign in</span>.</>
+            )}
+          </p>
+        )}
       </>}
 
       {step === 'done' && <div style={{ paddingTop: 80 }}>
@@ -400,7 +438,10 @@ function JournalWriteScreen({ go, payload }) {
         <p className="body" style={{ margin: '20px 0 32px', maxWidth: 320 }}>
           Felt {mood}. Writing made it {shift > 0 ? `${shift} lighter` : shift < 0 ? `${Math.abs(shift)} heavier` : 'unchanged'}. The page is the better friend tonight.
         </p>
-        <button className="btn btn-ghost" onClick={() => go('home')}>Back home</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-ghost" onClick={() => go('home')}>Back home</button>
+          <button className="btn btn-ghost" onClick={() => go('journal-archive')}>See the archive</button>
+        </div>
       </div>}
     </div>
   );

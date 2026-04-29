@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { BackRow, Eyebrow, Icon, LeafMark, Ph, Sprig } from './atoms.jsx';
+import { api, setToken } from './api.js';
 
 // ─────────────────────────────────────────────────────────────
 // READING GARDEN — interest taxonomy (Step 3)
@@ -37,13 +38,17 @@ const FLOWERS = SPRIGS;
 // ─────────────────────────────────────────────────────────────
 // ONBOARDING — 6 screens
 // ─────────────────────────────────────────────────────────────
-function OnboardingScreen({ go, payload }) {
+function OnboardingScreen({ go, payload, onAuthed }) {
   const step = payload?.step || 0;
   const [name, setName] = React.useState(payload?.name || '');
   const [reasons, setReasons] = React.useState(payload?.reasons || []);
   const [time, setTime] = React.useState(payload?.time || 'evening');
   const [interests, setInterests] = React.useState(payload?.interests || []);
   const [flower, setFlower] = React.useState(payload?.flower || 'wisteria'); // key kept as 'flower' for tweak-state compat
+  const [email, setEmail] = React.useState(payload?.email || '');
+  const [password, setPassword] = React.useState(payload?.password || '');
+  const [submitting, setSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState(null);
 
   const REASONS = [
     { k: 'rest',     label: 'Rest more easily',     tone: 'wisteria' },
@@ -54,9 +59,30 @@ function OnboardingScreen({ go, payload }) {
     { k: 'wonder',   label: 'Notice more',          tone: 'meadow' },
   ];
 
-  const TOTAL = 6;
-  const state = { name, reasons, time, interests, flower };
+  const TOTAL = 7;
+  const state = { name, reasons, time, interests, flower, email, password };
   const goStep = (n) => go('onboarding', { step: n, ...state });
+
+  async function submitSignup() {
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const { token } = await api.auth.signup({
+        email: email.trim().toLowerCase(),
+        password,
+        name: name.trim(),
+        onboarding: { flower, reasons, interests, dailyTime: time },
+      });
+      setToken(token);
+      if (typeof onAuthed === 'function') {
+        await onAuthed();
+      }
+      go('home');
+    } catch (err) {
+      setSubmitError(err.data?.error || err.message || 'Something went wrong');
+      setSubmitting(false);
+    }
+  }
 
   function toggleReason(k) {
     setReasons(rs => rs.includes(k) ? rs.filter(x => x !== k) : [...rs, k]);
@@ -313,12 +339,57 @@ function OnboardingScreen({ go, payload }) {
     );
   }
 
-  // step 6 — light the fire
+  // step 6 — make a hearth (email + password)
+  if (step === 6) {
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    const passwordOk = password.length >= 8;
+    return (
+      <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
+        <OnboardingProgress n={6} total={TOTAL}/>
+        <Eyebrow tone="ember" style={{ marginTop: 28 }}>Step six · Make a hearth</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
+          Keep your<br/><span style={{ fontStyle: 'italic' }}>fire safe.</span>
+        </h1>
+        <p className="body" style={{ margin: '0 0 22px' }}>
+          An email and a password we can use to bring you back to your entries on any device.
+        </p>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 6 }}>Email</div>
+            <input className="hearth-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@somewhere.kind" type="email" autoComplete="email" style={{ fontSize: 17 }}/>
+          </div>
+          <div>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 6 }}>Password</div>
+            <input className="hearth-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least eight characters" type="password" autoComplete="new-password" style={{ fontSize: 17 }}/>
+            <div className="body-sm" style={{ marginTop: 6, color: passwordOk ? 'var(--meadow-deep, var(--paper-mute))' : 'var(--paper-mute)' }}>
+              {password.length === 0 ? 'Pick something only you would know.' : passwordOk ? 'Looks good.' : `${8 - password.length} more characters`}
+            </div>
+          </div>
+        </div>
+
+        <p className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-faint)', textTransform: 'uppercase', textAlign: 'center', marginTop: 22 }}>
+          Private by default. No ads. Your entries are never used to train models.
+        </p>
+
+        <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+          <button className="btn btn-ghost" onClick={() => goStep(5)}>Back</button>
+          <button className="btn btn-ember" disabled={!emailOk || !passwordOk}
+            style={{ opacity: (!emailOk || !passwordOk) ? 0.5 : 1 }}
+            onClick={() => goStep(7)}>
+            Continue {Icon.arrow(14, 'var(--on-ember)')}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // step 7 — light the fire (creates the account)
   const pickedFlower = SPRIGS.find(f => f.k === flower) || SPRIGS[0];
   return (
     <div className="fade-in" style={{ padding: '60px 28px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh', justifyContent: 'space-between' }}>
       <div>
-        <OnboardingProgress n={6} total={TOTAL}/>
+        <OnboardingProgress n={7} total={TOTAL}/>
         <div style={{ position: 'relative', width: 110, height: 110, margin: '40px auto 0' }}>
           <div className="flicker" style={{ position: 'absolute', inset: 0, borderRadius: '50%',
             background: 'radial-gradient(circle at 35% 30%, #f3c98a, #d4a574 40%, #6e431f 90%)',
@@ -333,14 +404,18 @@ function OnboardingScreen({ go, payload }) {
         <p className="body" style={{ maxWidth: 300, margin: '0 auto' }}>
           Your fire is lit, your {pickedFlower.label.toLowerCase()} is in bloom, and your reading is on its way. Your first prompt is waiting on the home screen.
         </p>
+        {submitError && (
+          <p className="body-sm" style={{ marginTop: 22, color: 'var(--ember-deep, var(--ember))', maxWidth: 280, marginInline: 'auto' }}>
+            {submitError}
+            {' '}
+            <span onClick={() => goStep(6)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Edit account</span>.
+          </p>
+        )}
       </div>
-      <button className={`btn btn-${pickedFlower.tone}`} style={{ width: '100%', maxWidth: 280, justifyContent: 'center' }}
-        onClick={() => {
-          // persist the picks into Tweaks if host supports it
-          window.parent.postMessage({ type: '__edit_mode_set_keys', edits: { flower, interests } }, '*');
-          go('home');
-        }}>
-        Step inside {Icon.arrow(14, `var(--on-${pickedFlower.tone})`)}
+      <button className={`btn btn-${pickedFlower.tone}`} disabled={submitting}
+        style={{ width: '100%', maxWidth: 280, justifyContent: 'center', opacity: submitting ? 0.6 : 1 }}
+        onClick={submitSignup}>
+        {submitting ? 'Lighting the fire…' : <>Step inside {Icon.arrow(14, `var(--on-${pickedFlower.tone})`)}</>}
       </button>
     </div>
   );
@@ -420,14 +495,37 @@ function OnboardingProgress({ n, total }) {
 // ─────────────────────────────────────────────────────────────
 // AUTH — sign in
 // ─────────────────────────────────────────────────────────────
-function AuthScreen({ go }) {
-  const [mode, setMode] = React.useState('signin');
+function AuthScreen({ go, onAuthed }) {
   const [email, setEmail] = React.useState('');
+  const [password, setPassword] = React.useState('');
   const [busy, setBusy] = React.useState(false);
+  const [error, setError] = React.useState(null);
 
-  function submit() {
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const canSubmit = emailOk && password.length >= 8 && !busy;
+
+  async function submit() {
+    if (!canSubmit) return;
     setBusy(true);
-    setTimeout(() => { setBusy(false); go('home'); }, 1100);
+    setError(null);
+    try {
+      const { token } = await api.auth.signin({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      setToken(token);
+      if (typeof onAuthed === 'function') {
+        await onAuthed();
+      }
+      go('home');
+    } catch (err) {
+      setError(err.data?.error || err.message || 'Something went wrong');
+      setBusy(false);
+    }
+  }
+
+  function onKeyDown(e) {
+    if (e.key === 'Enter' && canSubmit) submit();
   }
 
   return (
@@ -439,46 +537,46 @@ function AuthScreen({ go }) {
       <div style={{ marginTop: 32, textAlign: 'center' }}>
         <span className="hearth-mark" style={{ display: 'inline-block', width: 28, height: 28 }}/>
         <h1 className="h-display serif" style={{ margin: '20px 0 8px', fontWeight: 350 }}>
-          {mode === 'signin' ? 'Welcome back.' : 'Make a hearth.'}
+          Welcome back.
         </h1>
         <p className="body" style={{ margin: 0 }}>
-          {mode === 'signin' ? 'Pick up where you left off.' : 'Your fire, kept private and yours.'}
+          Pick up where you left off.
         </p>
       </div>
 
-      <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button className="card-soft" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', border: '1px solid var(--paper-line)' }} onClick={submit}>
-          <div style={{ width: 18, height: 18, borderRadius: 4, background: 'linear-gradient(135deg, var(--hh-green-2), var(--hh-dogwood))' }}/>
-          <span className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380 }}>Continue with passkey</span>
-        </button>
-        <button className="card-soft" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', border: '1px solid var(--paper-line)' }} onClick={submit}>
-          <div style={{ width: 18, height: 18, borderRadius: '50%', background: 'var(--hh-green)' }}/>
-          <span className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380 }}>Continue with Apple</span>
-        </button>
+      <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 6 }}>Email</div>
+          <input className="hearth-input" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={onKeyDown}
+            placeholder="you@somewhere.kind" type="email" autoComplete="email" style={{ fontSize: 17 }}/>
+        </div>
+        <div>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 6 }}>Password</div>
+          <input className="hearth-input" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={onKeyDown}
+            placeholder="" type="password" autoComplete="current-password" style={{ fontSize: 17 }}/>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: 'var(--paper-faint)', margin: '22px 0' }}>
-        <hr className="divider-faint divider" style={{ flex: 1 }}/>
-        <span className="mono" style={{ fontSize: 9, letterSpacing: '0.2em' }}>OR</span>
-        <hr className="divider-faint divider" style={{ flex: 1 }}/>
-      </div>
-
-      <input className="hearth-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@somewhere.kind"
-        style={{ fontSize: 17 }} type="email"/>
-      <button className="btn btn-ember" disabled={busy || email.length < 4} onClick={submit}
-        style={{ marginTop: 12, width: '100%', justifyContent: 'center', opacity: (busy || email.length < 4) ? 0.5 : 1 }}>
-        {busy ? 'Sending a link…' : (mode === 'signin' ? 'Send sign-in link' : 'Create hearth')}
+      <button className="btn btn-ember" disabled={!canSubmit} onClick={submit}
+        style={{ marginTop: 18, width: '100%', justifyContent: 'center', opacity: canSubmit ? 1 : 0.5 }}>
+        {busy ? 'Tending the fire…' : 'Sign in'}
       </button>
 
+      {error && (
+        <p className="body-sm" style={{ textAlign: 'center', marginTop: 14, color: 'var(--ember-deep, var(--ember))' }}>
+          {error}
+        </p>
+      )}
+
       <p className="body-sm" style={{ textAlign: 'center', marginTop: 22 }}>
-        {mode === 'signin' ? "First time here? " : "Already have one? "}
-        <span onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+        First time here?{' '}
+        <span onClick={() => go('onboarding', { step: 0 })}
           style={{ color: 'var(--ember)', cursor: 'pointer', textDecoration: 'underline' }}>
-          {mode === 'signin' ? 'Make a hearth' : 'Sign in'}
+          Make a hearth
         </span>
       </p>
       <p className="mono" style={{ fontSize: 9, letterSpacing: '0.14em', textAlign: 'center', color: 'var(--paper-faint)', marginTop: 30 }}>
-        E2E ENCRYPTED · NO ADS · NO TRAINING ON YOUR ENTRIES
+        PRIVATE BY DEFAULT · NO ADS · NEVER USED TO TRAIN MODELS
       </p>
     </div>
   );
