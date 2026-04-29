@@ -19,35 +19,104 @@ const { useState: useState1, useEffect: useEffect1 } = React;
 //   4. Three-up index of practices
 //   5. Closing line
 // ─────────────────────────────────────────────────────────────
-function HomeScreen({ go, partOfDay, streak }) {
+function computeJournalStats(entries) {
+  const total = entries.length;
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  const thisWeek = entries.filter(e => new Date(e.createdAt) >= startOfWeek).length;
+
+  const dayKey = (d) => d.toDateString();
+  const dates = new Set(entries.map(e => dayKey(new Date(e.createdAt))));
+  let streak = 0;
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  if (!dates.has(dayKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  while (dates.has(dayKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return { total, thisWeek, streak };
+}
+
+function formatTodayKicker() {
+  const now = new Date();
+  const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
+  const dayMonth = now.toLocaleDateString(undefined, { day: 'numeric', month: 'long' });
+  const time = now.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  return `${weekday} · ${dayMonth} · ${time}`;
+}
+
+function HomeScreen({ go, partOfDay, user }) {
   const D = HEARTH_DATA;
   const isEvening = partOfDay === 'evening';
-  const greet = partOfDay === 'morning'
-    ? 'Good morning.'
+  const isMorning = partOfDay === 'morning';
+  const firstName = user?.name?.split(/\s+/)[0]?.trim();
+  const greet = isMorning
+    ? `Good morning${firstName ? ', ' + firstName : ''}.`
     : isEvening
-      ? 'Welcome back.'
-      : 'Good afternoon.';
+      ? `Welcome back${firstName ? ', ' + firstName : ''}.`
+      : `Good afternoon${firstName ? ', ' + firstName : ''}.`;
   const promptOfDay = isEvening ? D.eveningPrompts[0] : D.morningPrompts[0];
-  const featured = D.magazine.stories[0];
-  const promptAccent = isEvening ? 'green' : 'ecru'; // dark for evening, warm for morning
+  const promptAccent = isEvening ? 'green' : 'ecru';
+
+  const [stats, setStats] = useState1({ total: 0, thisWeek: 0, streak: 0 });
+  const [featured, setFeatured] = useState1(null);
+  const [featuredState, setFeaturedState] = useState1('idle'); // idle|loading|ready|empty|unauthed
+
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { entries } = await api.journal.list();
+        if (!cancelled) setStats(computeJournalStats(entries));
+      } catch {
+        // not authed or error: keep zeros
+      }
+    })();
+    (async () => {
+      setFeaturedState('loading');
+      try {
+        const data = await api.discover.today();
+        if (cancelled) return;
+        const item = (data.items || []).find(i => i.kind === 'article' || i.kind === 'essay') || (data.items || [])[0];
+        if (item) {
+          setFeatured(item);
+          setFeaturedState('ready');
+        } else {
+          setFeaturedState('empty');
+        }
+      } catch (err) {
+        if (cancelled) return;
+        if (err.status === 401) setFeaturedState('unauthed');
+        else setFeaturedState('empty');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       {/* ── 1. Greeting on Old Lace ───────────────── */}
       <section style={{ padding: '14px 22px 36px' }}>
-        <Kicker>Friday · 27 November · {isEvening ? '5:42 pm' : '7:18 am'}</Kicker>
+        <Kicker>{formatTodayKicker()}</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
           {greet}
         </Headline>
         <p className="body" style={{ margin: '14px 0 0', maxWidth: 320 }}>
           {isEvening
             ? 'The light is going. The kettle is on. There is no hurry tonight.'
-            : 'A quiet hour, before the day asks anything of you.'}
+            : isMorning
+              ? 'A quiet hour, before the day asks anything of you.'
+              : 'The day is mid-stride. A small return, on your terms.'}
         </p>
         <div style={{ display: 'flex', gap: 22, marginTop: 26 }}>
-          <HomeStat n={streak} label="day streak"/>
-          <HomeStat n={42} label="entries kept"/>
-          <HomeStat n={6} label="this week"/>
+          <HomeStat n={stats.streak} label="day streak"/>
+          <HomeStat n={stats.total} label="entries kept"/>
+          <HomeStat n={stats.thisWeek} label="this week"/>
         </div>
       </section>
 
@@ -86,20 +155,52 @@ function HomeScreen({ go, partOfDay, streak }) {
 
       {/* ── 3. Featured reading ───────────────────── */}
       <section style={{ padding: '40px 22px 0' }}>
-        <Kicker>From the reading room · Issue 14</Kicker>
-        <div onClick={() => go('article', featured)} style={{ cursor: 'pointer', marginTop: 18 }}>
-          <Photo accent="dogwood" h={220}/>
-          <Headline size="title" italic style={{ marginTop: 18 }}>
-            {featured.title}
-          </Headline>
-          <p className="body" style={{ margin: '12px 0 0', maxWidth: 340 }}>
-            {featured.dek}
-          </p>
-          <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center' }}>
-            <Kicker accent="mute">{featured.kicker}</Kicker>
-            <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {featured.readTime}</span>
+        <Kicker>From the reading room</Kicker>
+        {featuredState === 'loading' && (
+          <div style={{ marginTop: 18 }}>
+            <div style={{ height: 220, background: 'var(--paper-line)', opacity: 0.4 }}/>
+            <div style={{ height: 18, background: 'var(--paper-line)', opacity: 0.4, marginTop: 18, width: '70%' }}/>
+            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '90%' }}/>
           </div>
-        </div>
+        )}
+        {featuredState === 'ready' && featured && (
+          <div onClick={() => featured.url && window.open(featured.url, '_blank', 'noopener,noreferrer')}
+            style={{ cursor: featured.url ? 'pointer' : 'default', marginTop: 18 }}>
+            <Photo accent="dogwood" h={220}/>
+            <Headline size="title" italic style={{ marginTop: 18 }}>
+              {featured.title}
+            </Headline>
+            <p className="body" style={{ margin: '12px 0 0', maxWidth: 340 }}>
+              {featured.dek}
+            </p>
+            <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center' }}>
+              <Kicker accent="mute">{featured.source || featured.kind}</Kicker>
+              {featured.readTime && (
+                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {featured.readTime}</span>
+              )}
+            </div>
+          </div>
+        )}
+        {featuredState === 'empty' && (
+          <div style={{ marginTop: 18 }}>
+            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 340 }}>
+              Today's reading room is being curated for you.
+            </p>
+            <button className="btn btn-ghost" onClick={() => go('discover')} style={{ marginTop: 14 }}>
+              Open Discover
+            </button>
+          </div>
+        )}
+        {featuredState === 'unauthed' && (
+          <div style={{ marginTop: 18 }}>
+            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 340 }}>
+              Your reading room opens once you sign in.
+            </p>
+            <button className="btn btn-ghost" onClick={() => go('auth')} style={{ marginTop: 14 }}>
+              Sign in
+            </button>
+          </div>
+        )}
       </section>
 
       {/* ── 4. Three-up index ────────────────────── */}
