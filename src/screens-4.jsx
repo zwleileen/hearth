@@ -1,5 +1,9 @@
 // Hearth — journal depth, reading view, mini-player, weekly digest, states
 
+import React from 'react';
+import { BackRow, ColorBlock, Eyebrow, Headline, Icon, Kicker, LeafMark, Ph, Rule } from './atoms.jsx';
+import { HEARTH_DATA } from './data.js';
+
 // ─────────────────────────────────────────────────────────────
 // JOURNAL — archive (search + filter + tags)
 // ─────────────────────────────────────────────────────────────
@@ -206,7 +210,7 @@ function ShareSheet({ entry, onClose }) {
 // DISCOVER — article reading view
 // ─────────────────────────────────────────────────────────────
 function ArticleScreen({ go, payload }) {
-  const M = window.HEARTH_DATA.magazine;
+  const M = HEARTH_DATA.magazine;
   const story = payload?.story || M.stories[0];
   const isScience = payload?.slug === 'science';
 
@@ -305,7 +309,7 @@ function ScienceArticle() {
 // BOOKMARKS
 // ─────────────────────────────────────────────────────────────
 function BookmarksScreen({ go }) {
-  const M = window.HEARTH_DATA.magazine;
+  const M = HEARTH_DATA.magazine;
   const tones = ['ember', 'rose', 'meadow', 'wisteria', 'citron'];
   return (
     <div className="fade-in" style={{ padding: '4px 22px 32px' }}>
@@ -499,7 +503,7 @@ function StreakBrokenScreen({ go }) {
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 280 }}>
-        <button className="btn btn-ember" style={{ justifyContent: 'center' }} onClick={() => go('journal-write', { mode: 'evening', prompt: window.HEARTH_DATA.eveningPrompts[0] })}>
+        <button className="btn btn-ember" style={{ justifyContent: 'center' }} onClick={() => go('journal-write', { mode: 'evening', prompt: HEARTH_DATA.eveningPrompts[0] })}>
           Light it again {Icon.arrow(14, 'var(--on-ember)')}
         </button>
         <button className="btn btn-ghost" style={{ justifyContent: 'center' }} onClick={() => go('home')}>Maybe tomorrow</button>
@@ -513,7 +517,7 @@ function StreakBrokenScreen({ go }) {
 // ATTUNE — reading history
 // ─────────────────────────────────────────────────────────────
 function AttuneHistoryScreen({ go }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const READS = [
     { date: 'Tonight',    arche: D.attuneArchetypes[0], felt: 'tender' },
     { date: 'Wed evening',arche: D.attuneArchetypes[1], felt: 'restless' },
@@ -656,7 +660,7 @@ function Toast({ message, tone = 'meadow' }) {
   );
 }
 
-Object.assign(window, {
+export {
   JournalArchiveScreen, EntryDetailScreen,
   ArticleScreen, BookmarksScreen,
   WeeklyDigestScreen, StreakBrokenScreen,
@@ -664,4 +668,4 @@ Object.assign(window, {
   MiniPlayer,
   EmptyState, LoadingShimmer, OfflineBanner, Toast,
   SAMPLE_ENTRIES,
-});
+};

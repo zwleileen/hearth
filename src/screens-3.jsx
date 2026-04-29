@@ -1,5 +1,8 @@
 // Hearth — onboarding, auth, settings, notification mocks
 
+import React from 'react';
+import { BackRow, Eyebrow, Icon, LeafMark, Ph, Sprig } from './atoms.jsx';
+
 // ─────────────────────────────────────────────────────────────
 // READING GARDEN — interest taxonomy (Step 3)
 // Cross-disciplinary, world-spanning. Each maps to a botanical tone.
@@ -711,4 +714,4 @@ function Stat({ tone, big, label }) {
   );
 }
 
-Object.assign(window, { OnboardingScreen, AuthScreen, SettingsScreen, NotificationsScreen, ProfileScreen, LeafGlyph, FlowerGlyph, READING_GARDEN, SPRIGS, FLOWERS });
+export { OnboardingScreen, AuthScreen, SettingsScreen, NotificationsScreen, ProfileScreen, LeafGlyph, FlowerGlyph, READING_GARDEN, SPRIGS, FLOWERS };

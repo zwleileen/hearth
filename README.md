@@ -15,32 +15,37 @@ Describe how you're feeling, and Hearth suggests songs, books, or poems shown to
 
 ## Tech
 
-A no-build React prototype using Babel standalone, so JSX runs directly in the browser without a bundler. React 18 is loaded via CDN.
+React 18 + Vite. JSX components live in `src/` as ES modules.
 
 ## Running locally
 
-The app uses `<script type="text/babel" src="...">`, so it must be served over HTTP rather than opened as a `file://` URL. From the project root:
-
 ```bash
-# Python 3
-python3 -m http.server 8000
-
-# or Node
-npx serve .
+npm install
+npm run dev       # local dev server with hot reload
+npm run build     # production build to dist/
+npm run preview   # preview the production build
 ```
 
-Then visit `http://localhost:8000`.
+Then visit `http://localhost:5173`.
 
-The fully bundled `dist/hearth-standalone.html` works without a server, just open it directly in a browser.
+The original no-build prototype lives in `prototype-bundle/` (`hearth-standalone.html` opens directly in a browser, no server needed).
 
 ## Project structure
 
 ```
 hearth/
-├── index.html         Dev entry point
-├── src/               React source (jsx, data, styles)
-├── dist/              Bundled standalone artifacts
-└── docs/              Audit screenshots and design references
+├── index.html              Vite entry
+├── src/
+│   ├── main.jsx            App mount point
+│   ├── app.jsx             Routing + tab bar
+│   ├── atoms.jsx           Editorial atoms (Icon, Photo, Headline, etc.)
+│   ├── ios-frame.jsx       iOS device frame components
+│   ├── tweaks-panel.jsx    Dev tweaks panel + form controls
+│   ├── screens-1..4.jsx    Screen components (Home, Journal, Discover, etc.)
+│   ├── data.js             Content + research-backed prompt data
+│   └── styles.css
+├── prototype-bundle/       Original no-build artifacts (standalone HTML)
+└── docs/                   Audit screenshots and design references
 ```
 
 ## Status

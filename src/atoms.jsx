@@ -6,6 +6,8 @@
 // section, never as gradients or tints. No botanical
 // vocabulary. No leaves. No sprigs. No fire metaphor in chrome.
 
+import React from 'react';
+
 const Icon = {
   pen: (s = 18, c = 'currentColor') => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
@@ -254,9 +256,9 @@ const PetalScatter = LeafScatter;
 const FlowerGarden = Sprig;
 const GrassSprig = LeafMark;
 
-Object.assign(window, {
+export {
   Icon, HearthMarkSmall, HearthTopbar,
-  Photo, Ph, Kicker, Eyebrow, Headline, Rule, ColorBlock,
+  Photo, Ph, Kicker, Eyebrow, Headline, Rule, ColorBlock, BackRow,
   LeafMark, LeafScatter, Sprig,
   FlowerMark, GrassSprig, PetalScatter, FlowerGarden,
-});
+};

@@ -1,7 +1,7 @@
 // Hearth — content & data
 // Sources noted in comments where relevant.
 
-window.HEARTH_DATA = {
+export const HEARTH_DATA = {
 
   // ─────────────────────────────────────────────────────────────
   // JOURNAL PROMPTS — drawn from the most cited, evidence-supported

@@ -10,13 +10,17 @@
 *.swp
 *.swo
 
-# Node (in case a build is added later)
+# Node
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .env
 .env.local
+
+# Vite build output
+dist/
+.vite/
 
 # Logs
 *.log

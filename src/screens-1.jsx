@@ -2,6 +2,10 @@
 // Aesop / Frama. Old Lace paper, Midnight Green ink, four
 // feature accents used as full color blocks, never tints.
 
+import React from 'react';
+import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
+import { HEARTH_DATA } from './data.js';
+
 const { useState: useState1, useEffect: useEffect1 } = React;
 
 // ─────────────────────────────────────────────────────────────
@@ -15,7 +19,7 @@ const { useState: useState1, useEffect: useEffect1 } = React;
 //   5. Closing line
 // ─────────────────────────────────────────────────────────────
 function HomeScreen({ go, partOfDay, streak }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const isEvening = partOfDay === 'evening';
   const greet = partOfDay === 'morning'
     ? 'Good morning.'
@@ -175,7 +179,7 @@ function HomeStat({ n, label }) {
 // of prompts with a hairline rule between each.
 // ─────────────────────────────────────────────────────────────
 function JournalScreen({ go }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const [tab, setTab] = useState1('evening');
   const list = tab === 'morning' ? D.morningPrompts : D.eveningPrompts;
 
@@ -281,7 +285,7 @@ function JournalScreen({ go }) {
 // JOURNAL WRITE — editorial
 // ─────────────────────────────────────────────────────────────
 function JournalWriteScreen({ go, payload }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const prompt = payload?.prompt || D.eveningPrompts[0];
   const mode = payload?.mode || 'evening';
   const [text, setText] = useState1('');
@@ -402,4 +406,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-Object.assign(window, { HomeScreen, JournalScreen, JournalWriteScreen });
+export { HomeScreen, JournalScreen, JournalWriteScreen };

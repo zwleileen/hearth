@@ -4,6 +4,10 @@
 // color blocks for ownership of a single section, never as
 // gradients or chrome decoration.
 
+import React from 'react';
+import { BackRow, ColorBlock, Headline, Icon, Kicker, Ph, Photo, Rule } from './atoms.jsx';
+import { HEARTH_DATA } from './data.js';
+
 const { useState: useState2 } = React;
 
 // ─────────────────────────────────────────────────────────────
@@ -11,7 +15,7 @@ const { useState: useState2 } = React;
 // Cover → masthead → feature → two field reports → shelf → letter
 // ─────────────────────────────────────────────────────────────
 function DiscoverScreen({ go }) {
-  const M = window.HEARTH_DATA.magazine;
+  const M = HEARTH_DATA.magazine;
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       {/* ── Masthead ─────────────────────────────── */}
@@ -198,7 +202,7 @@ function DiscoverScreen({ go }) {
 // the song and Old Lace for the book.
 // ─────────────────────────────────────────────────────────────
 function AttuneScreen({ go }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const [text, setText] = useState2('');
   const [reading, setReading] = useState2(null);
 
@@ -386,7 +390,7 @@ function AttuneScreen({ go }) {
 // Editorial: numbered list, hairline rules, no left-bar accents.
 // ─────────────────────────────────────────────────────────────
 function RitualsScreen({ go }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       <section style={{ padding: '14px 22px 0' }}>
@@ -722,7 +726,7 @@ function RitualBuilderScreen({ go }) {
 
 
 function RitualDetailScreen({ go, payload }) {
-  const r = payload?.ritual || window.HEARTH_DATA.rituals[0];
+  const r = payload?.ritual || HEARTH_DATA.rituals[0];
   if (r.key === 'breath')    return <BreathRitual go={go}/>;
   if (r.key === 'gratitude') return <GratitudeRitual go={go}/>;
   if (r.key === 'awe')       return <AweRitual go={go}/>;
@@ -902,7 +906,7 @@ function AweRitual({ go }) {
 }
 
 function ValuesRitual({ go }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const [picked, setPicked] = useState2(['Care', 'Craft', 'Wonder']);
   function toggle(v) {
     setPicked(p => p.includes(v) ? p.filter(x => x !== v) : (p.length < 5 ? [...p, v] : p));
@@ -949,7 +953,7 @@ function ValuesRitual({ go }) {
 }
 
 function ShutdownRitual({ go }) {
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const [done, setDone] = useState2([false, false, false, false, false]);
   const all = done.every(Boolean);
   return (
@@ -964,7 +968,7 @@ function ShutdownRitual({ go }) {
         {D.shutdownChecklist.map((t, i) => (
           <button key={i} onClick={() => { const n = done.slice(); n[i] = !n[i]; setDone(n); }}
             style={{
-              display: 'block', width: '100%', textAlign: 'left',
+              width: '100%', textAlign: 'left',
               background: 'transparent', border: 0,
               padding: '20px 0',
               borderBottom: i === D.shutdownChecklist.length - 1 ? '1px solid rgba(31, 64, 69, 0.14)' : '1px solid rgba(31, 64, 69, 0.10)',
@@ -1002,4 +1006,4 @@ function ShutdownRitual({ go }) {
   );
 }
 
-Object.assign(window, { DiscoverScreen, AttuneScreen, RitualsScreen, RitualDetailScreen });
+export { DiscoverScreen, AttuneScreen, RitualsScreen, RitualDetailScreen, RitualBuilderScreen };

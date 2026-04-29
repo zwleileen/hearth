@@ -1,5 +1,27 @@
 // Hearth — main app: routing, tab bar, mounting
-const { useState, useEffect } = React;
+
+import React, { useState, useEffect } from 'react';
+import { HearthMarkSmall, HearthTopbar, Icon } from './atoms.jsx';
+import { IOSDevice } from './ios-frame.jsx';
+import {
+  useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect,
+  TweakToggle, TweakNumber, TweakButton,
+} from './tweaks-panel.jsx';
+import { HEARTH_DATA } from './data.js';
+import { HomeScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
+import {
+  DiscoverScreen, AttuneScreen, RitualsScreen,
+  RitualDetailScreen, RitualBuilderScreen,
+} from './screens-2.jsx';
+import {
+  OnboardingScreen, AuthScreen, SettingsScreen,
+  NotificationsScreen, ProfileScreen,
+} from './screens-3.jsx';
+import {
+  JournalArchiveScreen, EntryDetailScreen, ArticleScreen,
+  BookmarksScreen, WeeklyDigestScreen, StreakBrokenScreen,
+  AttuneHistoryScreen, MiniPlayer, OfflineBanner, Toast,
+} from './screens-4.jsx';
 
 const TABS = [
   { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
@@ -77,7 +99,7 @@ function App() {
       : 'home');
 
   const isFullBleed = FULLBLEED_ROUTES.has(route);
-  const D = window.HEARTH_DATA;
+  const D = HEARTH_DATA;
   const playerSong = values.miniPlayer ? D.attuneArchetypes[0].song : null;
 
   return (
@@ -200,4 +222,4 @@ function App() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+export default App;
