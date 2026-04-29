@@ -3,6 +3,7 @@ import { User } from '../models/User.js';
 import { DailyDiscover } from '../models/DailyDiscover.js';
 import { requireAuth } from '../middleware/auth.js';
 import { getOpenAI, MODEL, HEARTH_VOICE, DISCOVER_SCHEMA } from '../lib/ai.js';
+import { fetchOgImage } from '../lib/og.js';
 
 export const discover = Router();
 discover.use(requireAuth);
@@ -66,13 +67,21 @@ Return the result as JSON matching the schema. Each item must have a real source
     }
     const data = JSON.parse(text);
 
+    // Enrich items with og:image (best-effort, parallel, with per-URL timeout)
+    const items = await Promise.all(
+      (data.items || []).map(async (item) => {
+        const image = item.url ? await fetchOgImage(item.url).catch(() => null) : null;
+        return { ...item, image: image || null };
+      }),
+    );
+
     await DailyDiscover.findOneAndUpdate(
       { userId: req.userId, date },
-      { $set: { issueNote: data.issueNote, items: data.items } },
+      { $set: { issueNote: data.issueNote, items } },
       { upsert: true, new: true },
     );
 
-    res.json({ date, issueNote: data.issueNote, items: data.items, cached: false });
+    res.json({ date, issueNote: data.issueNote, items, cached: false });
   } catch (err) {
     console.error('[discover]', err);
     res.status(500).json({ error: 'Failed to curate content', detail: err.message });

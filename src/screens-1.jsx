@@ -167,7 +167,18 @@ function HomeScreen({ go, partOfDay, user }) {
         {featuredState === 'ready' && featured && (
           <div onClick={() => featured.url && window.open(featured.url, '_blank', 'noopener,noreferrer')}
             style={{ cursor: featured.url ? 'pointer' : 'default', marginTop: 18 }}>
-            <Rule/>
+            {featured.image ? (
+              <img
+                src={featured.image}
+                alt=""
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <Rule/>
+            )}
             <Headline size="title" italic style={{ marginTop: 18 }}>
               {featured.title}
             </Headline>
