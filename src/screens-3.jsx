@@ -586,13 +586,20 @@ function AuthScreen({ go, onAuthed }) {
 // ─────────────────────────────────────────────────────────────
 // SETTINGS
 // ─────────────────────────────────────────────────────────────
-function SettingsScreen({ go }) {
+function SettingsScreen({ go, onSignOut }) {
   return (
     <div className="fade-in" style={{ padding: '8px 22px 32px' }}>
       <Eyebrow tone="bloom">Settings</Eyebrow>
       <h1 className="h-display serif" style={{ margin: '8px 0 18px', fontWeight: 350 }}>
         Tend the fire,<br/><span style={{ fontStyle: 'italic' }}>your way.</span>
       </h1>
+      {onSignOut && (
+        <div style={{ marginTop: 24 }}>
+          <button className="btn btn-ghost" onClick={onSignOut} style={{ width: '100%', justifyContent: 'center' }}>
+            Sign out
+          </button>
+        </div>
+      )}
 
       <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
         <div style={{ width: 52, height: 52, borderRadius: '50%',

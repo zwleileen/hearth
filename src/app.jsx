@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { HearthMarkSmall, HearthTopbar, Icon } from './atoms.jsx';
-import { IOSDevice } from './ios-frame.jsx';
 import {
   useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect,
   TweakToggle, TweakNumber, TweakButton,
@@ -135,50 +134,99 @@ function App() {
   const D = HEARTH_DATA;
   const playerSong = values.miniPlayer ? D.attuneArchetypes[0].song : null;
 
+  const screenContent = (
+    <>
+      {/* Onboarding & auth */}
+      {route === 'onboarding' && <OnboardingScreen go={go} payload={payload} onAuthed={refreshUser}/>}
+      {route === 'auth' && <AuthScreen go={go} onAuthed={refreshUser}/>}
+
+      {/* Main */}
+      {route === 'home' && <HomeScreen go={go} partOfDay={values.partOfDay} flower={values.flower} user={user}/>}
+      {route === 'journal' && <JournalScreen go={go}/>}
+      {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
+      {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}
+      {route === 'entry-detail' && <EntryDetailScreen go={go} payload={payload}/>}
+      {route === 'discover' && <DiscoverScreen go={go}/>}
+      {route === 'article' && <ArticleScreen go={go} payload={payload}/>}
+      {route === 'bookmarks' && <BookmarksScreen go={go}/>}
+      {route === 'attune' && <AttuneScreen go={go}/>}
+      {route === 'attune-history' && <AttuneHistoryScreen go={go}/>}
+      {route === 'rituals' && <RitualsScreen go={go}/>}
+      {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}
+      {route === 'ritual-builder' && <RitualBuilderScreen go={go}/>}
+      {route === 'weekly-digest' && <WeeklyDigestScreen go={go}/>}
+      {route === 'streak-broken' && <StreakBrokenScreen go={go}/>}
+
+      {/* Settings */}
+      {route === 'settings' && <SettingsScreen go={go} onSignOut={user ? signOut : null}/>}
+      {route === 'settings-notifications' && <NotificationsScreen go={go}/>}
+      {route === 'settings-profile' && <ProfileScreen go={go}/>}
+    </>
+  );
+
   return (
     <>
-      <IOSDevice dark={false}>
-        <div className="hearth-stage">
-          {!values.showGrain && <style>{`.hearth-stage::before { display: none !important; }`}</style>}
-
-          {!isFullBleed && (
-            <div style={{ position: 'absolute', top: 58, left: 0, right: 0, zIndex: 5 }}>
-              <HearthTopbar
-                title="Hearth"
-                leading={<button onClick={() => go('settings')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>{Icon.more(20, 'var(--paper-2)')}</button>}
-                trailing={<button onClick={() => go('journal-archive')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>{Icon.bookmark(18, 'var(--paper-2)')}</button>}
-              />
+      <div className="hearth-app">
+        {!isFullBleed && (
+          <aside className="hearth-sidebar">
+            <div className="hearth-brand">
+              hearth
+              <small>Tend the fire</small>
             </div>
+            <nav className="hearth-sidebar-nav">
+              {TABS.map(t => (
+                <button key={t.key} className={`hearth-sidebar-link ${tab === t.key ? 'active' : ''}`}
+                  onClick={() => go(t.route)}>
+                  {t.icon(tab === t.key)}
+                  <span>{t.label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="hearth-sidebar-foot">
+              <button onClick={() => go('journal-archive')}>
+                {Icon.bookmark(16, 'currentColor')}
+                <span>Bookmarks</span>
+              </button>
+              <button onClick={() => go('settings')}>
+                {Icon.more(16, 'currentColor')}
+                <span>Settings</span>
+              </button>
+              {user ? (
+                <div className="hearth-sidebar-account">
+                  <div className="hearth-sidebar-account-name">{user.name || 'Friend'}</div>
+                  <div className="hearth-sidebar-account-email">{user.email}</div>
+                  <button onClick={signOut} style={{ marginTop: 8, padding: '4px 0', fontSize: 11, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--paper-mute)' }}>
+                    Sign out
+                  </button>
+                </div>
+              ) : (
+                <button onClick={() => go('auth')} style={{ color: 'var(--hh-green)' }}>
+                  <span>Sign in</span>
+                </button>
+              )}
+            </div>
+          </aside>
+        )}
+
+        <main className="hearth-main">
+          {!isFullBleed && (
+            <header className="hearth-mobile-topbar">
+              <button onClick={() => go('settings')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>
+                {Icon.more(20, 'var(--paper-2)')}
+              </button>
+              <span className="hearth-mobile-topbar-title">Hearth</span>
+              <button onClick={() => go('journal-archive')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>
+                {Icon.bookmark(18, 'var(--paper-2)')}
+              </button>
+            </header>
           )}
 
           {values.offline && !isFullBleed && <OfflineBanner/>}
 
-          <div id="hearth-scroll" className={`hearth-scroll trans-${values.transition || 'lift'}`} style={{ paddingTop: isFullBleed ? 50 : 110 }} key={route}>
-            {/* Onboarding & auth */}
-            {route === 'onboarding' && <OnboardingScreen go={go} payload={payload} onAuthed={refreshUser}/>}
-            {route === 'auth' && <AuthScreen go={go} onAuthed={refreshUser}/>}
-
-            {/* Main */}
-            {route === 'home' && <HomeScreen go={go} partOfDay={values.partOfDay} flower={values.flower} user={user}/>}
-            {route === 'journal' && <JournalScreen go={go}/>}
-            {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
-            {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}
-            {route === 'entry-detail' && <EntryDetailScreen go={go} payload={payload}/>}
-            {route === 'discover' && <DiscoverScreen go={go}/>}
-            {route === 'article' && <ArticleScreen go={go} payload={payload}/>}
-            {route === 'bookmarks' && <BookmarksScreen go={go}/>}
-            {route === 'attune' && <AttuneScreen go={go}/>}
-            {route === 'attune-history' && <AttuneHistoryScreen go={go}/>}
-            {route === 'rituals' && <RitualsScreen go={go}/>}
-            {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}
-            {route === 'ritual-builder' && <RitualBuilderScreen go={go}/>}
-            {route === 'weekly-digest' && <WeeklyDigestScreen go={go}/>}
-            {route === 'streak-broken' && <StreakBrokenScreen go={go}/>}
-
-            {/* Settings */}
-            {route === 'settings' && <SettingsScreen go={go}/>}
-            {route === 'settings-notifications' && <NotificationsScreen go={go}/>}
-            {route === 'settings-profile' && <ProfileScreen go={go}/>}
+          <div id="hearth-scroll" className={`hearth-scroll trans-${values.transition || 'lift'}`} key={route}>
+            <div className={isFullBleed ? 'hearth-fullbleed' : 'hearth-content'}>
+              {screenContent}
+            </div>
           </div>
 
           {!isFullBleed && playerSong && <MiniPlayer song={playerSong} onClose={() => setTweak('miniPlayer', false)} onOpen={() => go('attune-history')}/>}
@@ -195,10 +243,10 @@ function App() {
               ))}
             </div>
           )}
-        </div>
-      </IOSDevice>
+        </main>
+      </div>
 
-      <TweaksPanel title="Tweaks">
+      {import.meta.env.DEV && <TweaksPanel title="Tweaks">
         <TweakSection label="Time of day"/>
         <TweakRadio label="Greeting" value={values.partOfDay}
           options={[{value:'morning',label:'Morning'},{value:'afternoon',label:'Afternoon'},{value:'evening',label:'Evening'}]}
@@ -250,7 +298,7 @@ function App() {
           onChange={v => { setTweak('startingScreen', v); go(v); }}/>
         <TweakButton label="Reset to home" onClick={() => go('home')}/>
         <TweakButton label="Restart onboarding" onClick={() => go('onboarding', { step: 0 })}/>
-      </TweaksPanel>
+      </TweaksPanel>}
     </>
   );
 }
