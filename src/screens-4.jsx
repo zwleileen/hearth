@@ -46,7 +46,7 @@ function entryExcerpt(body, max = 140) {
 const SAMPLE_ENTRIES = [
   { id: 'e1', date: 'Yesterday · evening', title: 'A small unhurried good', mood: 'tender', shift: '+1', tone: 'rose',
     excerpt: "The kettle was the loudest thing in the kitchen, and that was enough. I noticed I was holding my shoulders the way…",
-    body: "The kettle was the loudest thing in the kitchen, and that was enough. I noticed I was holding my shoulders the way I used to, before I learned to put them down. The day asked little of me — just to be present for the small unhurried goods. The light through the window. The cat's slow blink. A friend's voicemail I'd forgotten to listen to until tonight.\n\nWhat I want to remember: that not every evening has to be a recovery from the day. Some evenings, I just step into them.",
+    body: "The kettle was the loudest thing in the kitchen, and that was enough. I noticed I was holding my shoulders the way I used to, before I learned to put them down. The day asked little of me, just to be present for the small unhurried goods. The light through the window. The cat's slow blink. A friend's voicemail I'd forgotten to listen to until tonight.\n\nWhat I want to remember: that not every evening has to be a recovery from the day. Some evenings, I just step into them.",
     tags: ['gratitude', 'tender'], lineage: 'Three good things' },
   { id: 'e2', date: 'Wed · morning', title: 'WOOP for the meeting', mood: 'restless', shift: '+2', tone: 'citron',
     excerpt: "Wish: that the proposal lands. Outcome: relief and a small celebration. Obstacle: I rush when I'm nervous…",
@@ -54,7 +54,7 @@ const SAMPLE_ENTRIES = [
     tags: ['intention', 'work'], lineage: 'WOOP' },
   { id: 'e3', date: 'Tue · evening', title: 'Three good things', mood: 'grateful', shift: '+1', tone: 'meadow',
     excerpt: "The bread rose. The walk back was longer than I needed and I let it be. A stranger smiled, and I let it land…",
-    body: "The bread rose. The walk back was longer than I needed and I let it be. A stranger smiled, and I let it land.\n\nWhy: I'd left margin in the day. I'd told myself I could.\n\nMy part: I'd planned for an unhurried evening — and I held to it.",
+    body: "The bread rose. The walk back was longer than I needed and I let it be. A stranger smiled, and I let it land.\n\nWhy: I'd left margin in the day. I'd told myself I could.\n\nMy part: I'd planned for an unhurried evening, and I held to it.",
     tags: ['gratitude'], lineage: 'Three good things' },
   { id: 'e4', date: 'Mon · evening', title: 'A letter to myself', mood: 'heavy', shift: '0', tone: 'wisteria',
     excerpt: "Dear friend, you are not behind. You are exactly where the work has put you, which is a different thing from where…",
@@ -66,7 +66,7 @@ const SAMPLE_ENTRIES = [
     tags: ['vision', 'hopeful'], lineage: 'Best possible self' },
   { id: 'e6', date: 'Sat · evening', title: 'Pennebaker · twenty minutes', mood: 'raw', shift: '+1', tone: 'fern',
     excerpt: "What I haven't said out loud is that I'm tired in a way sleep doesn't fix. I think the tiredness is grief…",
-    body: "[Twenty minutes of expressive writing — kept private.]",
+    body: "[Twenty minutes of expressive writing, kept private.]",
     tags: ['expressive', 'grief'], lineage: 'Expressive writing' },
 ];
 
@@ -130,9 +130,12 @@ function JournalArchiveScreen({ go }) {
     <div className="fade-in" style={{ padding: '4px 22px 32px' }}>
       <BackRow go={go} label="Journal" dest="journal"/>
       <Eyebrow ember style={{ marginTop: 18 }}>The kept</Eyebrow>
-      <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+      <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
         Everything you've<br/><span style={{ fontStyle: 'italic' }}>written here.</span>
       </h1>
+      <p className="body" style={{ margin: '0 0 18px', maxWidth: 420 }}>
+        Your own words, kept warm. Search by phrase, mood, or theme.
+      </p>
 
       <div style={{ position: 'relative' }}>
         <input className="hearth-input" value={q} onChange={e => setQ(e.target.value)} placeholder="Search by word, mood, or month…"
@@ -156,9 +159,9 @@ function JournalArchiveScreen({ go }) {
           <LoadingShimmer lines={4}/>
         ) : list.length === 0 ? (
           <EmptyState
-            title="Nothing kept yet."
-            sub="Begin a first entry from the Journal screen."
-            action="Go to Journal"
+            title="A quiet shelf for now."
+            sub="When you write something you want to keep, it lands here."
+            action="Open the Journal"
             onAction={() => go('journal')}/>
         ) : filtered.length === 0 ? (
           <EmptyState
@@ -212,7 +215,7 @@ function EntryDetailScreen({ go, payload }) {
       </div>
 
       <div style={{ marginTop: 22, position: 'relative' }}>
-        {/* pressed leaf in the margin — the user's signature on a kept entry */}
+        {/* pressed leaf in the margin, the user's signature on a kept entry */}
         <div style={{ position: 'absolute', right: -4, top: 6, opacity: 0.35, pointerEvents: 'none', transform: 'rotate(18deg)' }}>
           <LeafMark size={48} tone="sig"/>
         </div>
@@ -339,7 +342,7 @@ function FeatureArticle({ story }) {
         he first time the kiln was lit, the village stood at a distance, then closer, then close enough to feel the heat. What had been a pile of clay was now a wall. What had been a wall was, by sundown, a school.
       </p>
       <p style={{ margin: '0 0 16px' }}>
-        Building with what is local — earth, light, the patience of a community that has agreed to spend its Saturdays — is not a romantic gesture. It is, the architect would tell you, the only way a building can know the climate it stands in.
+        Building with what is local, earth, light, the patience of a community that has agreed to spend its Saturdays, is not a romantic gesture. It is, the architect would tell you, the only way a building can know the climate it stands in.
       </p>
     </div>
 
@@ -370,7 +373,7 @@ function ScienceArticle() {
       The science behind the warmth
     </h1>
     <p className="body" style={{ fontSize: 16 }}>
-      Every prompt and ritual in Hearth is drawn from a body of peer-reviewed work. We don't claim novelty — we curate replication.
+      Every prompt and ritual in Hearth is drawn from a body of peer-reviewed work. We don't claim novelty, we curate replication.
     </p>
     {[
       { tone: 'ember',    title: 'Three good things',   cite: 'Seligman et al., 2005',  body: 'A two-week intervention produced sustained reductions in depressive symptoms at six months. Among the most replicated findings in positive psychology.' },
@@ -450,14 +453,23 @@ function BookmarksScreen({ go }) {
     return presentKinds.map(k => ({ kind: k, items: visible.filter(b => b.kind === k) }));
   })();
 
+  const KIND_ACCENT = {
+    song:    { color: 'var(--hh-dogwood)', deep: 'var(--hh-dogwood-deep)' },
+    poem:    { color: 'var(--hh-dogwood)', deep: 'var(--hh-dogwood-deep)' },
+    book:    { color: 'var(--hh-blue)',    deep: 'var(--hh-blue-deep)' },
+    essay:   { color: 'var(--hh-ecru)',    deep: 'var(--hh-ecru-deep)' },
+    article: { color: 'var(--hh-ecru)',    deep: 'var(--hh-ecru-deep)' },
+    news:    { color: 'var(--hh-green)',   deep: 'var(--hh-green)' },
+  };
+
   return (
     <div className="fade-in" style={{ padding: '14px 22px 32px' }}>
       <Eyebrow tone="rose">The Nook</Eyebrow>
       <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
         Everything you've<br/><span style={{ fontStyle: 'italic' }}>kept close.</span>
       </h1>
-      <p className="body" style={{ margin: '0 0 18px', maxWidth: 380 }}>
-        Songs, poems, books, and articles you've saved from Hearth and Attune. Tap to revisit. The Nook is yours alone.
+      <p className="body" style={{ margin: '0 0 18px', maxWidth: 420 }}>
+        Songs, poems, books, and articles you've saved from Hearth and Attune. Yours alone, here whenever you want them.
       </p>
 
       {bookmarks !== null && list.length > 0 && (
@@ -489,40 +501,49 @@ function BookmarksScreen({ go }) {
           </div>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
           {grouped.map(({ kind, items }) => {
             if (!items.length) return null;
-            const tone = KIND_TONE[kind] || 'wisteria';
+            const accent = KIND_ACCENT[kind] || { color: 'var(--hh-green)', deep: 'var(--hh-green)' };
             return (
               <section key={kind}>
                 {filter === 'all' && (
-                  <>
-                    <Rule/>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 14, marginBottom: 14 }}>
-                      <Kicker accent="mute">{KIND_LABEL[kind] || kind}</Kicker>
-                      <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                        {items.length}
-                      </span>
-                    </div>
-                  </>
+                  <div className="hearth-dept-head">
+                    <span className="hearth-dept-head-title" style={{ color: accent.deep }}>
+                      {KIND_LABEL[kind] || kind}
+                    </span>
+                    <span className="hearth-dept-head-meta">
+                      {items.length} {items.length === 1 ? 'kept' : 'kept'}
+                    </span>
+                  </div>
                 )}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  {items.map((b) => {
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {items.map((b, i) => {
                     const open = () => {
                       if (b.url) window.open(b.url, '_blank', 'noopener,noreferrer');
                     };
                     return (
-                      <div key={b.id} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', position: 'relative', padding: '10px 0' }}>
-                        <div aria-hidden style={{ width: 2, background: `var(--${tone})`, alignSelf: 'stretch', flexShrink: 0 }}/>
-                        <div style={{ flex: 1, cursor: b.url ? 'pointer' : 'default' }} onClick={open}>
-                          <h3 className="serif" style={{ margin: 0, fontSize: 18, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>{b.title}</h3>
+                      <div key={b.id} style={{
+                        display: 'flex', gap: 16, alignItems: 'flex-start', position: 'relative',
+                        padding: '20px 0',
+                        borderBottom: '1px solid var(--paper-line-2)',
+                      }}>
+                        <div aria-hidden style={{
+                          width: 28, flexShrink: 0,
+                          fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.16em',
+                          color: accent.deep, fontWeight: 500, paddingTop: 2,
+                        }}>
+                          {String(i + 1).padStart(2, '0')}
+                        </div>
+                        <div style={{ flex: 1, cursor: b.url ? 'pointer' : 'default', minWidth: 0 }} onClick={open}>
+                          <h3 className="serif" style={{ margin: 0, fontSize: 19, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>{b.title}</h3>
                           {b.source && (
                             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginTop: 6 }}>
                               {b.source}
                             </div>
                           )}
                           {b.excerpt && (
-                            <p className="body-sm" style={{ margin: '8px 0 0', color: 'var(--paper-2)', lineHeight: 1.55 }}>
+                            <p className="body-sm" style={{ margin: '10px 0 0', color: 'var(--paper-2)', lineHeight: 1.55 }}>
                               {b.excerpt}
                             </p>
                           )}
@@ -729,17 +750,20 @@ function WeeklyDigestScreen({ go }) {
       </section>
 
       {/* Stats */}
-      <section style={{ padding: '32px 22px 0' }}>
-        <Kicker>By the numbers</Kicker>
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">By the numbers</span>
+          <span className="hearth-dept-head-meta">{w.totalEntries} {w.totalEntries === 1 ? 'entry' : 'entries'}</span>
+        </div>
         <div style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0,
-          marginTop: 16, borderTop: '1px solid var(--paper-line)',
+          marginTop: 14, borderTop: '1px solid var(--paper-line)',
         }}>
           {[
             { big: `${w.daysWritten}/7`, label: 'days kept' },
             { big: String(w.totalEntries), label: w.totalEntries === 1 ? 'entry' : 'entries' },
-            { big: w.writingMinutes ? `${w.writingMinutes}m` : '—', label: 'of writing' },
-            { big: w.avgShift !== null ? `${w.avgShift > 0 ? '+' : ''}${w.avgShift.toFixed(1)}` : '—', label: 'avg shift' },
+            { big: w.writingMinutes ? `${w.writingMinutes}m` : ', ', label: 'of writing' },
+            { big: w.avgShift !== null ? `${w.avgShift > 0 ? '+' : ''}${w.avgShift.toFixed(1)}` : ', ', label: 'avg shift' },
           ].map((s, i) => (
             <div key={i} style={{
               padding: '20px 0',
@@ -756,8 +780,11 @@ function WeeklyDigestScreen({ go }) {
       </section>
 
       {/* Mood arc */}
-      <section style={{ padding: '36px 22px 0' }}>
-        <Kicker>Mood arc</Kicker>
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title" style={{ color: 'var(--hh-blue-deep)' }}>Mood arc</span>
+          <span className="hearth-dept-head-meta">7 days</span>
+        </div>
         <div style={{ marginTop: 18 }}>
           <svg viewBox="0 0 300 110" style={{ width: '100%', height: 130 }}>
             {[14, 38, 62, 86].map(y => (
@@ -789,13 +816,15 @@ function WeeklyDigestScreen({ go }) {
         </p>
       </section>
 
-      {/* What was alive — themes */}
+      {/* What was alive, themes */}
       {(w.topTags.length > 0 || w.topLineages.length > 0) && (
         <section style={{ padding: '40px 22px 0' }}>
-          <Rule/>
-          <Kicker style={{ marginTop: 26 }}>What was alive</Kicker>
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title" style={{ color: 'var(--hh-ecru-deep)' }}>What was alive</span>
+            <span className="hearth-dept-head-meta">themes</span>
+          </div>
           {w.topTags.length > 0 && (
-            <Headline size="section" style={{ marginTop: 14, fontWeight: 380 }}>
+            <Headline size="section" style={{ marginTop: 18, fontWeight: 380 }}>
               You wrote about{' '}
               {w.topTags.map(([t], i) => (
                 <span key={t}>
@@ -833,13 +862,15 @@ function WeeklyDigestScreen({ go }) {
         </section>
       )}
 
-      {/* What was attuned — saved this week */}
+      {/* What was attuned, saved this week */}
       {(w.attuneSaves.length > 0 || w.homeSaves.length > 0) && (
         <section style={{ padding: '40px 22px 0' }}>
-          <Rule/>
-          <Kicker style={{ marginTop: 26 }}>What was attuned</Kicker>
-          <p className="body" style={{ margin: '14px 0 18px' }}>
-            {w.weekBookmarks.length} {w.weekBookmarks.length === 1 ? 'piece kept' : 'pieces kept'} in the Nook this week.
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title" style={{ color: 'var(--hh-dogwood-deep)' }}>What was attuned</span>
+            <span className="hearth-dept-head-meta">{w.weekBookmarks.length} kept</span>
+          </div>
+          <p className="body" style={{ margin: '14px 0 18px', maxWidth: 480 }}>
+            What you reached for this week, kept close in the Nook.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {w.weekBookmarks.slice(0, 6).map(b => (
@@ -866,8 +897,10 @@ function WeeklyDigestScreen({ go }) {
       {/* Recent entries this week */}
       {w.weekEntries.length > 0 && (
         <section style={{ padding: '40px 22px 0' }}>
-          <Rule/>
-          <Kicker style={{ marginTop: 26 }}>This week's entries</Kicker>
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title">This week's entries</span>
+            <span className="hearth-dept-head-meta">{w.weekEntries.length}</span>
+          </div>
           <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column' }}>
             {w.weekEntries.slice(0, 5).map(e => (
               <div key={e.id} onClick={() => go('entry-detail', { entry: {
@@ -899,8 +932,10 @@ function WeeklyDigestScreen({ go }) {
 
       {/* The week ahead */}
       <section style={{ padding: '40px 22px 0' }}>
-        <Rule/>
-        <Kicker style={{ marginTop: 26 }}>For the week ahead</Kicker>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">For the week ahead</span>
+          <span className="hearth-dept-head-meta">a soft suggestion</span>
+        </div>
         <Headline size="section" italic style={{ marginTop: 14 }}>
           {w.daysWritten === 0 ? 'A first quiet entry.' : w.daysWritten >= 5 ? 'Keep the rhythm gentle.' : 'One small move.'}
         </Headline>
@@ -1085,7 +1120,7 @@ function OfflineBanner({ onClose }) {
     }}>
       <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--wisteria)' }}/>
       <span className="serif" style={{ flex: 1, fontSize: 14, fontStyle: 'italic', fontWeight: 380, color: 'var(--wisteria-deep)' }}>
-        You're offline. Hearth still works — your writing waits here.
+        You're offline. Hearth still works, your writing waits here.
       </span>
       {onClose && <button onClick={onClose} style={{ background: 'transparent', border: 0, color: 'var(--wisteria)', cursor: 'pointer', fontSize: 16, lineHeight: 1 }}>×</button>}
     </div>

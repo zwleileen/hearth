@@ -193,7 +193,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           What stories<br/><span style={{ fontStyle: 'italic' }}>nourish you?</span>
         </h1>
         <p className="body" style={{ margin: '0 0 16px' }}>
-          Pick a few. We'll bring you slow, well-sourced reading from around the world — never more than a handful a day.
+          Pick a few. We'll bring you slow, well-sourced reading from around the world. Never more than a handful a day.
         </p>
         <div className="mono" style={{ fontSize: 10, letterSpacing: '0.16em', color: 'var(--paper-faint)', textTransform: 'uppercase', marginBottom: 12 }}>
           {interests.length} of 9 chosen · pick 2–6 for variety
@@ -258,7 +258,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           Choose a<br/><span style={{ fontStyle: 'italic' }}>signature sprig.</span>
         </h1>
         <p className="body" style={{ margin: '0 0 18px' }}>
-          It will quietly appear throughout your hearth — beside your name, on lock-screen nudges, in the margin of every entry. Change it any season.
+          It will quietly appear throughout your hearth: beside your name, on lock-screen nudges, in the margin of every entry. Change it any season.
         </p>
 
         {/* preview vignette */}
@@ -286,7 +286,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
         </div>
 
         <p className="serif" style={{ margin: '14px 0 0', fontSize: 14, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', textAlign: 'center' }}>
-          {picked.label} — <span style={{ color: `var(--${picked.tone}-deep)` }}>{picked.meaning}</span>
+          {picked.label} · <span style={{ color: `var(--${picked.tone}-deep)` }}>{picked.meaning}</span>
         </p>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
@@ -315,7 +315,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           When do you<br/><span style={{ fontStyle: 'italic' }}>tend the fire?</span>
         </h1>
         <p className="body" style={{ margin: '0 0 22px' }}>
-          We'll send one quiet nudge — and only one. Change it any time.
+          We'll send one quiet nudge, and only one. Change it any time.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {TIMES.map(t => {

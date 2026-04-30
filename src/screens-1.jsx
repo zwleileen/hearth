@@ -187,55 +187,53 @@ function HomeScreen({ go, user }) {
         </section>
       )}
 
-      {/* ── 3. Editorial spread — full reading room ── */}
-      <section style={{ padding: '40px 22px 0' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
-          <Kicker>From the reading room</Kicker>
+      {/* ── 3. Editorial spread, full reading room ── */}
+      <section style={{ padding: '48px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">The reading room</span>
           {feedState === 'ready' && (
-            <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-              Today · {items.length} pieces
-            </span>
+            <span className="hearth-dept-head-meta">Today · {items.length} {items.length === 1 ? 'piece' : 'pieces'}</span>
           )}
         </div>
         {issueNote && feedState === 'ready' && (
-          <p className="serif" style={{ margin: '6px 0 0', fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)', maxWidth: 540, lineHeight: 1.4 }}>
+          <p className="serif" style={{ margin: '14px 0 0', fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)', maxWidth: 580, lineHeight: 1.45 }}>
             {issueNote}
           </p>
         )}
 
         {feedState === 'loading' && (
-          <div style={{ marginTop: 22 }}>
-            <Rule/>
-            <div style={{ height: 220, background: 'var(--paper-line)', opacity: 0.3, marginTop: 18 }}/>
-            <div style={{ height: 22, background: 'var(--paper-line)', opacity: 0.4, marginTop: 18, width: '70%' }}/>
-            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '90%' }}/>
+          <div style={{ marginTop: 28 }}>
+            <div style={{ height: 280, background: 'var(--paper-line)', opacity: 0.25 }}/>
+            <div style={{ height: 24, background: 'var(--paper-line)', opacity: 0.35, marginTop: 18, width: '70%' }}/>
+            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.25, marginTop: 10, width: '90%' }}/>
           </div>
         )}
 
         {feedState === 'unauthed' && (
-          <div style={{ marginTop: 18 }}>
-            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
-              Your reading room opens once you sign in.
+          <div style={{ marginTop: 22 }}>
+            <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 420 }}>
+              Your reading room opens once you sign in. We keep it small, and we keep it yours.
             </p>
-            <button className="btn btn-ghost" onClick={() => go('auth')} style={{ marginTop: 14 }}>
+            <button className="btn btn-ember" onClick={() => go('auth')} style={{ marginTop: 18 }}>
               Sign in
             </button>
           </div>
         )}
 
         {feedState === 'empty' && (
-          <div style={{ marginTop: 18 }}>
-            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
-              Today's reading room is being curated for you.
+          <div style={{ marginTop: 22 }}>
+            <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 420 }}>
+              Today's reading room is being gathered for you. Check back in a moment.
             </p>
           </div>
         )}
 
+        {/* Hero article — magazine cover treatment */}
         {feedState === 'ready' && hero && (() => {
           const heroKey = hero.url || `${hero.kind}:${hero.title}`;
           const heroSaved = savedFeed[heroKey];
           return (
-            <article style={{ marginTop: 22 }}>
+            <article style={{ marginTop: 28 }}>
               <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
                 style={{ cursor: hero.url ? 'pointer' : 'default' }}>
                 {hero.image ? (
@@ -244,16 +242,16 @@ function HomeScreen({ go, user }) {
                     alt=""
                     referrerPolicy="no-referrer"
                     loading="lazy"
-                    style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                    style={{ width: '100%', height: 320, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
                     onError={(e) => { e.currentTarget.style.display = 'none'; }}
                   />
-                ) : (
-                  <Rule/>
-                )}
+                ) : null}
               </div>
-              <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <Kicker accent="mute">{hero.kind}</Kicker>
+              <div style={{ display: 'flex', gap: 14, marginTop: 18, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span className="mono" style={{ fontSize: 10, letterSpacing: '0.24em', color: 'var(--hh-ecru-deep)', textTransform: 'uppercase', fontWeight: 500 }}>
+                    Cover · {hero.kind}
+                  </span>
                   {hero.source && (
                     <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
                       · {hero.source}
@@ -271,10 +269,13 @@ function HomeScreen({ go, user }) {
               </div>
               <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
                 style={{ cursor: hero.url ? 'pointer' : 'default' }}>
-                <Headline size="title" italic style={{ marginTop: 12 }}>
+                <h2 className="serif" style={{
+                  margin: '14px 0 12px', fontSize: 30, lineHeight: 1.1, fontStyle: 'italic',
+                  fontWeight: 360, letterSpacing: '-0.01em', color: 'var(--hh-green)',
+                }}>
                   {hero.title}
-                </Headline>
-                <p className="body" style={{ margin: '12px 0 0', maxWidth: 540 }}>
+                </h2>
+                <p className="body" style={{ margin: 0, maxWidth: 580, fontSize: 16, lineHeight: 1.55 }}>
                   {hero.dek}
                 </p>
               </div>
@@ -282,48 +283,67 @@ function HomeScreen({ go, user }) {
           );
         })()}
 
+        {/* Heavier hairline between hero and the grid */}
         {feedState === 'ready' && rest.length > 0 && (
-          <>
-            <div style={{ marginTop: 36 }}><Rule/></div>
-            <div className="hearth-feed-grid" style={{ marginTop: 22 }}>
+          <div style={{ marginTop: 48 }}>
+            <hr className="hearth-hero-rule"/>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 14, marginBottom: 6 }}>
+              <span className="mono" style={{ fontSize: 10.5, letterSpacing: '0.26em', color: 'var(--hh-green)', textTransform: 'uppercase', fontWeight: 500 }}>
+                Also in this issue
+              </span>
+              <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                {rest.length} {rest.length === 1 ? 'piece' : 'pieces'}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* Grid of remaining items, each on a rotating accent */}
+        {feedState === 'ready' && rest.length > 0 && (() => {
+          const ACCENTS = [
+            { color: 'var(--hh-ecru)',    deep: 'var(--hh-ecru-deep)' },
+            { color: 'var(--hh-blue)',    deep: 'var(--hh-blue-deep)' },
+            { color: 'var(--hh-dogwood)', deep: 'var(--hh-dogwood-deep)' },
+            { color: 'var(--hh-green)',   deep: 'var(--hh-green)' },
+          ];
+          return (
+            <div className="hearth-feed-grid" style={{ marginTop: 28 }}>
               {rest.map((it, i) => {
                 const itemKey = it.url || `${it.kind}:${it.title}:${i}`;
                 const itemSaved = savedFeed[itemKey];
+                const accent = ACCENTS[i % ACCENTS.length];
                 return (
-                  <article key={itemKey} style={{ display: 'flex', flexDirection: 'column' }}>
+                  <article key={itemKey} className="hearth-article"
+                    style={{
+                      '--card-accent': accent.color,
+                      '--card-accent-deep': accent.deep,
+                    }}>
                     <div onClick={() => it.url && window.open(it.url, '_blank', 'noopener,noreferrer')}
                       style={{ cursor: it.url ? 'pointer' : 'default' }}>
+                      <div className="hearth-article-no">
+                        № {String(i + 1).padStart(2, '0')} · {it.kind}
+                      </div>
                       {it.image ? (
                         <img
                           src={it.image}
                           alt=""
                           referrerPolicy="no-referrer"
                           loading="lazy"
-                          style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                          style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--paper-line)', marginTop: 14 }}
                           onError={(e) => { e.currentTarget.style.display = 'none'; }}
                         />
                       ) : null}
-                      <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <Kicker accent="mute" style={{ fontSize: 9 }}>{it.kind}</Kicker>
-                        {it.source && (
-                          <span className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                            · {it.source}
-                          </span>
-                        )}
-                      </div>
-                      <h3 className="serif" style={{ margin: '8px 0 6px', fontSize: 18, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>
-                        {it.title}
-                      </h3>
-                      <p className="body-sm" style={{ margin: 0, lineHeight: 1.5 }}>
+                      <h3 className="hearth-article-title">{it.title}</h3>
+                      <p className="body-sm" style={{ margin: 0, lineHeight: 1.6 }}>
                         {it.dek}
                       </p>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 10 }}>
-                      {it.readTime ? (
-                        <div className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                          {it.readTime}
+                      {(it.source || it.readTime) && (
+                        <div className="hearth-article-source">
+                          {it.source}{it.source && it.readTime ? ' · ' : ''}{it.readTime}
                         </div>
-                      ) : <div/>}
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 14 }}>
                       <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(it); }}
                         disabled={itemSaved} className="hearth-save-btn" data-saved={itemSaved}>
                         {Icon.bookmark(11, 'currentColor')}
@@ -334,17 +354,19 @@ function HomeScreen({ go, user }) {
                 );
               })}
             </div>
-          </>
-        )}
+          );
+        })()}
 
-        {/* Begin journal CTA — under the editorial spread */}
-        <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid var(--paper-line-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <p className="serif" style={{ margin: 0, fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)' }}>
-            And then, the page.
-          </p>
-          <button className="btn btn-ember" onClick={() => go('journal')}>
-            Begin today's entry {Icon.arrow(14, 'var(--on-ember)')}
-          </button>
+        {/* Heavy section break to journal CTA */}
+        <div style={{ marginTop: 56, paddingTop: 28, borderTop: '2px solid var(--hh-green)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+            <p className="serif" style={{ margin: 0, fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper)', maxWidth: 380, lineHeight: 1.4 }}>
+              When the reading is done, the page is here. Five minutes is enough.
+            </p>
+            <button className="btn btn-ember" onClick={() => go('journal')}>
+              Begin today's entry {Icon.arrow(14, 'var(--on-ember)')}
+            </button>
+          </div>
         </div>
       </section>
     </div>
@@ -417,11 +439,11 @@ function JournalScreen({ go }) {
           Write yourself<br/>warm.
         </Headline>
         <p className="body" style={{ margin: '14px 0 0', maxWidth: 320 }}>
-          Five prompts for the morning, five for the evening. Drawn from the most replicated work in positive and clinical psychology — Seligman, Pennebaker, Neff, King.
+          Five prompts for the morning, five for the evening. Drawn from the most replicated work in positive and clinical psychology: Seligman, Pennebaker, Neff, and King.
         </p>
       </section>
 
-      {/* Segmented — flat, editorial, no pill */}
+      {/* Segmented, flat, editorial, no pill */}
       <section style={{ padding: '0 22px' }}>
         <div style={{ display: 'flex', borderTop: '1px solid var(--hh-green)', borderBottom: '1px solid var(--hh-green)' }}>
           {['morning', 'evening'].map(t => (
@@ -436,7 +458,7 @@ function JournalScreen({ go }) {
         </div>
       </section>
 
-      {/* Prompt list — numbered editorial */}
+      {/* Prompt list, numbered editorial */}
       <section style={{ padding: '0 22px' }}>
         {list.map((p, i) => (
           <button key={p.title} onClick={() => go('journal-write', { mode: tab, prompt: p })}
@@ -461,7 +483,7 @@ function JournalScreen({ go }) {
         ))}
       </section>
 
-      {/* Recent entries — only what the user has actually saved */}
+      {/* Recent entries, only what the user has actually saved */}
       <section style={{ padding: '40px 22px 0' }}>
         <Kicker>Recent entries</Kicker>
 

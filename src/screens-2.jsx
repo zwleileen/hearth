@@ -189,7 +189,7 @@ function DiscoverScreen({ go }) {
         <p className="mono" style={{
           marginTop: 28, fontSize: 9.5, letterSpacing: '0.22em',
           textTransform: 'uppercase', color: 'rgba(249,244,230,0.5)',
-        }}>— End of issue 14</p>
+        }}>, End of issue 14</p>
       </ColorBlock>
     </div>
   );
@@ -281,7 +281,7 @@ function AttuneScreen({ go }) {
           </p>
         </section>
 
-        {/* Songs — Pale Dogwood block */}
+        {/* Songs, Pale Dogwood block */}
         <ColorBlock accent="dogwood" style={{ marginTop: 40 }}>
           <Kicker>Songs · for your ears, now</Kicker>
           <div style={{ marginTop: 18 }}>
@@ -436,7 +436,7 @@ function AttuneScreen({ go }) {
           How are you,<br/><span style={{ fontStyle: 'italic' }}>really?</span>
         </Headline>
         <p className="body" style={{ margin: '18px 0 28px', maxWidth: 380 }}>
-          Tell me in a sentence. I'll find songs for now, books for after, and poems for the page — chosen on what the research says actually helps.
+          Tell me in a sentence. I'll find songs for now, books for after, and poems for the page. Chosen on what the research says actually helps.
         </p>
 
         <textarea
@@ -572,7 +572,7 @@ function RitualsScreen({ go }) {
         ))}
       </section>
 
-      {/* Weekly review entry — quiet card */}
+      {/* Weekly review entry, quiet card */}
       <section style={{ padding: '34px 22px 0' }}>
         <button onClick={() => go('weekly-digest')} style={{
           width: '100%', textAlign: 'left', cursor: 'pointer',
@@ -592,7 +592,7 @@ function RitualsScreen({ go }) {
         </button>
       </section>
 
-      {/* Build your own — new */}
+      {/* Build your own, new */}
       <section style={{ padding: '20px 22px 0' }}>
         <button onClick={() => go('ritual-builder')} style={{
           width: '100%', textAlign: 'left', cursor: 'pointer',
@@ -1052,7 +1052,7 @@ function ValuesRitual({ go }) {
       <RitualHeader go={go}
         kicker="04 · Values check-in · ACT · weekly"
         title={<>What's most alive<br/>this week?</>}
-        body="Choose up to five. Not what you should care about — what you actually do."
+        body="Choose up to five. Not what you should care about, what you actually do."
       />
       <section style={{ padding: '32px 22px 0' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -1071,7 +1071,7 @@ function ValuesRitual({ go }) {
       <ColorBlock accent="ecru" style={{ marginTop: 36 }}>
         <Kicker>One small move</Kicker>
         <Headline size="title" italic style={{ marginTop: 14 }}>
-          This week I will do one thing in service of <span style={{ fontStyle: 'normal', textDecoration: 'underline', textUnderlineOffset: 4 }}>{picked[0] || '—'}</span>.
+          This week I will do one thing in service of <span style={{ fontStyle: 'normal', textDecoration: 'underline', textUnderlineOffset: 4 }}>{picked[0] || ', '}</span>.
         </Headline>
         <textarea placeholder="It will be small. It will be specific. It will be soon."
           style={{

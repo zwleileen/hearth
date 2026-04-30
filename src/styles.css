@@ -4,7 +4,7 @@
    Aesop / Frama register. Generous whitespace. Serif headlines.
    All-caps eyebrows. Photography. Hairline rules.
 
-   THE PALETTE — six colors, no exceptions
+   THE PALETTE, six colors, no exceptions
      Old Lace          #F9F4E6   paper / stage
      Blush Isabelline  #F2EAE8   second paper / soft sections
      Midnight Green    #1F4045   ink / type / dark sections
@@ -13,7 +13,7 @@
      Pale Dogwood      #EBCDC2   feature accent (soft)
 
    Color usage rule: Old Lace + Midnight Green carry every
-   screen. The other four are FEATURE ACCENTS — used as
+   screen. The other four are FEATURE ACCENTS, used as
    full color blocks for a single section, never as
    gradients, tints, or chrome decoration.
 
@@ -33,11 +33,11 @@
   --hh-green:    #1F4045;   /* ink */
   --hh-green-2:  #2d5258;   /* ink lifted */
   --hh-green-3:  #486a6e;   /* ink secondary on light */
-  --hh-ecru:     #E1BE74;   /* feature accent — warm */
+  --hh-ecru:     #E1BE74;   /* feature accent, warm */
   --hh-ecru-deep:#a8893e;   /* readable text on ecru/lace */
-  --hh-blue:     #C9D8DA;   /* feature accent — cool */
+  --hh-blue:     #C9D8DA;   /* feature accent, cool */
   --hh-blue-deep:#5e8388;   /* readable text on blue/lace */
-  --hh-dogwood:  #EBCDC2;   /* feature accent — soft */
+  --hh-dogwood:  #EBCDC2;   /* feature accent, soft */
   --hh-dogwood-deep:#9a6e5e;/* readable text on dogwood/lace */
 
   /* ── Type ────────────────────────────────────────── */
@@ -46,7 +46,7 @@
   --mono:  'JetBrains Mono', ui-monospace, Menlo, monospace;
 
   /* ── Semantic tokens ─────────────────────────────── */
-  --paper:        var(--hh-green);     /* "ink" — body text color */
+  --paper:        var(--hh-green);     /* "ink", body text color */
   --paper-2:      var(--hh-green-3);
   --paper-mute:   #6e8489;
   --paper-faint:  #97a8ac;
@@ -423,16 +423,104 @@ html, body {
 }
 
 /* Editorial feed grid (Discover items on Home).
-   1 column on phones, 2 on small tablets and up. */
+   1 column on phones, 2 on small tablets and up. Bigger vertical gap
+   between rows so each piece has room to breathe. */
 .hearth-feed-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 32px 24px;
+  gap: 48px 28px;
 }
 @media (min-width: 600px) {
   .hearth-feed-grid {
     grid-template-columns: 1fr 1fr;
   }
+}
+
+/* Magazine-style article card with a colored top bar + numbered kicker.
+   The accent color is rotated by index so items visibly differ. */
+.hearth-article {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  padding-top: 18px;
+}
+.hearth-article::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--card-accent, var(--hh-green));
+}
+.hearth-article-no { /* small numeral + kind kicker, in accent color */
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--card-accent-deep, var(--hh-green));
+  font-weight: 500;
+}
+.hearth-article-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--hh-green);
+  letter-spacing: -0.005em;
+  margin: 10px 0 8px;
+}
+@media (min-width: 600px) {
+  .hearth-article-title { font-size: 20px; }
+}
+.hearth-article-source {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
+  margin-top: 12px;
+}
+
+/* Hero article (first item in the spread). Bigger, no top accent bar
+   because the cover treatment (image, large headline) is anchor enough. */
+.hearth-hero-rule {
+  border: 0;
+  height: 2px;
+  background: var(--hh-green);
+  margin: 0;
+}
+.hearth-hero-rule-light {
+  border: 0;
+  height: 1px;
+  background: var(--paper-line);
+  margin: 0;
+}
+
+/* Department header — the bold kicker that introduces the spread on Home,
+   the Nook, and Weekly Review. Pairs a large all-caps eyebrow with a
+   right-aligned meta line. */
+.hearth-dept-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 2px solid var(--hh-green);
+  padding-top: 14px;
+  margin-bottom: 8px;
+}
+.hearth-dept-head-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--hh-green);
+  font-weight: 500;
+}
+.hearth-dept-head-meta {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
 }
 
 /* Save-to-Nook button — appears on Attune items, Home Discover items.
@@ -506,7 +594,7 @@ html, body {
 .card {
   background: var(--hh-isabel);
   border: 1px solid var(--paper-line-2);
-  border-radius: 0;     /* editorial — sharp corners */
+  border-radius: 0;     /* editorial, sharp corners */
   padding: 22px;
   position: relative;
   overflow: hidden;

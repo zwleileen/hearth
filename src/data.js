@@ -22,7 +22,7 @@ export const HEARTH_DATA = {
     {
       title: "Best possible self",
       lineage: "King, 2001",
-      prompt: "Imagine yourself a year from now, having lived this year well. What does your day look like — who are you with, what are you working on, what feels different in your body?"
+      prompt: "Imagine yourself a year from now, having lived this year well. What does your day look like, who are you with, what are you working on, what feels different in your body?"
     },
     {
       title: "One small intention",
@@ -37,7 +37,7 @@ export const HEARTH_DATA = {
     {
       title: "WOOP",
       lineage: "Oettingen · mental contrasting",
-      prompt: "Wish — what do you want today? Outcome — how will you feel when it's done? Obstacle — what inside you might get in the way? Plan — what will you do when the obstacle arrives?"
+      prompt: "Wish, what do you want today? Outcome, how will you feel when it's done? Obstacle, what inside you might get in the way? Plan, what will you do when the obstacle arrives?"
     },
     {
       title: "Anchor of gratitude",
@@ -50,7 +50,7 @@ export const HEARTH_DATA = {
     {
       title: "Three good things",
       lineage: "Seligman et al., 2005",
-      prompt: "Three things that went well today — however small. For each, why did it go well? What part did you play?"
+      prompt: "Three things that went well today, however small. For each, why did it go well? What part did you play?"
     },
     {
       title: "Expressive writing",
@@ -60,7 +60,7 @@ export const HEARTH_DATA = {
     {
       title: "Letter of self-compassion",
       lineage: "Neff, 2003",
-      prompt: "If a dear friend had your day, what would you say to them tonight? Now, write that — to yourself."
+      prompt: "If a dear friend had your day, what would you say to them tonight? Now, write that, to yourself."
     },
     {
       title: "What did you learn?",
@@ -86,7 +86,7 @@ export const HEARTH_DATA = {
     cover: {
       kicker: "The long work",
       title: "Builders of warmer worlds",
-      dek: "Five conversations with people whose practice is repair — of soil, of cities, of the way we speak to each other.",
+      dek: "Five conversations with people whose practice is repair, of soil, of cities, of the way we speak to each other.",
       caption: "ph · long-exposure of bakery window in snow"
     },
     stories: [
@@ -104,7 +104,7 @@ export const HEARTH_DATA = {
         kicker: "Food systems · Copenhagen",
         title: "If a kitchen could repair a forest",
         author: "Inside Refettorio's volunteer kitchens",
-        dek: "Massimo Bottura's nonprofit feeds dignity, not leftovers — and rewrites who gets to eat well.",
+        dek: "Massimo Bottura's nonprofit feeds dignity, not leftovers, and rewrites who gets to eat well.",
         readTime: "8 min",
         caption: "ph · long table, communal meal, candlelight"
       },
@@ -156,7 +156,7 @@ export const HEARTH_DATA = {
       key: "tender",
       keywords: ["sad", "grieving", "heavy", "tender", "missing", "lonely"],
       readingOfYou: "Something tender is asking to be held.",
-      science: "Slow, melancholic music can deepen — and then ease — felt sadness, a process linked to lower cortisol and a sense of being accompanied (Sachs et al., 2015).",
+      science: "Slow, melancholic music can deepen, and then ease, felt sadness, a process linked to lower cortisol and a sense of being accompanied (Sachs et al., 2015).",
       song: {
         title: "Spiegel im Spiegel",
         artist: "Arvo Pärt",
@@ -188,7 +188,7 @@ export const HEARTH_DATA = {
       key: "alight",
       keywords: ["happy", "alive", "alight", "joyful", "energized", "in love", "grateful"],
       readingOfYou: "Stay here a moment. Savoring extends the glow.",
-      science: "Deliberate savoring — naming and noticing positive states — predicts higher well-being weeks later (Bryant & Veroff, 2007).",
+      science: "Deliberate savoring, naming and noticing positive states, predicts higher well-being weeks later (Bryant & Veroff, 2007).",
       song: {
         title: "Harvest Moon",
         artist: "Neil Young",
@@ -203,7 +203,7 @@ export const HEARTH_DATA = {
     {
       key: "uncertain",
       keywords: ["lost", "stuck", "uncertain", "scared", "unsure", "doubt"],
-      readingOfYou: "Not lost — between rooms.",
+      readingOfYou: "Not lost, between rooms.",
       science: "Self-distancing language (\"you\" instead of \"I\") in writing about uncertainty improves problem-solving and lowers reactivity (Kross, 2014).",
       song: {
         title: "An Ending (Ascent)",
@@ -237,7 +237,7 @@ export const HEARTH_DATA = {
   // Sample free-write seeds (placeholder text)
   attuneSeeds: [
     "I feel quietly tender today. The morning was heavier than I expected.",
-    "I'm a little wired — too many tabs open, in my head and on the screen.",
+    "I'm a little wired, too many tabs open, in my head and on the screen.",
     "I'm grateful and a bit afraid of how good this feels.",
     "I don't know what I want. Just sitting with that.",
   ],
@@ -341,7 +341,7 @@ export const HEARTH_DATA = {
     { text: "I want to beg you, as much as I can, to be patient toward all that is unresolved.", author: "Rainer Maria Rilke", source: "Letters to a Young Poet", year: 1903 },
     { text: "There are years that ask questions and years that answer.", author: "Zora Neale Hurston", source: "Their Eyes Were Watching God", year: 1937 },
     { text: "Fairy tales do not tell children the dragons exist. Children already know that dragons exist. Fairy tales tell children the dragons can be killed.", author: "G.K. Chesterton", source: "Tremendous Trifles", year: 1909 },
-    { text: "Tell the truth but tell it slant — Success in Circuit lies.", author: "Emily Dickinson", source: "Poem 1129", year: 1872 },
+    { text: "Tell the truth but tell it slant, Success in Circuit lies.", author: "Emily Dickinson", source: "Poem 1129", year: 1872 },
     { text: "Hope is the thing with feathers that perches in the soul.", author: "Emily Dickinson", source: "Poem 254", year: 1862 },
     { text: "We must be still and still moving into another intensity.", author: "T.S. Eliot", source: "Four Quartets", year: 1942 },
     { text: "What we call the beginning is often the end. And to make an end is to make a beginning.", author: "T.S. Eliot", source: "Little Gidding", year: 1942 },

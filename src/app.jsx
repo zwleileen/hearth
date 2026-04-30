@@ -259,11 +259,11 @@ function App() {
         <TweakToggle label="Paper grain" value={values.showGrain} onChange={v => setTweak('showGrain', v)}/>
         <TweakSelect label="Page transition" value={values.transition || 'lift'}
           options={[
-            {value:'lift',label:'Lift — fade up (default)'},
-            {value:'slide',label:'Slide — push from right'},
-            {value:'reveal',label:'Reveal — paper unfold'},
-            {value:'cross',label:'Cross — pure fade'},
-            {value:'none',label:'None — instant'},
+            {value:'lift',label:'Lift, fade up (default)'},
+            {value:'slide',label:'Slide, push from right'},
+            {value:'reveal',label:'Reveal, paper unfold'},
+            {value:'cross',label:'Cross, pure fade'},
+            {value:'none',label:'None, instant'},
           ]}
           onChange={v => setTweak('transition', v)}/>
         <TweakToggle label="Show mini-player" value={values.miniPlayer} onChange={v => setTweak('miniPlayer', v)}/>
