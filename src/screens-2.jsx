@@ -7,6 +7,7 @@
 import React from 'react';
 import { BackRow, ColorBlock, Headline, Icon, Kicker, Ph, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
+import { api } from './api.js';
 
 const { useState: useState2 } = React;
 
@@ -205,17 +206,27 @@ function AttuneScreen({ go }) {
   const D = HEARTH_DATA;
   const [text, setText] = useState2('');
   const [reading, setReading] = useState2(null);
+  const [busy, setBusy] = useState2(false);
+  const [error, setError] = useState2(null);
 
-  function interpret() {
-    const lower = text.toLowerCase();
-    let best = D.attuneArchetypes[0], bestScore = -1;
-    D.attuneArchetypes.forEach(a => {
-      let s = 0;
-      a.keywords.forEach(k => { if (lower.includes(k)) s++; });
-      if (s > bestScore) { best = a; bestScore = s; }
-    });
-    if (bestScore < 1) best = D.attuneArchetypes[3];
-    setReading(best);
+  async function generateReading() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const data = await api.attune.recommend(text.trim());
+      setReading(data);
+    } catch (err) {
+      if (err.status === 401) {
+        setError({ kind: 'unauthed' });
+      } else if (err.status === 503) {
+        setError({ kind: 'unconfigured', detail: err.data?.detail });
+      } else {
+        setError({ kind: 'other', detail: err.data?.error || err.message });
+      }
+    } finally {
+      setBusy(false);
+    }
   }
 
   // ── Reading view ───────────────────────────────
@@ -224,7 +235,7 @@ function AttuneScreen({ go }) {
       <div className="fade-in" style={{ paddingBottom: 32 }}>
         {/* breadcrumb */}
         <section style={{ padding: '4px 22px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button onClick={() => setReading(null)} style={{
+          <button onClick={() => { setReading(null); setText(''); }} style={{
             background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
             fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
@@ -235,69 +246,101 @@ function AttuneScreen({ go }) {
           <span className="mono" style={{
             fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
             textTransform: 'uppercase',
-          }}>A reading · 5:42 pm</span>
+          }}>A reading</span>
         </section>
 
-        {/* The reading itself */}
+        {/* Mood summary */}
         <section style={{ padding: '36px 22px 0' }}>
-          <Kicker>The reading</Kicker>
-          <Headline size="display" italic style={{ marginTop: 14 }}>
-            "{reading.readingOfYou}"
-          </Headline>
-          <p className="body" style={{ margin: '20px 0 0', maxWidth: 340 }}>
-            {reading.science}
+          <Kicker>What I'm hearing</Kicker>
+          <p className="serif" style={{
+            margin: '14px 0 0',
+            fontSize: 22, lineHeight: 1.4, fontWeight: 360, fontStyle: 'italic',
+            color: 'var(--hh-green)', maxWidth: 540,
+          }}>
+            {reading.moodSummary}
           </p>
         </section>
 
-        {/* Song — Pale Dogwood block */}
+        {/* Songs — Pale Dogwood block */}
         <ColorBlock accent="dogwood" style={{ marginTop: 40 }}>
-          <Kicker>For your ears, now</Kicker>
-          <Headline size="title" italic style={{ marginTop: 14 }}>
-            {reading.song.title}.
-          </Headline>
-          <p className="serif" style={{
-            margin: '8px 0 18px', fontSize: 14, fontStyle: 'italic',
-            color: 'var(--hh-green-3)', fontWeight: 380,
-          }}>{reading.song.artist}</p>
-          <p style={{
-            fontFamily: 'var(--sans)', fontSize: 14.5, lineHeight: 1.55,
-            fontWeight: 380, color: 'var(--hh-green)', margin: '0 0 26px', maxWidth: 340,
-          }}>{reading.song.why}</p>
-          <button style={{
-            background: 'var(--hh-green)', color: 'var(--hh-lace)',
-            border: 0, padding: '14px 22px', cursor: 'pointer',
-            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-            letterSpacing: '0.22em', textTransform: 'uppercase',
-            display: 'inline-flex', alignItems: 'center', gap: 12,
-          }}>
-            {Icon.play(11, 'var(--hh-lace)')}<span>Play softly</span>
-          </button>
+          <Kicker>Songs · for your ears, now</Kicker>
+          <div style={{ marginTop: 18 }}>
+            {(reading.songs || []).map((s, i) => (
+              <div key={i} style={{
+                paddingTop: i === 0 ? 0 : 22,
+                paddingBottom: 22,
+                borderBottom: i < (reading.songs.length - 1) ? '1px solid rgba(31, 64, 69, 0.18)' : 0,
+              }}>
+                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </div>
+                <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                  {s.title}
+                </Headline>
+                <p className="serif" style={{
+                  margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                  color: 'var(--hh-green-3)', fontWeight: 380,
+                }}>{s.artist}</p>
+                <p className="body" style={{ margin: 0, maxWidth: 540 }}>{s.why}</p>
+              </div>
+            ))}
+          </div>
         </ColorBlock>
 
-        {/* Book */}
+        {/* Books */}
         <section style={{ padding: '40px 22px 0' }}>
-          <Kicker>For your hands, later</Kicker>
-          <Headline size="title" italic style={{ marginTop: 14 }}>
-            {reading.book.title}.
-          </Headline>
-          <p className="serif" style={{
-            margin: '8px 0 18px', fontSize: 14, fontStyle: 'italic',
-            color: 'var(--hh-green-3)', fontWeight: 380,
-          }}>{reading.book.author}</p>
-          <p className="body" style={{ margin: '0 0 22px' }}>{reading.book.why}</p>
-          <button style={{
-            background: 'transparent', border: '1px solid var(--hh-green)',
-            color: 'var(--hh-green)', padding: '13px 22px', cursor: 'pointer',
-            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-            letterSpacing: '0.22em', textTransform: 'uppercase',
-            display: 'inline-flex', alignItems: 'center', gap: 12,
-          }}>
-            {Icon.bookmark(12, 'currentColor')}<span>Save to shelf</span>
-          </button>
+          <Kicker>Books · for your hands, later</Kicker>
+          <div style={{ marginTop: 18 }}>
+            {(reading.books || []).map((b, i) => (
+              <div key={i} style={{
+                paddingTop: i === 0 ? 0 : 22,
+                paddingBottom: 22,
+                borderBottom: i < (reading.books.length - 1) ? '1px solid var(--paper-line-2)' : 0,
+              }}>
+                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </div>
+                <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                  {b.title}
+                </Headline>
+                <p className="serif" style={{
+                  margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                  color: 'var(--hh-green-3)', fontWeight: 380,
+                }}>{b.author}</p>
+                <p className="body" style={{ margin: 0, maxWidth: 540 }}>{b.why}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Poems */}
+        <section style={{ padding: '24px 22px 0' }}>
+          <Kicker>Poems · for the page</Kicker>
+          <div style={{ marginTop: 18 }}>
+            {(reading.poems || []).map((p, i) => (
+              <div key={i} style={{
+                paddingTop: i === 0 ? 0 : 22,
+                paddingBottom: 22,
+                borderBottom: i < (reading.poems.length - 1) ? '1px solid var(--paper-line-2)' : 0,
+              }}>
+                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                  {String(i + 1).padStart(2, '0')}
+                </div>
+                <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                  {p.title}
+                </Headline>
+                <p className="serif" style={{
+                  margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                  color: 'var(--hh-green-3)', fontWeight: 380,
+                }}>{p.poet}</p>
+                <p className="body" style={{ margin: 0, maxWidth: 540 }}>{p.why}</p>
+              </div>
+            ))}
+          </div>
         </section>
 
         {/* Closing */}
-        <section style={{ padding: '54px 22px 0', textAlign: 'left' }}>
+        <section style={{ padding: '40px 22px 0', textAlign: 'left' }}>
           <Rule/>
           <p className="serif" style={{
             margin: '22px 0 0', fontSize: 16, fontStyle: 'italic',
@@ -311,6 +354,26 @@ function AttuneScreen({ go }) {
     );
   }
 
+  // ── Loading view ──────────────────────────────
+  if (busy) {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 32 }}>
+        <section style={{ padding: '14px 22px 0' }}>
+          <Kicker>Attune</Kicker>
+          <Headline size="display" italic style={{ marginTop: 14 }}>
+            Reading you,<br/>now.
+          </Headline>
+          <p className="body" style={{ margin: '18px 0 28px', maxWidth: 380 }}>
+            One quiet moment. Choosing what fits.
+          </p>
+          <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.4, marginTop: 18, width: '70%' }}/>
+          <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '50%' }}/>
+          <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '85%' }}/>
+        </section>
+      </div>
+    );
+  }
+
   // ── Input view ────────────────────────────────
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
@@ -319,8 +382,8 @@ function AttuneScreen({ go }) {
         <Headline size="display" style={{ marginTop: 14 }}>
           How are you,<br/><span style={{ fontStyle: 'italic' }}>really?</span>
         </Headline>
-        <p className="body" style={{ margin: '18px 0 28px', maxWidth: 340 }}>
-          Tell me in a sentence. I'll find a song for now and a book for after — chosen on what the research says actually helps.
+        <p className="body" style={{ margin: '18px 0 28px', maxWidth: 380 }}>
+          Tell me in a sentence. I'll find songs for now, books for after, and poems for the page — chosen on what the research says actually helps.
         </p>
 
         <textarea
@@ -342,7 +405,7 @@ function AttuneScreen({ go }) {
                 letterSpacing: '0.22em', textTransform: 'uppercase',
               }}>Type a sentence</button>
           ) : (
-            <button onClick={interpret} className="btn-fill-green"
+            <button onClick={generateReading}
               style={{
                 background: 'var(--hh-green)', color: 'var(--hh-lace)',
                 border: 0, padding: '14px 22px', cursor: 'pointer',
@@ -355,6 +418,26 @@ function AttuneScreen({ go }) {
             </button>
           )}
         </div>
+
+        {error && (
+          <div style={{ marginTop: 22, padding: 16, background: 'var(--hh-isabel)', borderLeft: '2px solid var(--ember)' }}>
+            {error.kind === 'unauthed' && (
+              <p className="body" style={{ margin: 0 }}>
+                <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--ember)' }}>Sign in</span> to use Attune.
+              </p>
+            )}
+            {error.kind === 'unconfigured' && (
+              <p className="body" style={{ margin: 0 }}>
+                Attune needs an OpenAI key configured on the server.
+              </p>
+            )}
+            {error.kind === 'other' && (
+              <p className="body" style={{ margin: 0 }}>
+                {error.detail || 'Something went wrong. Try again.'}
+              </p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Seed phrases */}
