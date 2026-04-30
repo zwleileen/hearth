@@ -141,7 +141,7 @@ function App() {
       {route === 'auth' && <AuthScreen go={go} onAuthed={refreshUser}/>}
 
       {/* Main */}
-      {route === 'home' && <HomeScreen go={go} partOfDay={values.partOfDay} flower={values.flower} user={user}/>}
+      {route === 'home' && <HomeScreen go={go} user={user}/>}
       {route === 'journal' && <JournalScreen go={go}/>}
       {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
       {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}

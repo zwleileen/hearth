@@ -422,6 +422,19 @@ html, body {
   margin: 0 auto;
 }
 
+/* Editorial feed grid (Discover items on Home).
+   1 column on phones, 2 on small tablets and up. */
+.hearth-feed-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 32px 24px;
+}
+@media (min-width: 600px) {
+  .hearth-feed-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 /* ─── Page transitions (run on route change via key={route}) ─
    Steady state is fully visible. Animations are forwards-only fade-ins
    on a slight Y offset; if the document timeline is paused (e.g. hidden

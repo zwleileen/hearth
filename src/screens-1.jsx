@@ -42,6 +42,16 @@ function computeJournalStats(entries) {
   return { total, thisWeek, streak };
 }
 
+// Local-time greeting buckets. Reads the user's machine timezone.
+function timeOfDay() {
+  const h = new Date().getHours();
+  if (h < 5)  return 'night';
+  if (h < 12) return 'morning';
+  if (h < 17) return 'afternoon';
+  if (h < 21) return 'evening';
+  return 'night';
+}
+
 function formatTodayKicker() {
   const now = new Date();
   const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
@@ -50,22 +60,39 @@ function formatTodayKicker() {
   return `${weekday} · ${dayMonth} · ${time}`;
 }
 
-function HomeScreen({ go, partOfDay, user }) {
+// Pick a quote deterministically from today's date so it stays stable
+// across reloads within a day, but changes each new day.
+function pickDailyQuote(quotes) {
+  if (!quotes || !quotes.length) return null;
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 0);
+  const dayOfYear = Math.floor((now - start) / 86400000);
+  return quotes[dayOfYear % quotes.length];
+}
+
+function HomeScreen({ go, user }) {
   const D = HEARTH_DATA;
-  const isEvening = partOfDay === 'evening';
-  const isMorning = partOfDay === 'morning';
+  const part = timeOfDay(); // 'night' | 'morning' | 'afternoon' | 'evening'
   const firstName = user?.name?.split(/\s+/)[0]?.trim();
-  const greet = isMorning
-    ? `Good morning${firstName ? ', ' + firstName : ''}.`
-    : isEvening
-      ? `Welcome back${firstName ? ', ' + firstName : ''}.`
-      : `Good afternoon${firstName ? ', ' + firstName : ''}.`;
-  const promptOfDay = isEvening ? D.eveningPrompts[0] : D.morningPrompts[0];
-  const promptAccent = isEvening ? 'green' : 'ecru';
+  const greet = (() => {
+    const tail = firstName ? `, ${firstName}` : '';
+    if (part === 'morning')   return `Good morning${tail}.`;
+    if (part === 'afternoon') return `Good afternoon${tail}.`;
+    if (part === 'evening')   return `Good evening${tail}.`;
+    return `Welcome back${tail}.`; // night / late
+  })();
+  const intro = (() => {
+    if (part === 'morning')   return 'A quiet hour, before the day asks anything of you.';
+    if (part === 'afternoon') return 'The day is mid-stride. A small return, on your terms.';
+    if (part === 'evening')   return 'The light is going. The kettle is on. There is no hurry tonight.';
+    return 'The world is quiet. You are still here, and that is something.';
+  })();
+  const quote = pickDailyQuote(D.dailyQuotes);
 
   const [stats, setStats] = useState1({ total: 0, thisWeek: 0, streak: 0 });
-  const [featured, setFeatured] = useState1(null);
-  const [featuredState, setFeaturedState] = useState1('idle'); // idle|loading|ready|empty|unauthed
+  const [items, setItems] = useState1(null);
+  const [issueNote, setIssueNote] = useState1('');
+  const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
 
   useEffect1(() => {
     let cancelled = false;
@@ -78,134 +105,94 @@ function HomeScreen({ go, partOfDay, user }) {
       }
     })();
     (async () => {
-      setFeaturedState('loading');
       try {
         const data = await api.discover.today();
         if (cancelled) return;
-        const item = (data.items || []).find(i => i.kind === 'article' || i.kind === 'essay') || (data.items || [])[0];
-        if (item) {
-          setFeatured(item);
-          setFeaturedState('ready');
-        } else {
-          setFeaturedState('empty');
-        }
+        const list = data.items || [];
+        setItems(list);
+        setIssueNote(data.issueNote || '');
+        setFeedState(list.length > 0 ? 'ready' : 'empty');
       } catch (err) {
         if (cancelled) return;
-        if (err.status === 401) setFeaturedState('unauthed');
-        else setFeaturedState('empty');
+        if (err.status === 401) setFeedState('unauthed');
+        else setFeedState('empty');
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
+  const hero = items?.[0];
+  const rest = items?.slice(1) || [];
+
   return (
-    <div className="fade-in" style={{ paddingBottom: 32 }}>
-      {/* ── 1. Greeting on Old Lace ───────────────── */}
-      <section style={{ padding: '14px 22px 36px' }}>
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      {/* ── 1. Greeting ─────────────────────────── */}
+      <section style={{ padding: '14px 22px 32px' }}>
         <Kicker>{formatTodayKicker()}</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
           {greet}
         </Headline>
-        <p className="body" style={{ margin: '14px 0 0', maxWidth: 320 }}>
-          {isEvening
-            ? 'The light is going. The kettle is on. There is no hurry tonight.'
-            : isMorning
-              ? 'A quiet hour, before the day asks anything of you.'
-              : 'The day is mid-stride. A small return, on your terms.'}
+        <p className="body" style={{ margin: '14px 0 0', maxWidth: 380 }}>
+          {intro}
         </p>
-        <div style={{ display: 'flex', gap: 22, marginTop: 26 }}>
+        <div style={{ display: 'flex', gap: 28, marginTop: 26 }}>
           <HomeStat n={stats.streak} label="day streak"/>
           <HomeStat n={stats.total} label="entries kept"/>
           <HomeStat n={stats.thisWeek} label="this week"/>
         </div>
       </section>
 
-      {/* ── 2. Tonight's prompt — full color block ── */}
-      <ColorBlock accent={promptAccent}>
-        <Kicker accent={promptAccent === 'green' ? 'mute' : 'green'}
-          style={{ color: promptAccent === 'green' ? 'rgba(249,244,230,0.6)' : 'var(--hh-green)' }}>
-          {isEvening ? "Tonight's prompt" : "This morning's prompt"} · {promptOfDay.lineage}
-        </Kicker>
-        <Headline size="title" italic
-          style={{
-            marginTop: 14, maxWidth: 320,
-            color: promptAccent === 'green' ? 'var(--hh-lace)' : 'var(--hh-green)',
-          }}>
-          {promptOfDay.title}.
-        </Headline>
-        <p style={{
-          margin: '14px 0 26px', fontFamily: 'var(--sans)',
-          fontSize: 14.5, lineHeight: 1.55, fontWeight: 380,
-          color: promptAccent === 'green' ? 'rgba(249,244,230,0.8)' : 'var(--hh-green)',
-          opacity: promptAccent === 'green' ? 1 : 0.85,
-          maxWidth: 340,
-        }}>{promptOfDay.prompt}</p>
-        <button onClick={() => go('journal-write', { mode: partOfDay, prompt: promptOfDay })}
-          style={{
-            background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
-            display: 'inline-flex', alignItems: 'center', gap: 14,
-            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-            letterSpacing: '0.22em', textTransform: 'uppercase',
-            color: promptAccent === 'green' ? 'var(--hh-lace)' : 'var(--hh-green)',
-          }}>
-          <span>Begin writing</span>
-          <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
-        </button>
-      </ColorBlock>
+      {/* ── 2. Daily quote (replaces the prompt block) ── */}
+      {quote && (
+        <section style={{ padding: '24px 22px 8px' }}>
+          <Rule glyph="◆"/>
+          <div style={{ padding: '32px 0 28px', textAlign: 'center' }}>
+            <p className="serif" style={{
+              margin: '0 auto', maxWidth: 540,
+              fontSize: 24, lineHeight: 1.4, fontWeight: 360, fontStyle: 'italic',
+              color: 'var(--hh-green)', letterSpacing: '-0.005em',
+            }}>
+              &ldquo;{quote.text}&rdquo;
+            </p>
+            <p className="mono" style={{
+              fontSize: 9.5, letterSpacing: '0.22em', color: 'var(--paper-mute)',
+              marginTop: 22, textTransform: 'uppercase',
+            }}>
+              {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
+            </p>
+          </div>
+          <Rule glyph="◆"/>
+        </section>
+      )}
 
-      {/* ── 3. Featured reading ───────────────────── */}
+      {/* ── 3. Editorial spread — full reading room ── */}
       <section style={{ padding: '40px 22px 0' }}>
-        <Kicker>From the reading room</Kicker>
-        {featuredState === 'loading' && (
-          <div style={{ marginTop: 18 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+          <Kicker>From the reading room</Kicker>
+          {feedState === 'ready' && (
+            <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+              Today · {items.length} pieces
+            </span>
+          )}
+        </div>
+        {issueNote && feedState === 'ready' && (
+          <p className="serif" style={{ margin: '6px 0 0', fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)', maxWidth: 540, lineHeight: 1.4 }}>
+            {issueNote}
+          </p>
+        )}
+
+        {feedState === 'loading' && (
+          <div style={{ marginTop: 22 }}>
             <Rule/>
+            <div style={{ height: 220, background: 'var(--paper-line)', opacity: 0.3, marginTop: 18 }}/>
             <div style={{ height: 22, background: 'var(--paper-line)', opacity: 0.4, marginTop: 18, width: '70%' }}/>
             <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '90%' }}/>
-            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 6, width: '60%' }}/>
           </div>
         )}
-        {featuredState === 'ready' && featured && (
-          <div onClick={() => featured.url && window.open(featured.url, '_blank', 'noopener,noreferrer')}
-            style={{ cursor: featured.url ? 'pointer' : 'default', marginTop: 18 }}>
-            {featured.image ? (
-              <img
-                src={featured.image}
-                alt=""
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                style={{ width: '100%', height: 220, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            ) : (
-              <Rule/>
-            )}
-            <Headline size="title" italic style={{ marginTop: 18 }}>
-              {featured.title}
-            </Headline>
-            <p className="body" style={{ margin: '12px 0 0', maxWidth: 340 }}>
-              {featured.dek}
-            </p>
-            <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center' }}>
-              <Kicker accent="mute">{featured.source || featured.kind}</Kicker>
-              {featured.readTime && (
-                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {featured.readTime}</span>
-              )}
-            </div>
-          </div>
-        )}
-        {featuredState === 'empty' && (
+
+        {feedState === 'unauthed' && (
           <div style={{ marginTop: 18 }}>
-            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 340 }}>
-              Today's reading room is being curated for you.
-            </p>
-            <button className="btn btn-ghost" onClick={() => go('discover')} style={{ marginTop: 14 }}>
-              Open Discover
-            </button>
-          </div>
-        )}
-        {featuredState === 'unauthed' && (
-          <div style={{ marginTop: 18 }}>
-            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 340 }}>
+            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
               Your reading room opens once you sign in.
             </p>
             <button className="btn btn-ghost" onClick={() => go('auth')} style={{ marginTop: 14 }}>
@@ -213,58 +200,101 @@ function HomeScreen({ go, partOfDay, user }) {
             </button>
           </div>
         )}
-      </section>
 
-      {/* ── 4. Three-up index ────────────────────── */}
-      <section style={{ padding: '46px 22px 0' }}>
-        <Rule/>
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
-          gap: 0, marginTop: 0,
-        }}>
-          {[
-            { n: '01', label: 'Journal', sub: 'Write yourself warm', route: 'journal' },
-            { n: '02', label: 'Attune',  sub: 'Music for the mood',  route: 'attune' },
-            { n: '03', label: 'Rituals', sub: 'Four-minute practices', route: 'rituals' },
-          ].map((it, i) => (
-            <button key={it.n} onClick={() => go(it.route)}
-              style={{
-                background: 'transparent', border: 0, padding: '24px 8px 8px 0',
-                borderRight: i < 2 ? '1px solid rgba(31, 64, 69, 0.12)' : '0',
-                paddingLeft: i > 0 ? 14 : 0,
-                cursor: 'pointer', textAlign: 'left',
-              }}>
-              <span className="mono" style={{ fontSize: 10, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>
-                {it.n}
-              </span>
-              <div className="serif" style={{
-                fontSize: 17, fontWeight: 400, color: 'var(--hh-green)',
-                marginTop: 10, lineHeight: 1.15,
-              }}>{it.label}</div>
-              <div style={{
-                fontFamily: 'var(--sans)', fontSize: 11.5, color: 'var(--hh-green-3)',
-                marginTop: 4, lineHeight: 1.35, fontWeight: 380,
-              }}>{it.sub}</div>
-            </button>
-          ))}
+        {feedState === 'empty' && (
+          <div style={{ marginTop: 18 }}>
+            <p className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
+              Today's reading room is being curated for you.
+            </p>
+          </div>
+        )}
+
+        {feedState === 'ready' && hero && (
+          <article onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
+            style={{ cursor: hero.url ? 'pointer' : 'default', marginTop: 22 }}>
+            {hero.image ? (
+              <img
+                src={hero.image}
+                alt=""
+                referrerPolicy="no-referrer"
+                loading="lazy"
+                style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : (
+              <Rule/>
+            )}
+            <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center' }}>
+              <Kicker accent="mute">{hero.kind}</Kicker>
+              {hero.source && (
+                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                  · {hero.source}
+                </span>
+              )}
+              {hero.readTime && (
+                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {hero.readTime}</span>
+              )}
+            </div>
+            <Headline size="title" italic style={{ marginTop: 12 }}>
+              {hero.title}
+            </Headline>
+            <p className="body" style={{ margin: '12px 0 0', maxWidth: 540 }}>
+              {hero.dek}
+            </p>
+          </article>
+        )}
+
+        {feedState === 'ready' && rest.length > 0 && (
+          <>
+            <div style={{ marginTop: 36 }}><Rule/></div>
+            <div className="hearth-feed-grid" style={{ marginTop: 22 }}>
+              {rest.map((it, i) => (
+                <article key={i} onClick={() => it.url && window.open(it.url, '_blank', 'noopener,noreferrer')}
+                  style={{ cursor: it.url ? 'pointer' : 'default' }}>
+                  {it.image ? (
+                    <img
+                      src={it.image}
+                      alt=""
+                      referrerPolicy="no-referrer"
+                      loading="lazy"
+                      style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : null}
+                  <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <Kicker accent="mute" style={{ fontSize: 9 }}>{it.kind}</Kicker>
+                    {it.source && (
+                      <span className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                        · {it.source}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="serif" style={{ margin: '8px 0 6px', fontSize: 18, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>
+                    {it.title}
+                  </h3>
+                  <p className="body-sm" style={{ margin: 0, lineHeight: 1.5 }}>
+                    {it.dek}
+                  </p>
+                  {it.readTime && (
+                    <div className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginTop: 10 }}>
+                      {it.readTime}
+                    </div>
+                  )}
+                </article>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Begin journal CTA — under the editorial spread */}
+        <div style={{ marginTop: 40, paddingTop: 24, borderTop: '1px solid var(--paper-line-2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <p className="serif" style={{ margin: 0, fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)' }}>
+            And then, the page.
+          </p>
+          <button className="btn btn-ember" onClick={() => go('journal')}>
+            Begin today's entry {Icon.arrow(14, 'var(--on-ember)')}
+          </button>
         </div>
-        <Rule/>
-      </section>
-
-      {/* ── 5. Closing line ──────────────────────── */}
-      <section style={{ padding: '54px 22px 0', textAlign: 'left' }}>
-        <Kicker accent="mute">Colophon</Kicker>
-        <p className="serif" style={{
-          margin: '14px 0 0', fontSize: 17, fontStyle: 'italic',
-          color: 'var(--hh-green-3)', lineHeight: 1.5, fontWeight: 350,
-          maxWidth: 320,
-        }}>
-          "Tell me, what is it you plan to do with your one wild and precious life?"
-        </p>
-        <p className="mono" style={{
-          fontSize: 9.5, letterSpacing: '0.22em', color: 'var(--paper-mute)',
-          marginTop: 14, textTransform: 'uppercase',
-        }}>Mary Oliver · 1990</p>
       </section>
     </div>
   );
@@ -292,10 +322,40 @@ function HomeStat({ n, label }) {
 // Magazine cover → segmented (morning / evening) → numbered list
 // of prompts with a hairline rule between each.
 // ─────────────────────────────────────────────────────────────
+function formatJournalListDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const isYesterday = d.toDateString() === yesterday.toDateString();
+  const hour = d.getHours();
+  const partOfDay = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
+  if (sameDay) return `Today · ${partOfDay}`;
+  if (isYesterday) return `Yesterday · ${partOfDay}`;
+  const weekday = d.toLocaleDateString(undefined, { weekday: 'short' });
+  return `${weekday} · ${partOfDay}`;
+}
+
 function JournalScreen({ go }) {
   const D = HEARTH_DATA;
   const [tab, setTab] = useState1('evening');
   const list = tab === 'morning' ? D.morningPrompts : D.eveningPrompts;
+  const [recent, setRecent] = useState1(null);
+  const [recentError, setRecentError] = useState1(null);
+
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { entries } = await api.journal.list();
+        if (!cancelled) setRecent(entries.slice(0, 3));
+      } catch (err) {
+        if (!cancelled) setRecentError(err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
     <div className="fade-in">
@@ -350,45 +410,78 @@ function JournalScreen({ go }) {
         ))}
       </section>
 
-      {/* Recent entries — editorial list */}
+      {/* Recent entries — only what the user has actually saved */}
       <section style={{ padding: '40px 22px 0' }}>
         <Kicker>Recent entries</Kicker>
-        <div style={{ marginTop: 14 }}>
-          {[
-            { date: 'Yesterday · evening', title: 'A small unhurried good', mood: 'tender',  shift: '+1' },
-            { date: 'Wed · morning',       title: 'WOOP for the meeting',  mood: 'restless', shift: '+2' },
-            { date: 'Tue · evening',       title: 'Three good things',     mood: 'grateful', shift: '+1' },
-          ].map((e, i) => (
-            <div key={i} onClick={() => go('entry-detail', e)}
-              style={{
-                padding: '18px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.10)',
-                cursor: 'pointer',
-              }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                  {e.date}
-                </span>
-                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'var(--hh-green)', textTransform: 'uppercase' }}>
-                  {e.mood} · {e.shift}
-                </span>
-              </div>
-              <div className="serif" style={{
-                fontSize: 18, fontWeight: 400, color: 'var(--hh-green)',
-                marginTop: 8, fontStyle: 'italic',
-              }}>{e.title}</div>
+
+        {recentError && recentError.status === 401 && (
+          <p className="body" style={{ marginTop: 14, color: 'var(--paper-mute)' }}>
+            <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--ember)' }}>Sign in</span>{' '}
+            to see your kept entries here.
+          </p>
+        )}
+
+        {!recentError && recent === null && (
+          <div style={{ marginTop: 14 }}>
+            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 12, width: '60%' }}/>
+            <div style={{ height: 18, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '85%' }}/>
+          </div>
+        )}
+
+        {!recentError && Array.isArray(recent) && recent.length === 0 && (
+          <p className="serif" style={{ marginTop: 14, fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
+            Nothing kept yet. Pick a prompt above and write yourself a first entry.
+          </p>
+        )}
+
+        {!recentError && Array.isArray(recent) && recent.length > 0 && (
+          <>
+            <div style={{ marginTop: 14 }}>
+              {recent.map((e) => (
+                <div key={e.id} onClick={() => go('entry-detail', { entry: {
+                  id: e.id,
+                  date: formatJournalListDate(e.createdAt),
+                  title: e.title || 'Untitled',
+                  mood: e.mood,
+                  shift: e.shift !== null && e.shift !== undefined ? `${e.shift > 0 ? '+' : ''}${e.shift}` : '',
+                  tone: 'wisteria',
+                  body: e.body,
+                  tags: e.tags || [],
+                  lineage: e.promptLineage,
+                } })}
+                  style={{
+                    padding: '18px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.10)',
+                    cursor: 'pointer',
+                  }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                      {formatJournalListDate(e.createdAt)}
+                    </span>
+                    {e.mood && (
+                      <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'var(--hh-green)', textTransform: 'uppercase' }}>
+                        {e.mood}{e.shift !== null && e.shift !== undefined ? ` · ${e.shift > 0 ? '+' : ''}${e.shift}` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className="serif" style={{
+                    fontSize: 18, fontWeight: 400, color: 'var(--hh-green)',
+                    marginTop: 8, fontStyle: 'italic',
+                  }}>{e.title || 'Untitled'}</div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <button onClick={() => go('journal-archive')} style={{
-          background: 'transparent', border: 0, padding: 0, marginTop: 24,
-          cursor: 'pointer',
-          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-          letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--hh-green)',
-          display: 'inline-flex', alignItems: 'center', gap: 14,
-        }}>
-          <span>All entries</span>
-          <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
-        </button>
+            <button onClick={() => go('journal-archive')} style={{
+              background: 'transparent', border: 0, padding: 0, marginTop: 24,
+              cursor: 'pointer',
+              fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+              letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--hh-green)',
+              display: 'inline-flex', alignItems: 'center', gap: 14,
+            }}>
+              <span>All entries</span>
+              <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
+            </button>
+          </>
+        )}
       </section>
     </div>
   );
