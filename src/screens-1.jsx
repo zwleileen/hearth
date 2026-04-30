@@ -60,14 +60,29 @@ function formatTodayKicker() {
   return `${weekday} · ${dayMonth} · ${time}`;
 }
 
+// Stable string hash (32-bit, jhash-style). Used to give each user a
+// different starting offset into the quote pool so two readers don't
+// see the same quote on the same day.
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < (s || '').length; i++) {
+    h = ((h << 5) - h) + s.charCodeAt(i);
+    h |= 0;
+  }
+  return Math.abs(h);
+}
+
 // Pick a quote deterministically from today's date so it stays stable
-// across reloads within a day, but changes each new day.
-function pickDailyQuote(quotes) {
+// across reloads within a day, but changes each new day. Mixes in a
+// per-user offset so two users see different quotes on the same day,
+// while each user's own rotation is consistent.
+function pickDailyQuote(quotes, user) {
   if (!quotes || !quotes.length) return null;
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((now - start) / 86400000);
-  return quotes[dayOfYear % quotes.length];
+  const userOffset = user?.id ? hashStr(user.id) : 0;
+  return quotes[(dayOfYear + userOffset) % quotes.length];
 }
 
 function HomeScreen({ go, user }) {
@@ -87,7 +102,7 @@ function HomeScreen({ go, user }) {
     if (part === 'evening')   return 'The light is going. The kettle is on. There is no hurry tonight.';
     return 'The world is quiet. You are still here, and that is something.';
   })();
-  const quote = pickDailyQuote(D.dailyQuotes);
+  const quote = pickDailyQuote(D.dailyQuotes, user);
 
   const [stats, setStats] = useState1({ total: 0, thisWeek: 0, streak: 0 });
   const [items, setItems] = useState1(null);
