@@ -73,16 +73,27 @@ function hashStr(s) {
 }
 
 // Pick a quote deterministically from today's date so it stays stable
-// across reloads within a day, but changes each new day. Mixes in a
-// per-user offset so two users see different quotes on the same day,
-// while each user's own rotation is consistent.
+// across reloads within a day, but changes each new day.
+//
+// Filters the pool by the user's 'What brought you here' reasons
+// (rest, clarity, gratitude, focus, grief, wonder) so the quote
+// reflects what they came to Hearth for. Mixes in a per-user offset
+// so two readers with the same reasons still see different quotes
+// on the same day. Falls back to the full pool if the user has no
+// reasons set, or if no quote matches their reasons.
 function pickDailyQuote(quotes, user) {
   if (!quotes || !quotes.length) return null;
+  const reasons = user?.onboarding?.reasons || [];
+  let pool = quotes;
+  if (reasons.length > 0) {
+    const filtered = quotes.filter(q => (q.themes || []).some(t => reasons.includes(t)));
+    if (filtered.length > 0) pool = filtered;
+  }
   const now = new Date();
   const start = new Date(now.getFullYear(), 0, 0);
   const dayOfYear = Math.floor((now - start) / 86400000);
   const userOffset = user?.id ? hashStr(user.id) : 0;
-  return quotes[(dayOfYear + userOffset) % quotes.length];
+  return pool[(dayOfYear + userOffset) % pool.length];
 }
 
 function HomeScreen({ go, user }) {
