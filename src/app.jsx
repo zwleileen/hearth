@@ -108,6 +108,14 @@ function App() {
   // Repaint --sig* whenever flower changes
   useEffect(() => { applyFlower(values.flower); }, [values.flower]);
 
+  // When the signed-in user's saved flower changes (e.g. after sign-in or
+  // after they update it in Settings), pull it into the runtime atmosphere
+  // so the visual signature follows the user, not the device default.
+  useEffect(() => {
+    const f = user?.onboarding?.flower;
+    if (f && f !== values.flower) setTweak('flower', f);
+  }, [user?.onboarding?.flower]);
+
   function go(r, p = null) {
     setRoute(r);
     setPayload(p);
@@ -159,9 +167,9 @@ function App() {
       {route === 'streak-broken' && <StreakBrokenScreen go={go}/>}
 
       {/* Settings */}
-      {route === 'settings' && <SettingsScreen go={go} onSignOut={user ? signOut : null}/>}
+      {route === 'settings' && <SettingsScreen go={go} user={user} refreshUser={refreshUser} onSignOut={user ? signOut : null}/>}
       {route === 'settings-notifications' && <NotificationsScreen go={go}/>}
-      {route === 'settings-profile' && <ProfileScreen go={go}/>}
+      {route === 'settings-profile' && <ProfileScreen go={go} user={user} refreshUser={refreshUser}/>}
     </>
   );
 

@@ -47,6 +47,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
   const [flower, setFlower] = React.useState(payload?.flower || 'wisteria'); // key kept as 'flower' for tweak-state compat
   const [email, setEmail] = React.useState(payload?.email || '');
   const [password, setPassword] = React.useState(payload?.password || '');
+  const [showPw, setShowPw] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState(null);
 
@@ -360,8 +361,16 @@ function OnboardingScreen({ go, payload, onAuthed }) {
             <input className="hearth-input" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@somewhere.kind" type="email" autoComplete="email" style={{ fontSize: 17 }}/>
           </div>
           <div>
-            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 6 }}>Password</div>
-            <input className="hearth-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least eight characters" type="password" autoComplete="new-password" style={{ fontSize: 17 }}/>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
+              <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>Password</div>
+              <button type="button" onClick={() => setShowPw(s => !s)}
+                style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+                  fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em',
+                  color: 'var(--ember)', textTransform: 'uppercase' }}>
+                {showPw ? 'Hide' : 'Show'}
+              </button>
+            </div>
+            <input className="hearth-input" value={password} onChange={e => setPassword(e.target.value)} placeholder="At least eight characters" type={showPw ? 'text' : 'password'} autoComplete="new-password" style={{ fontSize: 17 }}/>
             <div className="body-sm" style={{ marginTop: 6, color: passwordOk ? 'var(--meadow-deep, var(--paper-mute))' : 'var(--paper-mute)' }}>
               {password.length === 0 ? 'Pick something only you would know.' : passwordOk ? 'Looks good.' : `${8 - password.length} more characters`}
             </div>
@@ -498,6 +507,7 @@ function OnboardingProgress({ n, total }) {
 function AuthScreen({ go, onAuthed }) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
+  const [showPw, setShowPw] = React.useState(false);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState(null);
 
@@ -551,9 +561,17 @@ function AuthScreen({ go, onAuthed }) {
             placeholder="you@somewhere.kind" type="email" autoComplete="email" style={{ fontSize: 17 }}/>
         </div>
         <div>
-          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 6 }}>Password</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6 }}>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>Password</div>
+            <button type="button" onClick={() => setShowPw(s => !s)}
+              style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+                fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em',
+                color: 'var(--ember)', textTransform: 'uppercase' }}>
+              {showPw ? 'Hide' : 'Show'}
+            </button>
+          </div>
           <input className="hearth-input" value={password} onChange={e => setPassword(e.target.value)} onKeyDown={onKeyDown}
-            placeholder="" type="password" autoComplete="current-password" style={{ fontSize: 17 }}/>
+            placeholder="" type={showPw ? 'text' : 'password'} autoComplete="current-password" style={{ fontSize: 17 }}/>
         </div>
       </div>
 
@@ -586,69 +604,280 @@ function AuthScreen({ go, onAuthed }) {
 // ─────────────────────────────────────────────────────────────
 // SETTINGS
 // ─────────────────────────────────────────────────────────────
-function SettingsScreen({ go, onSignOut }) {
+const TIME_OPTIONS = [
+  { k: 'morning',  label: 'Mornings',   sub: 'Set the day before it sets you',     tone: 'rose' },
+  { k: 'evening',  label: 'Evenings',   sub: 'Close the day before sleep',         tone: 'wisteria' },
+  { k: 'both',     label: 'Both',       sub: 'A small fire, twice a day',          tone: 'ember' },
+  { k: 'flexible', label: 'When I can', sub: 'No reminders, just here when needed',tone: 'meadow' },
+];
+
+const REASON_OPTIONS = [
+  { k: 'rest',      label: 'Rest more easily' },
+  { k: 'clarity',   label: 'Find clarity' },
+  { k: 'gratitude', label: 'Practice gratitude' },
+  { k: 'focus',     label: 'Work with intention' },
+  { k: 'grief',     label: 'Sit with something hard' },
+  { k: 'wonder',    label: 'Notice more' },
+];
+
+function SettingsScreen({ go, user, refreshUser, onSignOut }) {
+  const [counts, setCounts] = React.useState({ entries: null, bookmarks: null });
+  const [savingKey, setSavingKey] = React.useState(null);
+  const [savedKey, setSavedKey] = React.useState(null);
+
+  React.useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [j, b] = await Promise.all([api.journal.list(), api.bookmarks.list()]);
+        if (cancelled) return;
+        setCounts({ entries: j.entries?.length || 0, bookmarks: b.bookmarks?.length || 0 });
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="fade-in" style={{ padding: '40px 22px 32px', textAlign: 'center' }}>
+        <Eyebrow tone="bloom" style={{ marginTop: 32 }}>Settings</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+          Tend the fire,<br/><span style={{ fontStyle: 'italic' }}>your way.</span>
+        </h1>
+        <p className="body" style={{ maxWidth: 320, margin: '0 auto 22px' }}>
+          Sign in to find your atmosphere, your kept entries, and what's on your shelf.
+        </p>
+        <button className="btn btn-ember" onClick={() => go('auth')}>Sign in</button>
+      </div>
+    );
+  }
+
+  const onb = user.onboarding || {};
+  const flower = onb.flower || 'wisteria';
+  const reasons = onb.reasons || [];
+  const interests = onb.interests || [];
+  const dailyTime = onb.dailyTime || 'morning';
+  const initial = (user.name || user.email || 'F')[0].toUpperCase();
+
+  async function updateOnboarding(patch, key) {
+    setSavingKey(key);
+    try {
+      await api.profile.update({ onboarding: patch });
+      await refreshUser();
+      setSavedKey(key);
+      setTimeout(() => setSavedKey(null), 1500);
+    } catch {
+      // could surface error inline; keep silent for now
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
+  function toggleInArray(arr, k) {
+    return arr.includes(k) ? arr.filter(x => x !== k) : [...arr, k];
+  }
+
   return (
-    <div className="fade-in" style={{ padding: '8px 22px 32px' }}>
+    <div className="fade-in" style={{ padding: '14px 22px 32px' }}>
       <Eyebrow tone="bloom">Settings</Eyebrow>
-      <h1 className="h-display serif" style={{ margin: '8px 0 18px', fontWeight: 350 }}>
+      <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
         Tend the fire,<br/><span style={{ fontStyle: 'italic' }}>your way.</span>
       </h1>
-      {onSignOut && (
-        <div style={{ marginTop: 24 }}>
-          <button className="btn btn-ghost" onClick={onSignOut} style={{ width: '100%', justifyContent: 'center' }}>
-            Sign out
-          </button>
-        </div>
-      )}
+      <p className="body" style={{ margin: '0 0 22px', maxWidth: 420 }}>
+        What you choose here shapes what Hearth becomes for you. Adjust any time.
+      </p>
 
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      {/* Account card */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0', borderTop: '2px solid var(--hh-green)', borderBottom: '1px solid var(--paper-line-2)' }}>
         <div style={{ width: 52, height: 52, borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--rose) 0%, var(--ember) 100%)',
+          background: `linear-gradient(135deg, var(--${SPRIGS.find(s => s.k === flower)?.tone || 'wisteria'}) 0%, var(--hh-ecru) 100%)`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--on-ember)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 22, fontWeight: 380 }}>
-          F
+          color: 'var(--hh-green)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 24, fontWeight: 380 }}>
+          {initial}
         </div>
-        <div style={{ flex: 1 }}>
-          <div className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380 }}>Friend</div>
-          <div className="body-sm">friend@hearth.example · 23-day fire</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--hh-green)' }}>{user.name || 'Friend'}</div>
+          <div className="body-sm" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {user.email}{counts.entries !== null ? ` · ${counts.entries} ${counts.entries === 1 ? 'entry kept' : 'entries kept'}` : ''}
+          </div>
         </div>
-        <button onClick={() => go('settings-profile')} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>
+        <button onClick={() => go('settings-profile')} style={{ background: 'transparent', border: 0, cursor: 'pointer', color: 'var(--paper-2)', padding: 4 }}>
           {Icon.arrow(16, 'var(--paper-2)')}
         </button>
       </div>
 
-      <SettingsGroup title="Daily">
-        <SettingsRow tone="ember" icon={Icon.flame(18, 'var(--ember)')} label="Fire reminder" right="Evenings · 8:30 pm" onClick={() => go('settings-notifications')}/>
-        <SettingsRow tone="meadow" icon={Icon.leaf(18, 'var(--meadow)')} label="Weekly review" right="Sundays" onClick={() => go('weekly-digest')}/>
-        <SettingsRow tone="rose"   icon={Icon.bookmark(18, 'var(--rose)')} label="Bookmarks" right="14 saved" onClick={() => go('bookmarks')}/>
-      </SettingsGroup>
+      {/* Atmosphere */}
+      <section style={{ marginTop: 28 }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title" style={{ color: 'var(--hh-ecru-deep)' }}>Atmosphere</span>
+          <span className="hearth-dept-head-meta">applies live</span>
+        </div>
 
-      <SettingsGroup title="Atmosphere">
-        <SettingsRow tone="wisteria" icon={<LeafGlyph tone="wisteria" size={18}/>} label="Signature sprig" right="Oak" onClick={() => go('onboarding', { step: 4 })}/>
-        <SettingsRow tone="rose" icon={Icon.compass(18, 'var(--rose)')} label="Reading garden" right="6 interests" onClick={() => go('onboarding', { step: 3 })}/>
-        <SettingsRow tone="bloom" icon={Icon.wave(18, 'var(--bloom)')} label="Theme" right="Paper · Day"/>
-        <SettingsRow tone="citron" icon={Icon.book(18, 'var(--citron-deep)')} label="Reading list source" right="Curated"/>
-      </SettingsGroup>
+        {/* Signature sprig */}
+        <div style={{ marginTop: 18 }}>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
+            Signature sprig
+            {savingKey === 'flower' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
+            {savedKey === 'flower' && <span style={{ marginLeft: 10, color: 'var(--meadow-deep, var(--hh-green))' }}>saved</span>}
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+            {SPRIGS.map(s => {
+              const on = flower === s.k;
+              return (
+                <button key={s.k} onClick={() => updateOnboarding({ flower: s.k }, 'flower')}
+                  disabled={savingKey === 'flower'}
+                  style={{
+                    padding: '16px 10px', cursor: 'pointer', textAlign: 'center',
+                    background: on ? `var(--${s.tone}-tint)` : 'transparent',
+                    border: '1px solid ' + (on ? `var(--${s.tone})` : 'var(--paper-line)'),
+                    borderRadius: 12,
+                    transition: 'all 0.18s ease',
+                  }}>
+                  <LeafGlyph tone={s.tone} size={32} active={on}/>
+                  <div className="serif" style={{ fontSize: 14, fontStyle: 'italic', fontWeight: 380, marginTop: 6, color: on ? `var(--${s.tone}-deep)` : 'var(--paper-2)' }}>
+                    {s.label}
+                  </div>
+                  <div className="body-sm" style={{ fontSize: 11, marginTop: 2, color: 'var(--paper-mute)' }}>
+                    {s.meaning}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <SettingsGroup title="Your data">
-        <SettingsRow tone="fern" icon={Icon.book(18, 'var(--fern)')} label="Export entries" right="PDF · JSON"/>
-        <SettingsRow tone="bloom" icon={Icon.bookmark(18, 'var(--bloom)')} label="Privacy" right="E2E encrypted"/>
-        <SettingsRow tone="rose"  icon={Icon.flame(18, 'var(--rose)')} label="Delete account" danger/>
-      </SettingsGroup>
+        {/* When you tend the fire */}
+        <div style={{ marginTop: 24 }}>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
+            When you tend the fire
+            {savingKey === 'dailyTime' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
+            {savedKey === 'dailyTime' && <span style={{ marginLeft: 10, color: 'var(--meadow-deep, var(--hh-green))' }}>saved</span>}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {TIME_OPTIONS.map(t => {
+              const on = dailyTime === t.k;
+              return (
+                <button key={t.k} onClick={() => updateOnboarding({ dailyTime: t.k }, 'dailyTime')}
+                  disabled={savingKey === 'dailyTime'}
+                  style={{
+                    padding: '14px 16px', cursor: 'pointer', textAlign: 'left',
+                    background: on ? `var(--${t.tone}-tint)` : 'transparent',
+                    border: '1px solid ' + (on ? `var(--${t.tone})` : 'var(--paper-line)'),
+                    borderRadius: 10,
+                  }}>
+                  <div className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--hh-green)' }}>{t.label}</div>
+                  <div className="body-sm" style={{ marginTop: 2 }}>{t.sub}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <SettingsGroup title="About">
-        <SettingsRow icon={Icon.book(18, 'var(--paper-2)')} label="The science behind Hearth" onClick={() => go('article', { slug: 'science' })}/>
-        <SettingsRow icon={Icon.pen(18, 'var(--paper-2)')} label="Send a letter to the editor"/>
-        <SettingsRow icon={Icon.compass(18, 'var(--paper-2)')} label="Version" right="2.4 · Long November"/>
-      </SettingsGroup>
+        {/* What brought you here */}
+        <div style={{ marginTop: 24 }}>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
+            What brought you here
+            {savingKey === 'reasons' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
+            {savedKey === 'reasons' && <span style={{ marginLeft: 10, color: 'var(--meadow-deep, var(--hh-green))' }}>saved</span>}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {REASON_OPTIONS.map(r => {
+              const on = reasons.includes(r.k);
+              return (
+                <button key={r.k}
+                  onClick={() => updateOnboarding({ reasons: toggleInArray(reasons, r.k) }, 'reasons')}
+                  disabled={savingKey === 'reasons'}
+                  className={`chip ${on ? 'chip-ember' : ''}`}
+                  style={{ cursor: 'pointer', border: on ? undefined : '1px solid var(--paper-line)' }}>
+                  {r.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
-      <div style={{ marginTop: 22, textAlign: 'center' }}>
-        <button className="btn btn-ghost" onClick={() => go('onboarding', { step: 0 })}>Sign out</button>
-      </div>
-      <p className="mono" style={{ fontSize: 9, letterSpacing: '0.14em', textAlign: 'center', color: 'var(--paper-faint)', marginTop: 18 }}>
-        MADE SLOWLY · ON A QUIET STREET
+        {/* Reading garden */}
+        <div style={{ marginTop: 24 }}>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
+            Reading garden
+            {savingKey === 'interests' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
+            {savedKey === 'interests' && <span style={{ marginLeft: 10, color: 'var(--meadow-deep, var(--hh-green))' }}>saved</span>}
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {READING_GARDEN.map(g => {
+              const on = interests.includes(g.k);
+              return (
+                <button key={g.k}
+                  onClick={() => updateOnboarding({ interests: toggleInArray(interests, g.k) }, 'interests')}
+                  disabled={savingKey === 'interests'}
+                  className={`chip ${on ? `chip-${g.tone}` : ''}`}
+                  style={{ cursor: 'pointer', border: on ? undefined : '1px solid var(--paper-line)' }}>
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+          <p className="body-sm" style={{ marginTop: 10, color: 'var(--paper-mute)' }}>
+            What we'll search for when curating tomorrow's reading room.
+          </p>
+        </div>
+      </section>
+
+      {/* Daily / shortcuts */}
+      <section style={{ marginTop: 36 }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Where to find things</span>
+          <span className="hearth-dept-head-meta"></span>
+        </div>
+        <div style={{ marginTop: 4 }}>
+          <SettingsLink onClick={() => go('weekly-digest')} icon={Icon.wave(16, 'var(--hh-green)')}
+            label="Weekly review" right="A look back"/>
+          <SettingsLink onClick={() => go('bookmarks')} icon={Icon.bookmark(16, 'var(--hh-green)')}
+            label="The Nook" right={counts.bookmarks !== null ? `${counts.bookmarks} ${counts.bookmarks === 1 ? 'kept' : 'kept'}` : ''}/>
+          <SettingsLink onClick={() => go('journal-archive')} icon={Icon.pen(16, 'var(--hh-green)')}
+            label="Journal archive" right={counts.entries !== null ? `${counts.entries} ${counts.entries === 1 ? 'entry' : 'entries'}` : ''}/>
+        </div>
+      </section>
+
+      {/* Account */}
+      <section style={{ marginTop: 36 }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Account</span>
+          <span className="hearth-dept-head-meta"></span>
+        </div>
+        <div style={{ marginTop: 4 }}>
+          <SettingsLink onClick={() => go('settings-profile')} icon={Icon.more(16, 'var(--hh-green)')}
+            label="Edit profile" right={user.name || ''}/>
+          {onSignOut && (
+            <SettingsLink onClick={onSignOut} icon={Icon.back(16, 'var(--paper-mute)')}
+              label="Sign out"/>
+          )}
+        </div>
+      </section>
+
+      <p className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', textAlign: 'center', color: 'var(--paper-faint)', marginTop: 28, textTransform: 'uppercase' }}>
+        Made slowly · v0.1
       </p>
     </div>
+  );
+}
+
+function SettingsLink({ onClick, icon, label, right }) {
+  return (
+    <button onClick={onClick} style={{
+      width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+      padding: '16px 0', background: 'transparent', border: 0,
+      borderBottom: '1px solid var(--paper-line-2)',
+      cursor: 'pointer', textAlign: 'left',
+    }}>
+      <div style={{ width: 28, display: 'flex', justifyContent: 'center', flexShrink: 0 }}>{icon}</div>
+      <span className="serif" style={{ flex: 1, fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--hh-green)' }}>{label}</span>
+      {right && <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>{right}</span>}
+      {Icon.arrow(14, 'var(--paper-faint)')}
+    </button>
   );
 }
 
@@ -764,7 +993,83 @@ function ReminderRow({ tone, on, onChange, title, sub, time }) {
 // ─────────────────────────────────────────────────────────────
 // PROFILE
 // ─────────────────────────────────────────────────────────────
-function ProfileScreen({ go }) {
+function ProfileScreen({ go, user, refreshUser }) {
+  const [name, setName] = React.useState(user?.name || '');
+  const [editing, setEditing] = React.useState(false);
+  const [saving, setSaving] = React.useState(false);
+  const [stats, setStats] = React.useState({ entries: null, bookmarks: null, words: 0, joined: null });
+
+  React.useEffect(() => { setName(user?.name || ''); }, [user?.name]);
+
+  React.useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const [j, b] = await Promise.all([api.journal.list(), api.bookmarks.list()]);
+        if (cancelled) return;
+        const words = (j.entries || []).reduce((sum, e) => sum + (e.body || '').trim().split(/\s+/).filter(Boolean).length, 0);
+        setStats({
+          entries: j.entries?.length || 0,
+          bookmarks: b.bookmarks?.length || 0,
+          words,
+          joined: user.createdAt || null,
+        });
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
+  if (!user) {
+    return (
+      <div className="fade-in" style={{ padding: '40px 22px 32px', textAlign: 'center' }}>
+        <BackRow go={go} label="Settings" dest="settings"/>
+        <Eyebrow tone="rose" style={{ marginTop: 32 }}>Your hearth</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+          Sign in to find<br/><span style={{ fontStyle: 'italic' }}>your profile.</span>
+        </h1>
+        <button className="btn btn-ember" onClick={() => go('auth')}>Sign in</button>
+      </div>
+    );
+  }
+
+  async function saveName() {
+    if (saving) return;
+    if ((name.trim() || '') === (user.name || '')) {
+      setEditing(false);
+      return;
+    }
+    setSaving(true);
+    try {
+      await api.profile.update({ name: name.trim() });
+      await refreshUser();
+      setEditing(false);
+    } catch {
+      // surface inline if needed
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const onb = user.onboarding || {};
+  const flower = onb.flower || 'wisteria';
+  const sprig = SPRIGS.find(s => s.k === flower) || SPRIGS[0];
+  const reasonsText = (onb.reasons || []).join(', ') || 'Not yet set';
+  const interestsText = (onb.interests || [])
+    .map(k => READING_GARDEN.find(g => g.k === k)?.label || k)
+    .join(', ') || 'Not yet set';
+  const dailyTimeLabel = ({
+    morning: 'Mornings', afternoon: 'Afternoons', evening: 'Evenings',
+    both: 'Mornings and evenings', flexible: 'When you can',
+  })[onb.dailyTime || 'morning'];
+  const tz = (() => {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return ''; }
+  })();
+  const initial = (user.name || user.email || 'F')[0].toUpperCase();
+  const joined = stats.joined ? new Date(stats.joined).toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : '';
+
   return (
     <div className="fade-in" style={{ padding: '4px 22px 32px' }}>
       <BackRow go={go} label="Settings" dest="settings"/>
@@ -775,27 +1080,78 @@ function ProfileScreen({ go }) {
 
       <div style={{ textAlign: 'center', margin: '8px 0 24px' }}>
         <div style={{ width: 96, height: 96, borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--rose) 0%, var(--ember) 100%)',
+          background: `linear-gradient(135deg, var(--${sprig.tone}) 0%, var(--hh-ecru) 100%)`,
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-          color: 'var(--on-ember)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 38, fontWeight: 380,
-          boxShadow: '0 8px 30px rgba(168,74,46,0.25)' }}>
-          F
+          color: 'var(--hh-green)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 40, fontWeight: 380 }}>
+          {initial}
         </div>
+        {joined && (
+          <p className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginTop: 12 }}>
+            With Hearth since {joined}
+          </p>
+        )}
       </div>
 
-      <ProfileField label="Display name" value="Friend"/>
-      <ProfileField label="Email" value="friend@hearth.example"/>
-      <ProfileField label="Time zone" value="GMT · London"/>
-      <ProfileField label="Brought you here" value="Rest, gratitude, wonder" tone="meadow"/>
-      <ProfileField label="Signature sprig" value="Oak · endurance, deep roots" tone="wisteria"/>
-      <ProfileField label="Reading garden" value="Repair, ideas, place, food" tone="rose"/>
+      {/* Display name (editable) */}
+      <div style={{ borderTop: '1px solid var(--paper-line)', padding: '14px 0', borderBottom: '1px solid var(--paper-line-2)' }}>
+        <div className="mono" style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--paper-faint)' }}>Display name</div>
+        {editing ? (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
+            <input className="hearth-input" value={name} onChange={e => setName(e.target.value)}
+              autoFocus style={{ fontSize: 17, flex: 1 }}
+              onKeyDown={e => { if (e.key === 'Enter') saveName(); if (e.key === 'Escape') { setName(user.name || ''); setEditing(false); } }}/>
+            <button onClick={saveName} disabled={saving}
+              className="hearth-save-btn" data-saved={saving}>
+              <span>{saving ? 'Saving' : 'Save'}</span>
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 4 }}>
+            <div className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--hh-green)' }}>
+              {user.name || 'Friend'}
+            </div>
+            <button onClick={() => setEditing(true)} className="hearth-save-btn">
+              <span>Edit</span>
+            </button>
+          </div>
+        )}
+      </div>
 
-      <Eyebrow style={{ marginTop: 26, marginBottom: 10 }}>Your fire, in numbers</Eyebrow>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <Stat tone="ember"    big="23"  label="day fire"/>
-        <Stat tone="rose"     big="148" label="entries kept"/>
-        <Stat tone="meadow"   big="19h" label="of attention"/>
-        <Stat tone="wisteria" big="42"  label="rituals tended"/>
+      <ProfileField label="Email" value={user.email}/>
+      {tz && <ProfileField label="Time zone" value={tz}/>}
+      <ProfileField label="When you tend the fire" value={dailyTimeLabel}/>
+      <ProfileField label="Brought you here" value={reasonsText} tone="meadow"/>
+      <ProfileField label="Signature sprig" value={`${sprig.label} · ${sprig.meaning}`} tone={sprig.tone}/>
+      <ProfileField label="Reading garden" value={interestsText} tone="rose"/>
+
+      <button onClick={() => go('settings')} className="btn btn-ghost" style={{ marginTop: 18, width: '100%', justifyContent: 'center' }}>
+        Edit atmosphere in Settings
+      </button>
+
+      <div style={{ marginTop: 28 }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title" style={{ color: 'var(--hh-ecru-deep)' }}>Your fire, in numbers</span>
+          <span className="hearth-dept-head-meta"></span>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, marginTop: 14, borderTop: '1px solid var(--paper-line)' }}>
+          {[
+            { big: stats.entries === null ? '…' : String(stats.entries), label: stats.entries === 1 ? 'entry kept' : 'entries kept' },
+            { big: stats.bookmarks === null ? '…' : String(stats.bookmarks), label: stats.bookmarks === 1 ? 'in the Nook' : 'in the Nook' },
+            { big: stats.words ? `${(stats.words / 1000).toFixed(stats.words >= 10000 ? 0 : 1)}k` : '0', label: 'words written' },
+            { big: stats.entries !== null && stats.entries > 0 ? Math.max(1, Math.round(stats.words / 30)) + 'm' : '—', label: 'of attention' },
+          ].map((s, i) => (
+            <div key={i} style={{
+              padding: '20px 0',
+              borderBottom: '1px solid var(--paper-line)',
+              borderRight: i % 2 === 0 ? '1px solid var(--paper-line)' : 'none',
+              paddingLeft: i % 2 === 0 ? 0 : 18,
+              paddingRight: i % 2 === 0 ? 18 : 0,
+            }}>
+              <div className="serif" style={{ fontSize: 30, fontWeight: 350, letterSpacing: '-0.01em', color: 'var(--hh-green)', lineHeight: 1 }}>{s.big}</div>
+              <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginTop: 8 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -803,9 +1159,9 @@ function ProfileScreen({ go }) {
 
 function ProfileField({ label, value, tone }) {
   return (
-    <div className="card-soft" style={{ marginBottom: 10, padding: '12px 16px' }}>
-      <div className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase', color: tone ? `var(--${tone})` : 'var(--paper-faint)' }}>{label}</div>
-      <div className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, marginTop: 4 }}>{value}</div>
+    <div style={{ borderBottom: '1px solid var(--paper-line-2)', padding: '14px 0' }}>
+      <div className="mono" style={{ fontSize: 9, letterSpacing: '0.2em', textTransform: 'uppercase', color: tone ? `var(--${tone}-deep, var(--paper-faint))` : 'var(--paper-faint)' }}>{label}</div>
+      <div className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380, marginTop: 4, color: 'var(--hh-green)' }}>{value}</div>
     </div>
   );
 }
