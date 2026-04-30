@@ -44,7 +44,6 @@ function OnboardingScreen({ go, payload, onAuthed }) {
   const [reasons, setReasons] = React.useState(payload?.reasons || []);
   const [time, setTime] = React.useState(payload?.time || 'evening');
   const [interests, setInterests] = React.useState(payload?.interests || []);
-  const [flower, setFlower] = React.useState(payload?.flower || 'wisteria'); // key kept as 'flower' for tweak-state compat
   const [email, setEmail] = React.useState(payload?.email || '');
   const [password, setPassword] = React.useState(payload?.password || '');
   const [showPw, setShowPw] = React.useState(false);
@@ -60,8 +59,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     { k: 'wonder',   label: 'Notice more',          tone: 'meadow' },
   ];
 
-  const TOTAL = 7;
-  const state = { name, reasons, time, interests, flower, email, password };
+  const TOTAL = 6;
+  const state = { name, reasons, time, interests, email, password };
   const goStep = (n) => go('onboarding', { step: n, ...state });
 
   async function submitSignup() {
@@ -72,7 +71,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
         email: email.trim().toLowerCase(),
         password,
         name: name.trim(),
-        onboarding: { flower, reasons, interests, dailyTime: time },
+        onboarding: { reasons, interests, dailyTime: time },
       });
       setToken(token);
       if (typeof onAuthed === 'function') {
@@ -248,60 +247,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     );
   }
 
-  // step 4 — signature sprig (the delight)
+  // step 4 — when to write (was step 5 before sprig was retired)
   if (step === 4) {
-    const picked = SPRIGS.find(f => f.k === flower) || SPRIGS[0];
-    return (
-      <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
-        <OnboardingProgress n={4} total={TOTAL}/>
-        <Eyebrow tone={picked.tone} style={{ marginTop: 28 }}>Step four · A small delight</Eyebrow>
-        <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
-          Choose a<br/><span style={{ fontStyle: 'italic' }}>signature sprig.</span>
-        </h1>
-        <p className="body" style={{ margin: '0 0 18px' }}>
-          It will quietly appear throughout your hearth: beside your name, on lock-screen nudges, in the margin of every entry. Change it any season.
-        </p>
-
-        {/* preview vignette */}
-        <SprigPreview sprig={picked} name={name || 'Friend'}/>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 18 }}>
-          {SPRIGS.map(f => {
-            const on = flower === f.k;
-            return (
-              <button key={f.k} onClick={() => setFlower(f.k)}
-                style={{
-                  padding: '18px 10px', cursor: 'pointer', textAlign: 'center',
-                  background: on ? `var(--${f.tone}-tint)` : 'rgba(255,255,255,0.4)',
-                  border: '1px solid ' + (on ? `var(--${f.tone})` : 'var(--paper-line)'),
-                  borderRadius: 14, transition: 'all 0.2s ease',
-                  position: 'relative',
-                }}>
-                <LeafGlyph tone={f.tone} size={36} active={on}/>
-                <div className="serif" style={{ fontSize: 14, fontStyle: 'italic', fontWeight: 380, marginTop: 8, color: on ? `var(--${f.tone}-deep)` : 'var(--paper-2)' }}>
-                  {f.label}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <p className="serif" style={{ margin: '14px 0 0', fontSize: 14, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', textAlign: 'center' }}>
-          {picked.label} · <span style={{ color: `var(--${picked.tone}-deep)` }}>{picked.meaning}</span>
-        </p>
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-          <button className="btn btn-ghost" onClick={() => goStep(3)}>Back</button>
-          <button className={`btn btn-${picked.tone}`} onClick={() => goStep(5)}>
-            Continue {Icon.arrow(14, `var(--on-${picked.tone})`)}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // step 5 — when to write
-  if (step === 5) {
     const TIMES = [
       { k: 'morning',   label: 'Mornings',   sub: 'Set the day before it sets you', tone: 'rose' },
       { k: 'evening',   label: 'Evenings',   sub: 'Close the day before sleep',     tone: 'wisteria' },
@@ -310,8 +257,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     ];
     return (
       <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
-        <OnboardingProgress n={5} total={TOTAL}/>
-        <Eyebrow tone="wisteria" style={{ marginTop: 28 }}>Step five</Eyebrow>
+        <OnboardingProgress n={4} total={TOTAL}/>
+        <Eyebrow tone="wisteria" style={{ marginTop: 28 }}>Step four</Eyebrow>
         <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
           When do you<br/><span style={{ fontStyle: 'italic' }}>tend the fire?</span>
         </h1>
@@ -331,8 +278,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           })}
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
-          <button className="btn btn-ghost" onClick={() => goStep(4)}>Back</button>
-          <button className="btn btn-wisteria" onClick={() => goStep(6)}>
+          <button className="btn btn-ghost" onClick={() => goStep(3)}>Back</button>
+          <button className="btn btn-wisteria" onClick={() => goStep(5)}>
             Continue {Icon.arrow(14, 'var(--on-wisteria)')}
           </button>
         </div>
@@ -340,14 +287,14 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     );
   }
 
-  // step 6 — make a hearth (email + password)
-  if (step === 6) {
+  // step 5 — make a hearth (email + password)
+  if (step === 5) {
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const passwordOk = password.length >= 8;
     return (
       <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
-        <OnboardingProgress n={6} total={TOTAL}/>
-        <Eyebrow tone="ember" style={{ marginTop: 28 }}>Step six · Make a hearth</Eyebrow>
+        <OnboardingProgress n={5} total={TOTAL}/>
+        <Eyebrow tone="ember" style={{ marginTop: 28 }}>Step five · Make a hearth</Eyebrow>
         <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
           Keep your<br/><span style={{ fontStyle: 'italic' }}>fire safe.</span>
         </h1>
@@ -382,10 +329,10 @@ function OnboardingScreen({ go, payload, onAuthed }) {
         </p>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button className="btn btn-ghost" onClick={() => goStep(5)}>Back</button>
+          <button className="btn btn-ghost" onClick={() => goStep(4)}>Back</button>
           <button className="btn btn-ember" disabled={!emailOk || !passwordOk}
             style={{ opacity: (!emailOk || !passwordOk) ? 0.5 : 1 }}
-            onClick={() => goStep(7)}>
+            onClick={() => goStep(6)}>
             Continue {Icon.arrow(14, 'var(--on-ember)')}
           </button>
         </div>
@@ -393,38 +340,34 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     );
   }
 
-  // step 7 — light the fire (creates the account)
-  const pickedFlower = SPRIGS.find(f => f.k === flower) || SPRIGS[0];
+  // step 6 — light the fire (creates the account)
   return (
     <div className="fade-in" style={{ padding: '60px 28px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh', justifyContent: 'space-between' }}>
       <div>
-        <OnboardingProgress n={7} total={TOTAL}/>
+        <OnboardingProgress n={6} total={TOTAL}/>
         <div style={{ position: 'relative', width: 110, height: 110, margin: '40px auto 0' }}>
           <div className="flicker" style={{ position: 'absolute', inset: 0, borderRadius: '50%',
             background: 'radial-gradient(circle at 35% 30%, #f3c98a, #d4a574 40%, #6e431f 90%)',
             boxShadow: '0 0 80px rgba(212,165,116,0.6)' }}/>
-          <div style={{ position: 'absolute', right: -8, top: -6, transform: 'rotate(12deg)' }}>
-            <LeafGlyph tone={pickedFlower.tone} size={42} active/>
-          </div>
         </div>
         <h1 className="h-display serif" style={{ margin: '32px 0 10px', fontWeight: 350, fontStyle: 'italic' }}>
           Welcome, {name || 'friend'}.
         </h1>
-        <p className="body" style={{ maxWidth: 300, margin: '0 auto' }}>
-          Your fire is lit, your {pickedFlower.label.toLowerCase()} is in bloom, and your reading is on its way. Your first prompt is waiting on the home screen.
+        <p className="body" style={{ maxWidth: 320, margin: '0 auto' }}>
+          Your hearth is ready. The reading room is being curated, and your first prompt is waiting on the home screen.
         </p>
         {submitError && (
-          <p className="body-sm" style={{ marginTop: 22, color: 'var(--ember-deep, var(--ember))', maxWidth: 280, marginInline: 'auto' }}>
+          <p className="body-sm" style={{ marginTop: 22, color: 'var(--ember-deep, var(--ember))', maxWidth: 320, marginInline: 'auto' }}>
             {submitError}
             {' '}
-            <span onClick={() => goStep(6)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Edit account</span>.
+            <span onClick={() => goStep(5)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Edit account</span>.
           </p>
         )}
       </div>
-      <button className={`btn btn-${pickedFlower.tone}`} disabled={submitting}
+      <button className="btn btn-ember" disabled={submitting}
         style={{ width: '100%', maxWidth: 280, justifyContent: 'center', opacity: submitting ? 0.6 : 1 }}
         onClick={submitSignup}>
-        {submitting ? 'Lighting the fire…' : <>Step inside {Icon.arrow(14, `var(--on-${pickedFlower.tone})`)}</>}
+        {submitting ? 'Lighting the fire…' : <>Step inside {Icon.arrow(14, 'var(--on-ember)')}</>}
       </button>
     </div>
   );
@@ -656,7 +599,6 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
   }
 
   const onb = user.onboarding || {};
-  const flower = onb.flower || 'wisteria';
   const reasons = onb.reasons || [];
   const interests = onb.interests || [];
   const dailyTime = onb.dailyTime || 'morning';
@@ -693,7 +635,7 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
       {/* Account card */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0', borderTop: '2px solid var(--hh-green)', borderBottom: '1px solid var(--paper-line-2)' }}>
         <div style={{ width: 52, height: 52, borderRadius: '50%',
-          background: `linear-gradient(135deg, var(--${SPRIGS.find(s => s.k === flower)?.tone || 'wisteria'}) 0%, var(--hh-ecru) 100%)`,
+          background: 'linear-gradient(135deg, var(--hh-ecru) 0%, var(--hh-dogwood) 100%)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--hh-green)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 24, fontWeight: 380 }}>
           {initial}
@@ -716,41 +658,8 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
           <span className="hearth-dept-head-meta">applies live</span>
         </div>
 
-        {/* Signature sprig */}
-        <div style={{ marginTop: 18 }}>
-          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
-            Signature sprig
-            {savingKey === 'flower' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
-            {savedKey === 'flower' && <span style={{ marginLeft: 10, color: 'var(--meadow-deep, var(--hh-green))' }}>saved</span>}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            {SPRIGS.map(s => {
-              const on = flower === s.k;
-              return (
-                <button key={s.k} onClick={() => updateOnboarding({ flower: s.k }, 'flower')}
-                  disabled={savingKey === 'flower'}
-                  style={{
-                    padding: '16px 10px', cursor: 'pointer', textAlign: 'center',
-                    background: on ? `var(--${s.tone}-tint)` : 'transparent',
-                    border: '1px solid ' + (on ? `var(--${s.tone})` : 'var(--paper-line)'),
-                    borderRadius: 12,
-                    transition: 'all 0.18s ease',
-                  }}>
-                  <LeafGlyph tone={s.tone} size={32} active={on}/>
-                  <div className="serif" style={{ fontSize: 14, fontStyle: 'italic', fontWeight: 380, marginTop: 6, color: on ? `var(--${s.tone}-deep)` : 'var(--paper-2)' }}>
-                    {s.label}
-                  </div>
-                  <div className="body-sm" style={{ fontSize: 11, marginTop: 2, color: 'var(--paper-mute)' }}>
-                    {s.meaning}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* When you tend the fire */}
-        <div style={{ marginTop: 24 }}>
+        <div style={{ marginTop: 18 }}>
           <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
             When you tend the fire
             {savingKey === 'dailyTime' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
@@ -1054,8 +963,6 @@ function ProfileScreen({ go, user, refreshUser }) {
   }
 
   const onb = user.onboarding || {};
-  const flower = onb.flower || 'wisteria';
-  const sprig = SPRIGS.find(s => s.k === flower) || SPRIGS[0];
   const reasonsText = (onb.reasons || []).join(', ') || 'Not yet set';
   const interestsText = (onb.interests || [])
     .map(k => READING_GARDEN.find(g => g.k === k)?.label || k)
@@ -1080,7 +987,7 @@ function ProfileScreen({ go, user, refreshUser }) {
 
       <div style={{ textAlign: 'center', margin: '8px 0 24px' }}>
         <div style={{ width: 96, height: 96, borderRadius: '50%',
-          background: `linear-gradient(135deg, var(--${sprig.tone}) 0%, var(--hh-ecru) 100%)`,
+          background: 'linear-gradient(135deg, var(--hh-ecru) 0%, var(--hh-dogwood) 100%)',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--hh-green)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 40, fontWeight: 380 }}>
           {initial}
@@ -1121,7 +1028,6 @@ function ProfileScreen({ go, user, refreshUser }) {
       {tz && <ProfileField label="Time zone" value={tz}/>}
       <ProfileField label="When you tend the fire" value={dailyTimeLabel}/>
       <ProfileField label="Brought you here" value={reasonsText} tone="meadow"/>
-      <ProfileField label="Signature sprig" value={`${sprig.label} · ${sprig.meaning}`} tone={sprig.tone}/>
       <ProfileField label="Reading garden" value={interestsText} tone="rose"/>
 
       <button onClick={() => go('settings')} className="btn btn-ghost" style={{ marginTop: 18, width: '100%', justifyContent: 'center' }}>

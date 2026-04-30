@@ -23,12 +23,14 @@ import {
 } from './screens-4.jsx';
 import { api, getToken, clearToken } from './api.js';
 
+// Active tab uses ink (Midnight Green); inactive uses currentColor so the
+// CSS .hearth-tab.active rule still wins the color cascade.
 const TABS = [
   { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
-  { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, a ? 'var(--sig)' : 'currentColor'),       route: 'journal' },
-  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, a ? 'var(--sig)' : 'currentColor'),      route: 'attune' },
-  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, a ? 'var(--sig)' : 'currentColor'),      route: 'rituals' },
-  { key: 'nook',     label: 'Nook',     icon: (a) => Icon.bookmark(18, a ? 'var(--sig)' : 'currentColor'),  route: 'bookmarks' },
+  { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, 'currentColor'),       route: 'journal' },
+  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, 'currentColor'),      route: 'attune' },
+  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, 'currentColor'),      route: 'rituals' },
+  { key: 'nook',     label: 'Nook',     icon: (a) => Icon.bookmark(18, 'currentColor'),  route: 'bookmarks' },
 ];
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -38,31 +40,8 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "startingScreen": "home",
   "miniPlayer": false,
   "offline": false,
-  "flower": "wisteria",
   "transition": "lift"
 }/*EDITMODE-END*/;
-
-// Flower → tone mapping (mirrors FLOWERS in screens-3.jsx)
-const FLOWER_TONE = {
-  wisteria: 'wisteria',
-  rose: 'rose',
-  poppy: 'ember',
-  cornflower: 'bloom',
-  fern: 'fern',
-  mimosa: 'citron',
-  sage: 'dew',
-};
-
-function applyFlower(flowerKey) {
-  const tone = FLOWER_TONE[flowerKey] || 'wisteria';
-  const root = document.documentElement;
-  ['', '-soft', '-deep', '-bright', '-tint', '-line'].forEach(suf => {
-    const v = getComputedStyle(root).getPropertyValue(`--${tone}${suf}`).trim();
-    if (v) root.style.setProperty(`--sig${suf}`, v);
-  });
-  const onv = getComputedStyle(root).getPropertyValue(`--on-${tone}`).trim();
-  if (onv) root.style.setProperty('--on-sig', onv);
-}
 
 const FULLBLEED_ROUTES = new Set(['landing', 'onboarding', 'auth', 'streak-broken']);
 
@@ -115,16 +94,6 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Repaint --sig* whenever flower changes
-  useEffect(() => { applyFlower(values.flower); }, [values.flower]);
-
-  // When the signed-in user's saved flower changes (e.g. after sign-in or
-  // after they update it in Settings), pull it into the runtime atmosphere
-  // so the visual signature follows the user, not the device default.
-  useEffect(() => {
-    const f = user?.onboarding?.flower;
-    if (f && f !== values.flower) setTweak('flower', f);
-  }, [user?.onboarding?.flower]);
 
   function go(r, p = null) {
     setRoute(r);
@@ -272,13 +241,6 @@ function App() {
           options={[{value:'morning',label:'Morning'},{value:'afternoon',label:'Afternoon'},{value:'evening',label:'Evening'}]}
           onChange={v => setTweak('partOfDay', v)}/>
         <TweakSection label="Atmosphere"/>
-        <TweakSelect label="Signature sprig" value={values.flower}
-          options={[
-            {value:'wisteria',label:'Oak · endurance, deep roots'},
-            {value:'poppy',label:'Birch · beginnings, light'},
-            {value:'cornflower',label:'Pine · steadiness through cold'},
-          ]}
-          onChange={v => setTweak('flower', v)}/>
         <TweakToggle label="Paper grain" value={values.showGrain} onChange={v => setTweak('showGrain', v)}/>
         <TweakSelect label="Page transition" value={values.transition || 'lift'}
           options={[
