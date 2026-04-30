@@ -13,7 +13,7 @@ import {
   RitualDetailScreen, RitualBuilderScreen,
 } from './screens-2.jsx';
 import {
-  OnboardingScreen, AuthScreen, SettingsScreen,
+  OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen,
   NotificationsScreen, ProfileScreen,
 } from './screens-3.jsx';
 import {
@@ -64,7 +64,7 @@ function applyFlower(flowerKey) {
   if (onv) root.style.setProperty('--on-sig', onv);
 }
 
-const FULLBLEED_ROUTES = new Set(['onboarding', 'auth', 'streak-broken']);
+const FULLBLEED_ROUTES = new Set(['landing', 'onboarding', 'auth', 'streak-broken']);
 
 function App() {
   const [values, setTweak] = useTweaks(TWEAK_DEFAULTS);
@@ -94,15 +94,25 @@ function App() {
   function signOut() {
     clearToken();
     setUser(null);
-    go('onboarding', { step: 0 });
+    go('landing');
   }
 
-  // Restore session on mount
+  // Restore session on mount. If no token, send the visitor to the
+  // landing page rather than dumping them on the (empty) home feed.
   useEffect(() => {
     (async () => {
-      await refreshUser();
+      const token = getToken();
+      const restored = await refreshUser();
+      if (!token || !restored) {
+        // Only redirect to landing if the route looks like a default
+        // home destination. Respect direct nav to onboarding/auth.
+        if (route === 'home' || route === values.startingScreen) {
+          setRoute('landing');
+        }
+      }
       setAuthChecked(true);
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Repaint --sig* whenever flower changes
@@ -145,7 +155,8 @@ function App() {
 
   const screenContent = (
     <>
-      {/* Onboarding & auth */}
+      {/* Landing, onboarding, auth */}
+      {route === 'landing' && <LandingScreen go={go}/>}
       {route === 'onboarding' && <OnboardingScreen go={go} payload={payload} onAuthed={refreshUser}/>}
       {route === 'auth' && <AuthScreen go={go} onAuthed={refreshUser}/>}
 
@@ -229,9 +240,13 @@ function App() {
           {values.offline && !isFullBleed && <OfflineBanner/>}
 
           <div id="hearth-scroll" className={`hearth-scroll trans-${values.transition || 'lift'}`} key={route}>
-            <div className={isFullBleed ? 'hearth-fullbleed' : 'hearth-content'}>
-              {screenContent}
-            </div>
+            {route === 'landing' ? (
+              screenContent
+            ) : (
+              <div className={isFullBleed ? 'hearth-fullbleed' : 'hearth-content'}>
+                {screenContent}
+              </div>
+            )}
           </div>
 
           {!isFullBleed && playerSong && <MiniPlayer song={playerSong} onClose={() => setTweak('miniPlayer', false)} onOpen={() => go('attune-history')}/>}

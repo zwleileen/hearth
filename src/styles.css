@@ -422,6 +422,233 @@ html, body {
   margin: 0 auto;
 }
 
+/* ─── Landing page ───────────────────────────────────
+   Editorial single-column layout. Each feature is a full-width
+   color block in one of the four feature accents (ecru, blue,
+   dogwood, green). Mobile-first; spacing scales up on desktop. */
+.hearth-landing {
+  width: 100%;
+  background: var(--hh-lace);
+  color: var(--hh-green);
+}
+
+.hearth-landing-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 22px;
+  background: rgba(249, 244, 230, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--paper-line-2);
+}
+.hearth-landing-mark {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-style: italic;
+  font-weight: 380;
+  letter-spacing: -0.005em;
+  color: var(--hh-green);
+}
+.hearth-landing-link {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hh-green);
+  background: transparent;
+  border: 0;
+  padding: 8px 14px;
+  border: 1px solid var(--hh-green);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.hearth-landing-link:hover {
+  background: var(--hh-green);
+  color: var(--hh-lace);
+}
+
+/* Hero */
+.hearth-landing-hero {
+  background: var(--hh-lace);
+  padding: 64px 22px 80px;
+}
+@media (min-width: 720px) {
+  .hearth-landing-hero { padding: 96px 22px 120px; }
+}
+.hearth-landing-hero-inner,
+.hearth-landing-feature-inner {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+}
+.hearth-landing-kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
+  font-weight: 500;
+  margin: 0 0 28px;
+}
+.hearth-landing-h1 {
+  font-family: var(--serif);
+  font-size: 44px;
+  line-height: 1.04;
+  letter-spacing: -0.02em;
+  font-weight: 340;
+  color: var(--hh-green);
+  margin: 0 0 28px;
+}
+@media (min-width: 720px) {
+  .hearth-landing-h1 { font-size: 64px; }
+}
+@media (min-width: 1100px) {
+  .hearth-landing-h1 { font-size: 76px; }
+}
+.hearth-landing-sub {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1.5;
+  font-weight: 380;
+  color: var(--paper-2);
+  max-width: 580px;
+  margin: 0 0 36px;
+}
+@media (min-width: 720px) {
+  .hearth-landing-sub { font-size: 21px; }
+}
+.hearth-landing-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+.hearth-landing-fineprint {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
+  margin: 0;
+}
+
+/* Feature blocks */
+.hearth-landing-feature {
+  padding: 72px 22px;
+}
+@media (min-width: 720px) {
+  .hearth-landing-feature { padding: 112px 22px; }
+}
+.hearth-landing-feature-kicker {
+  font-size: 10.5px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin: 0 0 22px;
+}
+.hearth-landing-feature-h {
+  font-family: var(--serif);
+  font-size: 38px;
+  line-height: 1.05;
+  letter-spacing: -0.015em;
+  font-weight: 340;
+  color: var(--hh-green);
+  margin: 0 0 24px;
+}
+@media (min-width: 720px) {
+  .hearth-landing-feature-h { font-size: 52px; }
+}
+.hearth-landing-feature-body {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 1.5;
+  font-weight: 380;
+  color: var(--hh-green);
+  max-width: 580px;
+  margin: 0;
+}
+@media (min-width: 720px) {
+  .hearth-landing-feature-body { font-size: 19px; }
+}
+.hearth-landing-prompt-card {
+  margin-top: 36px;
+  padding: 28px;
+  background: var(--hh-lace);
+  border-left: 3px solid var(--hh-green);
+  max-width: 580px;
+}
+
+/* Research section */
+.hearth-landing-research {
+  padding: 72px 22px;
+  background: var(--hh-isabel);
+}
+@media (min-width: 720px) {
+  .hearth-landing-research { padding: 112px 22px; }
+}
+.hearth-landing-lineages {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--paper-line);
+  max-width: 580px;
+}
+.hearth-landing-lineages li {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--paper-line-2);
+}
+@media (min-width: 600px) {
+  .hearth-landing-lineages li {
+    grid-template-columns: 200px 1fr;
+    gap: 16px;
+    align-items: baseline;
+  }
+}
+.hearth-landing-lineages .mono {
+  font-size: 9.5px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
+}
+.hearth-landing-lineages .serif {
+  font-size: 16px;
+  font-style: italic;
+  font-weight: 400;
+  color: var(--hh-green);
+  line-height: 1.4;
+}
+
+/* Final dark CTA */
+.hearth-landing-final {
+  padding: 96px 22px;
+  background: var(--hh-green);
+  color: var(--hh-lace);
+}
+@media (min-width: 720px) {
+  .hearth-landing-final { padding: 128px 22px; }
+}
+
+/* Footer */
+.hearth-landing-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 22px;
+  background: var(--hh-lace);
+  border-top: 1px solid var(--paper-line-2);
+}
+.hearth-landing-footer .mono {
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--paper-mute);
+}
+
 /* Editorial feed grid (Discover items on Home).
    1 column on phones, 2 on small tablets and up. Bigger vertical gap
    between rows so each piece has room to breathe. */

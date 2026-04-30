@@ -1175,4 +1175,174 @@ function Stat({ tone, big, label }) {
   );
 }
 
-export { OnboardingScreen, AuthScreen, SettingsScreen, NotificationsScreen, ProfileScreen, LeafGlyph, FlowerGlyph, READING_GARDEN, SPRIGS, FLOWERS };
+// ─────────────────────────────────────────────────────────────
+// LANDING — the front door for not-yet-signed-in visitors.
+// Editorial, single column, color blocks rotating ecru / blue /
+// dogwood for the feature spreads, with a final dark green CTA.
+// Mirrors the Hearth voice: small, considered, hospitable.
+// ─────────────────────────────────────────────────────────────
+function LandingScreen({ go }) {
+  return (
+    <div className="hearth-landing fade-in">
+      {/* Top bar: wordmark + sign-in shortcut */}
+      <header className="hearth-landing-top">
+        <div className="hearth-landing-mark">hearth</div>
+        <button onClick={() => go('auth')} className="hearth-landing-link">Sign in</button>
+      </header>
+
+      {/* Hero — editorial, restrained */}
+      <section className="hearth-landing-hero">
+        <div className="hearth-landing-hero-inner">
+          <p className="mono hearth-landing-kicker">A personal app · Made slowly</p>
+          <h1 className="serif hearth-landing-h1">
+            A small, quiet place<br/>
+            <span style={{ fontStyle: 'italic' }}>to return to.</span>
+          </h1>
+          <p className="serif hearth-landing-sub">
+            Hearth is a journal, a daily reading room, and a mood-aware companion
+            for what to read, what to listen to, and what to write. Built on
+            research. Tuned for you. Kept private.
+          </p>
+          <div className="hearth-landing-cta-row">
+            <button className="btn btn-ember" onClick={() => go('onboarding', { step: 0 })}>
+              Begin your hearth {Icon.arrow(14, 'var(--on-ember)')}
+            </button>
+            <button className="btn btn-ghost" onClick={() => go('auth')}>
+              I have an account
+            </button>
+          </div>
+          <p className="mono hearth-landing-fineprint">
+            Private by default · No ads · Never used to train models
+          </p>
+        </div>
+      </section>
+
+      {/* Feature 1 · Journal — Ecru block */}
+      <section className="hearth-landing-feature" style={{ background: 'var(--hh-ecru)' }}>
+        <div className="hearth-landing-feature-inner">
+          <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
+            № 01 · The Journal
+          </p>
+          <h2 className="serif hearth-landing-feature-h">
+            Write yourself<br/><span style={{ fontStyle: 'italic' }}>warm.</span>
+          </h2>
+          <p className="serif hearth-landing-feature-body">
+            Five prompts for the morning, five for the evening. Drawn from the most
+            replicated work in positive and clinical psychology: Seligman, Pennebaker,
+            Neff, and King. After writing, name how the page sat with you. The arc
+            of the week shows up gently, on Sunday.
+          </p>
+          <div className="hearth-landing-prompt-card">
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>
+              Seligman, 2005
+            </div>
+            <p className="serif" style={{ margin: '8px 0 0', fontSize: 21, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.3, color: 'var(--hh-green)' }}>
+              Three things that went well today, however small. For each, why did it
+              go well? What part did you play?
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Feature 2 · Reading room — Carolina Blue block */}
+      <section className="hearth-landing-feature" style={{ background: 'var(--hh-blue)' }}>
+        <div className="hearth-landing-feature-inner">
+          <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
+            № 02 · The Reading Room
+          </p>
+          <h2 className="serif hearth-landing-feature-h">
+            A small daily issue,<br/><span style={{ fontStyle: 'italic' }}>gathered for you.</span>
+          </h2>
+          <p className="serif hearth-landing-feature-body">
+            Each morning, an editor curates a short table of long-form essays, books
+            worth knowing, poems worth keeping, and slow news. Tuned to the interests
+            you choose at the start. Never more than a handful a day. Save what you
+            love to the Nook, your private shelf.
+          </p>
+        </div>
+      </section>
+
+      {/* Feature 3 · Attune — Pale Dogwood block */}
+      <section className="hearth-landing-feature" style={{ background: 'var(--hh-dogwood)' }}>
+        <div className="hearth-landing-feature-inner">
+          <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
+            № 03 · Attune
+          </p>
+          <h2 className="serif hearth-landing-feature-h">
+            For the texture<br/><span style={{ fontStyle: 'italic' }}>of the mood.</span>
+          </h2>
+          <p className="serif hearth-landing-feature-body">
+            Tell Hearth how you're feeling, in your own words. It returns two songs,
+            two books, and two poems chosen for the texture of the mood, each with a
+            short reason grounded in research on music, reading, and emotion. Save
+            what fits.
+          </p>
+        </div>
+      </section>
+
+      {/* Research credibility — quiet cream */}
+      <section className="hearth-landing-research">
+        <div className="hearth-landing-feature-inner">
+          <p className="mono hearth-landing-feature-kicker">Why we make Hearth</p>
+          <h2 className="serif hearth-landing-feature-h" style={{ marginBottom: 20 }}>
+            Built on evidence,<br/><span style={{ fontStyle: 'italic' }}>not advice.</span>
+          </h2>
+          <p className="serif hearth-landing-feature-body" style={{ marginBottom: 26 }}>
+            Every prompt and every recommendation is drawn from the most replicated work
+            in positive psychology, expressive writing, and music and mood research. We
+            don't claim novelty. We curate replication.
+          </p>
+          <ul className="hearth-landing-lineages">
+            <li><span className="mono">Positive psychology</span><span className="serif">Seligman · King · Lyubomirsky · Emmons</span></li>
+            <li><span className="mono">Expressive writing</span><span className="serif">Pennebaker · Kross</span></li>
+            <li><span className="mono">Goal setting</span><span className="serif">Gollwitzer · Oettingen (WOOP)</span></li>
+            <li><span className="mono">Emotion regulation</span><span className="serif">Gross · Neff · Bryant &amp; Veroff</span></li>
+            <li><span className="mono">Music and mood</span><span className="serif">Saarikallio · Sachs · North &amp; Hargreaves</span></li>
+            <li><span className="mono">Reading and wellbeing</span><span className="serif">Mar · Billington · Croom</span></li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Final CTA — Midnight Green dark block */}
+      <section className="hearth-landing-final">
+        <div className="hearth-landing-feature-inner" style={{ textAlign: 'center' }}>
+          <p className="mono" style={{ fontSize: 10.5, letterSpacing: '0.28em', color: 'rgba(249,244,230,0.6)', textTransform: 'uppercase', marginBottom: 18 }}>
+            When the day asks something of you
+          </p>
+          <h2 className="serif" style={{
+            margin: '0 auto 24px', maxWidth: 580,
+            fontSize: 38, lineHeight: 1.1, fontWeight: 340, letterSpacing: '-0.01em',
+            color: 'var(--hh-lace)',
+          }}>
+            The page is here<br/>
+            <span style={{ fontStyle: 'italic' }}>when you are.</span>
+          </h2>
+          <p className="serif" style={{
+            margin: '0 auto 28px', maxWidth: 460,
+            fontSize: 17, lineHeight: 1.55, fontWeight: 380,
+            color: 'rgba(249,244,230,0.85)',
+          }}>
+            Five minutes is enough. Begin a small daily practice. Hearth will keep
+            what you write and what you save, gently, for as long as you want it to.
+          </p>
+          <button className="btn btn-ember" onClick={() => go('onboarding', { step: 0 })} style={{ marginBottom: 16 }}>
+            Begin your hearth {Icon.arrow(14, 'var(--on-ember)')}
+          </button>
+          <p className="mono" style={{ fontSize: 10, letterSpacing: '0.18em', color: 'rgba(249,244,230,0.6)', textTransform: 'uppercase', margin: 0 }}>
+            Already here?{' '}
+            <span onClick={() => go('auth')} style={{ color: 'var(--hh-ecru)', cursor: 'pointer', textDecoration: 'underline' }}>
+              Sign in
+            </span>
+          </p>
+        </div>
+      </section>
+
+      <footer className="hearth-landing-footer">
+        <span className="mono">Hearth · Made slowly</span>
+        <span className="mono">v0.1</span>
+      </footer>
+    </div>
+  );
+}
+
+export { OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, NotificationsScreen, ProfileScreen, LeafGlyph, FlowerGlyph, READING_GARDEN, SPRIGS, FLOWERS };
