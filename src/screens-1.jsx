@@ -93,6 +93,28 @@ function HomeScreen({ go, user }) {
   const [items, setItems] = useState1(null);
   const [issueNote, setIssueNote] = useState1('');
   const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
+  const [savedFeed, setSavedFeed] = React.useState({}); // url -> true
+
+  async function saveDiscoverItem(item) {
+    const key = item.url || `${item.kind}:${item.title}`;
+    if (savedFeed[key]) return;
+    try {
+      const kind = ['article', 'essay', 'news'].includes(item.kind) ? 'article' : item.kind;
+      await api.bookmarks.create({
+        kind,
+        title: item.title,
+        source: item.source || '',
+        url: item.url || '',
+        excerpt: item.dek || '',
+        meta: { savedFrom: 'home', readTime: item.readTime, image: item.image },
+      });
+      setSavedFeed(prev => ({ ...prev, [key]: true }));
+    } catch (err) {
+      if (err.status === 409) {
+        setSavedFeed(prev => ({ ...prev, [key]: true }));
+      }
+    }
+  }
 
   useEffect1(() => {
     let cancelled = false;
@@ -209,79 +231,108 @@ function HomeScreen({ go, user }) {
           </div>
         )}
 
-        {feedState === 'ready' && hero && (
-          <article onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
-            style={{ cursor: hero.url ? 'pointer' : 'default', marginTop: 22 }}>
-            {hero.image ? (
-              <img
-                src={hero.image}
-                alt=""
-                referrerPolicy="no-referrer"
-                loading="lazy"
-                style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
-                onError={(e) => { e.currentTarget.style.display = 'none'; }}
-              />
-            ) : (
-              <Rule/>
-            )}
-            <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center' }}>
-              <Kicker accent="mute">{hero.kind}</Kicker>
-              {hero.source && (
-                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                  · {hero.source}
-                </span>
-              )}
-              {hero.readTime && (
-                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {hero.readTime}</span>
-              )}
-            </div>
-            <Headline size="title" italic style={{ marginTop: 12 }}>
-              {hero.title}
-            </Headline>
-            <p className="body" style={{ margin: '12px 0 0', maxWidth: 540 }}>
-              {hero.dek}
-            </p>
-          </article>
-        )}
+        {feedState === 'ready' && hero && (() => {
+          const heroKey = hero.url || `${hero.kind}:${hero.title}`;
+          const heroSaved = savedFeed[heroKey];
+          return (
+            <article style={{ marginTop: 22 }}>
+              <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
+                style={{ cursor: hero.url ? 'pointer' : 'default' }}>
+                {hero.image ? (
+                  <img
+                    src={hero.image}
+                    alt=""
+                    referrerPolicy="no-referrer"
+                    loading="lazy"
+                    style={{ width: '100%', height: 280, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                ) : (
+                  <Rule/>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 14, marginTop: 16, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <Kicker accent="mute">{hero.kind}</Kicker>
+                  {hero.source && (
+                    <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                      · {hero.source}
+                    </span>
+                  )}
+                  {hero.readTime && (
+                    <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {hero.readTime}</span>
+                  )}
+                </div>
+                <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(hero); }}
+                  disabled={heroSaved} className="hearth-save-btn" data-saved={heroSaved}>
+                  {Icon.bookmark(12, 'currentColor')}
+                  <span>{heroSaved ? 'Saved' : 'Save'}</span>
+                </button>
+              </div>
+              <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
+                style={{ cursor: hero.url ? 'pointer' : 'default' }}>
+                <Headline size="title" italic style={{ marginTop: 12 }}>
+                  {hero.title}
+                </Headline>
+                <p className="body" style={{ margin: '12px 0 0', maxWidth: 540 }}>
+                  {hero.dek}
+                </p>
+              </div>
+            </article>
+          );
+        })()}
 
         {feedState === 'ready' && rest.length > 0 && (
           <>
             <div style={{ marginTop: 36 }}><Rule/></div>
             <div className="hearth-feed-grid" style={{ marginTop: 22 }}>
-              {rest.map((it, i) => (
-                <article key={i} onClick={() => it.url && window.open(it.url, '_blank', 'noopener,noreferrer')}
-                  style={{ cursor: it.url ? 'pointer' : 'default' }}>
-                  {it.image ? (
-                    <img
-                      src={it.image}
-                      alt=""
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                      style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
-                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                    />
-                  ) : null}
-                  <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <Kicker accent="mute" style={{ fontSize: 9 }}>{it.kind}</Kicker>
-                    {it.source && (
-                      <span className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                        · {it.source}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="serif" style={{ margin: '8px 0 6px', fontSize: 18, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>
-                    {it.title}
-                  </h3>
-                  <p className="body-sm" style={{ margin: 0, lineHeight: 1.5 }}>
-                    {it.dek}
-                  </p>
-                  {it.readTime && (
-                    <div className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginTop: 10 }}>
-                      {it.readTime}
+              {rest.map((it, i) => {
+                const itemKey = it.url || `${it.kind}:${it.title}:${i}`;
+                const itemSaved = savedFeed[itemKey];
+                return (
+                  <article key={itemKey} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div onClick={() => it.url && window.open(it.url, '_blank', 'noopener,noreferrer')}
+                      style={{ cursor: it.url ? 'pointer' : 'default' }}>
+                      {it.image ? (
+                        <img
+                          src={it.image}
+                          alt=""
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
+                          style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : null}
+                      <div style={{ display: 'flex', gap: 10, marginTop: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <Kicker accent="mute" style={{ fontSize: 9 }}>{it.kind}</Kicker>
+                        {it.source && (
+                          <span className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                            · {it.source}
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="serif" style={{ margin: '8px 0 6px', fontSize: 18, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>
+                        {it.title}
+                      </h3>
+                      <p className="body-sm" style={{ margin: 0, lineHeight: 1.5 }}>
+                        {it.dek}
+                      </p>
                     </div>
-                  )}
-                </article>
-              ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12, gap: 10 }}>
+                      {it.readTime ? (
+                        <div className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                          {it.readTime}
+                        </div>
+                      ) : <div/>}
+                      <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(it); }}
+                        disabled={itemSaved} className="hearth-save-btn" data-saved={itemSaved}>
+                        {Icon.bookmark(11, 'currentColor')}
+                        <span>{itemSaved ? 'Saved' : 'Save'}</span>
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </>
         )}

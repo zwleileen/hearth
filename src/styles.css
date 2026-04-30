@@ -435,6 +435,43 @@ html, body {
   }
 }
 
+/* Save-to-Nook button — appears on Attune items, Home Discover items.
+   Editorial register: small, mono caps, hairline. Two visual states:
+   default (ink) and saved (muted, lower-weight). */
+.hearth-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--paper-line);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--hh-green);
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+.hearth-save-btn:hover {
+  background: var(--hh-green);
+  color: var(--hh-lace);
+  border-color: var(--hh-green);
+}
+.hearth-save-btn[data-saved="true"] {
+  background: transparent;
+  color: var(--paper-mute);
+  border-color: var(--paper-line-2);
+  cursor: default;
+}
+.hearth-save-btn[data-saved="true"]:hover {
+  background: transparent;
+  color: var(--paper-mute);
+  border-color: var(--paper-line-2);
+}
+
 /* ─── Page transitions (run on route change via key={route}) ─
    Steady state is fully visible. Animations are forwards-only fade-ins
    on a slight Y offset; if the document timeline is paused (e.g. hidden

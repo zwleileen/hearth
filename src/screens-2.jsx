@@ -208,6 +208,7 @@ function AttuneScreen({ go }) {
   const [reading, setReading] = useState2(null);
   const [busy, setBusy] = useState2(false);
   const [error, setError] = useState2(null);
+  const [saved, setSaved] = React.useState({}); // saveKey -> true
 
   async function generateReading() {
     if (busy) return;
@@ -216,6 +217,7 @@ function AttuneScreen({ go }) {
     try {
       const data = await api.attune.recommend(text.trim());
       setReading(data);
+      setSaved({});
     } catch (err) {
       if (err.status === 401) {
         setError({ kind: 'unauthed' });
@@ -226,6 +228,24 @@ function AttuneScreen({ go }) {
       }
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function saveItem(kind, item, key) {
+    if (saved[key]) return;
+    try {
+      await api.bookmarks.create({
+        kind,
+        title: item.title,
+        source: item.artist || item.author || item.poet || '',
+        excerpt: item.why || '',
+        meta: { savedFrom: 'attune' },
+      });
+      setSaved(prev => ({ ...prev, [key]: true }));
+    } catch (err) {
+      if (err.status === 409) {
+        setSaved(prev => ({ ...prev, [key]: true }));
+      }
     }
   }
 
@@ -265,25 +285,36 @@ function AttuneScreen({ go }) {
         <ColorBlock accent="dogwood" style={{ marginTop: 40 }}>
           <Kicker>Songs · for your ears, now</Kicker>
           <div style={{ marginTop: 18 }}>
-            {(reading.songs || []).map((s, i) => (
-              <div key={i} style={{
-                paddingTop: i === 0 ? 0 : 22,
-                paddingBottom: 22,
-                borderBottom: i < (reading.songs.length - 1) ? '1px solid rgba(31, 64, 69, 0.18)' : 0,
-              }}>
-                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                  {String(i + 1).padStart(2, '0')}
+            {(reading.songs || []).map((s, i) => {
+              const key = `song-${i}-${s.title}`;
+              const isSaved = saved[key];
+              return (
+                <div key={key} style={{
+                  paddingTop: i === 0 ? 0 : 22,
+                  paddingBottom: 22,
+                  borderBottom: i < (reading.songs.length - 1) ? '1px solid rgba(31, 64, 69, 0.18)' : 0,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <button onClick={() => saveItem('song', s, key)} disabled={isSaved}
+                      className="hearth-save-btn" data-saved={isSaved}>
+                      {Icon.bookmark(12, 'currentColor')}
+                      <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
+                    </button>
+                  </div>
+                  <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                    {s.title}
+                  </Headline>
+                  <p className="serif" style={{
+                    margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                    color: 'var(--hh-green-3)', fontWeight: 380,
+                  }}>{s.artist}</p>
+                  <p className="body" style={{ margin: 0, maxWidth: 540 }}>{s.why}</p>
                 </div>
-                <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
-                  {s.title}
-                </Headline>
-                <p className="serif" style={{
-                  margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
-                  color: 'var(--hh-green-3)', fontWeight: 380,
-                }}>{s.artist}</p>
-                <p className="body" style={{ margin: 0, maxWidth: 540 }}>{s.why}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ColorBlock>
 
@@ -291,25 +322,36 @@ function AttuneScreen({ go }) {
         <section style={{ padding: '40px 22px 0' }}>
           <Kicker>Books · for your hands, later</Kicker>
           <div style={{ marginTop: 18 }}>
-            {(reading.books || []).map((b, i) => (
-              <div key={i} style={{
-                paddingTop: i === 0 ? 0 : 22,
-                paddingBottom: 22,
-                borderBottom: i < (reading.books.length - 1) ? '1px solid var(--paper-line-2)' : 0,
-              }}>
-                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                  {String(i + 1).padStart(2, '0')}
+            {(reading.books || []).map((b, i) => {
+              const key = `book-${i}-${b.title}`;
+              const isSaved = saved[key];
+              return (
+                <div key={key} style={{
+                  paddingTop: i === 0 ? 0 : 22,
+                  paddingBottom: 22,
+                  borderBottom: i < (reading.books.length - 1) ? '1px solid var(--paper-line-2)' : 0,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <button onClick={() => saveItem('book', b, key)} disabled={isSaved}
+                      className="hearth-save-btn" data-saved={isSaved}>
+                      {Icon.bookmark(12, 'currentColor')}
+                      <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
+                    </button>
+                  </div>
+                  <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                    {b.title}
+                  </Headline>
+                  <p className="serif" style={{
+                    margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                    color: 'var(--hh-green-3)', fontWeight: 380,
+                  }}>{b.author}</p>
+                  <p className="body" style={{ margin: 0, maxWidth: 540 }}>{b.why}</p>
                 </div>
-                <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
-                  {b.title}
-                </Headline>
-                <p className="serif" style={{
-                  margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
-                  color: 'var(--hh-green-3)', fontWeight: 380,
-                }}>{b.author}</p>
-                <p className="body" style={{ margin: 0, maxWidth: 540 }}>{b.why}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 
@@ -317,25 +359,36 @@ function AttuneScreen({ go }) {
         <section style={{ padding: '24px 22px 0' }}>
           <Kicker>Poems · for the page</Kicker>
           <div style={{ marginTop: 18 }}>
-            {(reading.poems || []).map((p, i) => (
-              <div key={i} style={{
-                paddingTop: i === 0 ? 0 : 22,
-                paddingBottom: 22,
-                borderBottom: i < (reading.poems.length - 1) ? '1px solid var(--paper-line-2)' : 0,
-              }}>
-                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                  {String(i + 1).padStart(2, '0')}
+            {(reading.poems || []).map((p, i) => {
+              const key = `poem-${i}-${p.title}`;
+              const isSaved = saved[key];
+              return (
+                <div key={key} style={{
+                  paddingTop: i === 0 ? 0 : 22,
+                  paddingBottom: 22,
+                  borderBottom: i < (reading.poems.length - 1) ? '1px solid var(--paper-line-2)' : 0,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <button onClick={() => saveItem('poem', p, key)} disabled={isSaved}
+                      className="hearth-save-btn" data-saved={isSaved}>
+                      {Icon.bookmark(12, 'currentColor')}
+                      <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
+                    </button>
+                  </div>
+                  <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                    {p.title}
+                  </Headline>
+                  <p className="serif" style={{
+                    margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                    color: 'var(--hh-green-3)', fontWeight: 380,
+                  }}>{p.poet}</p>
+                  <p className="body" style={{ margin: 0, maxWidth: 540 }}>{p.why}</p>
                 </div>
-                <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
-                  {p.title}
-                </Headline>
-                <p className="serif" style={{
-                  margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
-                  color: 'var(--hh-green-3)', fontWeight: 380,
-                }}>{p.poet}</p>
-                <p className="body" style={{ margin: 0, maxWidth: 540 }}>{p.why}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </section>
 

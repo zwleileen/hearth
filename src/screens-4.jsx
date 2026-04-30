@@ -411,43 +411,64 @@ function BookmarksScreen({ go }) {
     return () => { cancelled = true; };
   }, []);
 
+  async function removeBookmark(id) {
+    try {
+      await api.bookmarks.remove(id);
+      setBookmarks(prev => (prev || []).filter(b => b.id !== id));
+    } catch {
+      // surface inline later if useful
+    }
+  }
+
   if (loadError && loadError.status === 401) {
     return (
       <div className="fade-in" style={{ padding: '40px 28px 32px', textAlign: 'center' }}>
-        <BackRow go={go} label="Settings" dest="settings"/>
-        <Eyebrow tone="rose" style={{ marginTop: 32 }}>Sign in</Eyebrow>
+        <Eyebrow tone="rose" style={{ marginTop: 32 }}>The Nook</Eyebrow>
         <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
-          Your shelf<br/><span style={{ fontStyle: 'italic' }}>is kept private.</span>
+          A quiet shelf,<br/><span style={{ fontStyle: 'italic' }}>kept private.</span>
         </h1>
-        <p className="body" style={{ maxWidth: 280, margin: '0 auto 22px' }}>
-          Sign in to see what you've saved.
+        <p className="body" style={{ maxWidth: 320, margin: '0 auto 22px' }}>
+          Sign in to see the songs, books, poems, and articles you've saved.
         </p>
         <button className="btn btn-ember" onClick={() => go('auth')}>Sign in</button>
       </div>
     );
   }
 
+  const KIND_LABEL = { article: 'Articles', essay: 'Essays', poem: 'Poems', book: 'Books', news: 'News', song: 'Songs' };
   const KIND_TONE = { article: 'ember', essay: 'wisteria', poem: 'rose', book: 'meadow', news: 'citron', song: 'bloom' };
+  const KIND_ORDER = ['song', 'poem', 'book', 'essay', 'article', 'news'];
+
   const list = bookmarks || [];
   const visible = filter === 'all' ? list : list.filter(b => b.kind === filter);
   const counts = list.reduce((acc, b) => { acc[b.kind] = (acc[b.kind] || 0) + 1; return acc; }, {});
-  const kinds = Object.keys(counts);
+  const presentKinds = KIND_ORDER.filter(k => counts[k]);
+
+  // Group visible items by kind for editorial layout when filter is 'all'
+  const grouped = (() => {
+    if (filter !== 'all') return [{ kind: filter, items: visible }];
+    return presentKinds.map(k => ({ kind: k, items: visible.filter(b => b.kind === k) }));
+  })();
 
   return (
-    <div className="fade-in" style={{ padding: '4px 22px 32px' }}>
-      <BackRow go={go} label="Settings" dest="settings"/>
-      <Eyebrow tone="rose" style={{ marginTop: 18 }}>Bookmarks</Eyebrow>
-      <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
-        On the shelf,<br/><span style={{ fontStyle: 'italic' }}>for later.</span>
+    <div className="fade-in" style={{ padding: '14px 22px 32px' }}>
+      <Eyebrow tone="rose">The Nook</Eyebrow>
+      <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
+        Everything you've<br/><span style={{ fontStyle: 'italic' }}>kept close.</span>
       </h1>
+      <p className="body" style={{ margin: '0 0 18px', maxWidth: 380 }}>
+        Songs, poems, books, and articles you've saved from Hearth and Attune. Tap to revisit. The Nook is yours alone.
+      </p>
 
       {bookmarks !== null && list.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 14 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 22 }}>
           <button onClick={() => setFilter('all')} className={`chip ${filter === 'all' ? 'chip-ember' : ''}`}
             style={{ cursor: 'pointer', border: filter === 'all' ? undefined : '1px solid var(--paper-line)' }}>All · {list.length}</button>
-          {kinds.map(k => (
+          {presentKinds.map(k => (
             <button key={k} onClick={() => setFilter(k)} className={`chip ${filter === k ? `chip-${KIND_TONE[k] || 'meadow'}` : ''}`}
-              style={{ cursor: 'pointer', border: filter === k ? undefined : '1px solid var(--paper-line)' }}>{k} · {counts[k]}</button>
+              style={{ cursor: 'pointer', border: filter === k ? undefined : '1px solid var(--paper-line)' }}>
+              {KIND_LABEL[k] || k} · {counts[k]}
+            </button>
           ))}
         </div>
       )}
@@ -455,29 +476,69 @@ function BookmarksScreen({ go }) {
       {bookmarks === null ? (
         <LoadingShimmer lines={4}/>
       ) : list.length === 0 ? (
-        <EmptyState
-          title="The shelf is empty."
-          sub="Save articles, songs, books, or poems from Discover and Attune to keep them here."
-          action="Go to Discover"
-          onAction={() => go('discover')}/>
+        <div style={{ marginTop: 20, padding: '32px 0', borderTop: '1px solid var(--paper-line-2)', borderBottom: '1px solid var(--paper-line-2)' }}>
+          <p className="serif" style={{ margin: 0, fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
+            The Nook is empty for now. Save what you want to come back to.
+          </p>
+          <p className="body-sm" style={{ marginTop: 14, maxWidth: 380 }}>
+            Tap <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--hh-green)', padding: '2px 8px', border: '1px solid var(--paper-line)', borderRadius: 999 }}>Save</span> on any article on Hearth or any song, book, or poem from Attune. It will appear here.
+          </p>
+          <div style={{ marginTop: 22, display: 'flex', gap: 10 }}>
+            <button className="btn btn-ember" onClick={() => go('home')}>Go to Hearth</button>
+            <button className="btn btn-ghost" onClick={() => go('attune')}>Open Attune</button>
+          </div>
+        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {visible.map((b) => {
-            const tone = KIND_TONE[b.kind] || 'wisteria';
-            const open = () => {
-              if (b.url) {
-                window.open(b.url, '_blank', 'noopener,noreferrer');
-              }
-            };
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
+          {grouped.map(({ kind, items }) => {
+            if (!items.length) return null;
+            const tone = KIND_TONE[kind] || 'wisteria';
             return (
-              <div key={b.id} className="card" style={{ display: 'flex', gap: 12, cursor: b.url ? 'pointer' : 'default', position: 'relative' }} onClick={open}>
-                <div aria-hidden style={{ position: 'absolute', left: 0, top: 18, bottom: 18, width: 2, background: `var(--${tone})`, borderRadius: 2 }}/>
-                <div style={{ flex: 1 }}>
-                  <div className="mag-rule" style={{ color: `var(--${tone})` }}>{b.kind}{b.source ? ` · ${b.source}` : ''}</div>
-                  <h3 className="serif" style={{ margin: '4px 0 4px', fontSize: 17, fontStyle: 'italic', fontWeight: 380, lineHeight: 1.2 }}>{b.title}</h3>
-                  {b.excerpt && <p className="body-sm" style={{ margin: 0, color: 'var(--paper-mute)' }}>{b.excerpt}</p>}
+              <section key={kind}>
+                {filter === 'all' && (
+                  <>
+                    <Rule/>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 14, marginBottom: 14 }}>
+                      <Kicker accent="mute">{KIND_LABEL[kind] || kind}</Kicker>
+                      <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                        {items.length}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {items.map((b) => {
+                    const open = () => {
+                      if (b.url) window.open(b.url, '_blank', 'noopener,noreferrer');
+                    };
+                    return (
+                      <div key={b.id} style={{ display: 'flex', gap: 14, alignItems: 'flex-start', position: 'relative', padding: '10px 0' }}>
+                        <div aria-hidden style={{ width: 2, background: `var(--${tone})`, alignSelf: 'stretch', flexShrink: 0 }}/>
+                        <div style={{ flex: 1, cursor: b.url ? 'pointer' : 'default' }} onClick={open}>
+                          <h3 className="serif" style={{ margin: 0, fontSize: 18, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.2, color: 'var(--hh-green)' }}>{b.title}</h3>
+                          {b.source && (
+                            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginTop: 6 }}>
+                              {b.source}
+                            </div>
+                          )}
+                          {b.excerpt && (
+                            <p className="body-sm" style={{ margin: '8px 0 0', color: 'var(--paper-2)', lineHeight: 1.55 }}>
+                              {b.excerpt}
+                            </p>
+                          )}
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); removeBookmark(b.id); }}
+                          aria-label="Remove from Nook"
+                          style={{ background: 'transparent', border: 0, padding: 4, cursor: 'pointer', color: 'var(--paper-faint)', flexShrink: 0 }}
+                          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--paper-mute)'; }}
+                          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--paper-faint)'; }}>
+                          <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Remove</span>
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              </section>
             );
           })}
         </div>
@@ -488,48 +549,202 @@ function BookmarksScreen({ go }) {
 
 
 // ─────────────────────────────────────────────────────────────
-// WEEKLY DIGEST
+// WEEKLY DIGEST — real data: last 7 days of journal + bookmarks
 // ─────────────────────────────────────────────────────────────
+function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+function dayKey(d) { return startOfDay(d).toISOString().slice(0, 10); }
+function wordCount(s) { return (s || '').trim().split(/\s+/).filter(Boolean).length; }
+
+function computeWeekly(entries, bookmarks) {
+  const now = new Date();
+  const weekStart = startOfDay(now);
+  weekStart.setDate(weekStart.getDate() - 6); // 7-day window ending today
+
+  const weekEntries = (entries || []).filter(e => new Date(e.createdAt) >= weekStart);
+  const weekBookmarks = (bookmarks || []).filter(b => new Date(b.createdAt) >= weekStart);
+
+  // Per-day: array of 7 day keys (oldest -> today), each with count + avg shift
+  const dayKeys = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now); d.setDate(now.getDate() - i);
+    dayKeys.push(dayKey(d));
+  }
+  const perDay = dayKeys.map(k => {
+    const entriesForDay = weekEntries.filter(e => dayKey(new Date(e.createdAt)) === k);
+    const shifts = entriesForDay.map(e => e.shift).filter(s => s !== null && s !== undefined);
+    const avgShift = shifts.length ? shifts.reduce((a, b) => a + b, 0) / shifts.length : null;
+    const date = new Date(k + 'T00:00:00');
+    return {
+      key: k,
+      label: date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase().slice(0, 3),
+      count: entriesForDay.length,
+      avgShift,
+    };
+  });
+
+  const daysWritten = perDay.filter(d => d.count > 0).length;
+  const totalWords = weekEntries.reduce((sum, e) => sum + wordCount(e.body), 0);
+  const writingMinutes = Math.max(0, Math.round(totalWords / 30)); // ~30 wpm for thoughtful writing
+  const allShifts = weekEntries.map(e => e.shift).filter(s => s !== null && s !== undefined);
+  const avgShift = allShifts.length ? (allShifts.reduce((a, b) => a + b, 0) / allShifts.length) : null;
+
+  // Tags + lineages
+  const tagFreq = {};
+  const lineageFreq = {};
+  for (const e of weekEntries) {
+    for (const t of (e.tags || [])) tagFreq[t] = (tagFreq[t] || 0) + 1;
+    if (e.promptLineage) lineageFreq[e.promptLineage] = (lineageFreq[e.promptLineage] || 0) + 1;
+  }
+  const topTags = Object.entries(tagFreq).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  const topLineages = Object.entries(lineageFreq).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  // Bookmarks by source
+  const attuneSaves = weekBookmarks.filter(b => b.meta?.savedFrom === 'attune');
+  const homeSaves = weekBookmarks.filter(b => b.meta?.savedFrom === 'home');
+
+  // Notable phrase: longest sentence under 200 chars from the most recent entry
+  let phrase = null;
+  if (weekEntries.length) {
+    const recent = weekEntries[0]; // entries returned newest-first
+    const sentences = (recent.body || '').split(/(?<=[.?!])\s+/).map(s => s.trim()).filter(s => s.length > 30 && s.length < 200);
+    if (sentences.length) phrase = sentences.sort((a, b) => b.length - a.length)[0];
+  }
+
+  return {
+    weekStart, now,
+    perDay,
+    daysWritten,
+    totalEntries: weekEntries.length,
+    totalWords,
+    writingMinutes,
+    avgShift,
+    topTags,
+    topLineages,
+    attuneSaves,
+    homeSaves,
+    weekBookmarks,
+    phrase,
+    weekEntries,
+  };
+}
+
 function WeeklyDigestScreen({ go }) {
-  const days = ['MON','TUE','WED','THU','FRI','SAT','SUN'];
-  const moods = [4.0, 4.6, 4.2, 5.5, 6.4, 7.1, 7.8]; // /10
-  const kept = [true, true, false, true, true, true, false];
-  const maxY = 90, minY = 14;
-  const yFor = (m) => maxY - ((m - 3) / 6) * (maxY - minY);
+  const [entries, setEntries] = React.useState(null);
+  const [bookmarks, setBookmarks] = React.useState(null);
+  const [unauthed, setUnauthed] = React.useState(false);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [j, b] = await Promise.all([api.journal.list(), api.bookmarks.list()]);
+        if (cancelled) return;
+        setEntries(j.entries || []);
+        setBookmarks(b.bookmarks || []);
+      } catch (err) {
+        if (cancelled) return;
+        if (err.status === 401) setUnauthed(true);
+        else { setEntries([]); setBookmarks([]); }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (unauthed) {
+    return (
+      <div className="fade-in" style={{ padding: '40px 22px 32px', textAlign: 'center' }}>
+        <Eyebrow tone="ember" style={{ marginTop: 32 }}>Weekly review</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+          Your week is yours,<br/><span style={{ fontStyle: 'italic' }}>kept private.</span>
+        </h1>
+        <p className="body" style={{ maxWidth: 320, margin: '0 auto 22px' }}>
+          Sign in to see a real reflection on what you've written and saved.
+        </p>
+        <button className="btn btn-ember" onClick={() => go('auth')}>Sign in</button>
+      </div>
+    );
+  }
+
+  if (entries === null || bookmarks === null) {
+    return (
+      <div className="fade-in" style={{ padding: '14px 22px 32px' }}>
+        <Eyebrow tone="ember">Weekly review</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 18px', fontWeight: 350 }}>
+          Gathering<br/><span style={{ fontStyle: 'italic' }}>the week…</span>
+        </h1>
+        <LoadingShimmer lines={5}/>
+      </div>
+    );
+  }
+
+  const w = computeWeekly(entries, bookmarks);
+  const weekRange = (() => {
+    const s = w.weekStart, n = w.now;
+    const fmt = (d) => d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+    return `${fmt(s)} – ${fmt(n)}`;
+  })();
+
+  // Mood arc geometry — only render line through days with data
+  const arcPoints = w.perDay.map((d, i) => {
+    if (d.avgShift === null) return null;
+    const x = 20 + i * 43;
+    // shift range -2..+2 -> y range minY..maxY (inverted for SVG)
+    const y = 86 - ((d.avgShift + 2) / 4) * (86 - 14);
+    return { x, y, ...d };
+  });
+  const linePath = (() => {
+    const pts = arcPoints.filter(Boolean);
+    if (pts.length < 2) return null;
+    return `M ${pts.map(p => `${p.x} ${p.y}`).join(' L ')}`;
+  })();
+
+  // Mood arc copy
+  const arcLine = (() => {
+    if (w.daysWritten === 0) return 'No entries this week. The line is drawn the day you next write.';
+    if (w.daysWritten === 1) return 'One day kept. The line begins.';
+    const written = w.perDay.filter(d => d.avgShift !== null);
+    if (written.length >= 2) {
+      const first = written[0].avgShift, last = written[written.length - 1].avgShift;
+      if (last > first + 0.4) return `The line lifted across the week. ${w.daysWritten} days written.`;
+      if (last < first - 0.4) return `The line softened across the week. That, too, is information.`;
+    }
+    return `${w.daysWritten} days written. The line steadies, neither lifting nor falling much.`;
+  })();
+
+  const isEmpty = w.totalEntries === 0 && w.weekBookmarks.length === 0;
 
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      {/* Editorial cover — ColorBlock */}
-      <ColorBlock accent="ecru" bleed style={{ padding: '36px 22px 32px' }}>
-        <BackRow go={go} label="Home" dest="home"/>
-        <div style={{ marginTop: 20 }}>
-          <Kicker accent="green">Sunday review · Week 48</Kicker>
-          <Headline size="display" italic style={{ marginTop: 14 }}>
-            A small look<br/>back at the week.
-          </Headline>
-          <p className="body" style={{ margin: '20px 0 0', maxWidth: 320 }}>
-            Five evenings tended. Three small goods named. One ember of a long-lost friendship rekindled.
-          </p>
-        </div>
-      </ColorBlock>
+      {/* Cover */}
+      <section style={{ padding: '14px 22px 0' }}>
+        <Eyebrow tone="ember">Weekly review · {weekRange}</Eyebrow>
+        <h1 className="h-display serif" style={{ margin: '8px 0 14px', fontWeight: 350 }}>
+          A small look back<br/><span style={{ fontStyle: 'italic' }}>at the week.</span>
+        </h1>
+        <p className="body" style={{ margin: '0 0 0', maxWidth: 380 }}>
+          {isEmpty
+            ? 'A quiet week on Hearth. Nothing to review yet, and that is its own kind of rest.'
+            : `${w.daysWritten} of 7 days kept. ${w.weekBookmarks.length} ${w.weekBookmarks.length === 1 ? 'piece' : 'pieces'} added to the Nook.`}
+        </p>
+      </section>
 
-      {/* Stats — full-width grid, no card chrome */}
+      {/* Stats */}
       <section style={{ padding: '32px 22px 0' }}>
         <Kicker>By the numbers</Kicker>
         <div style={{
           display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0,
-          marginTop: 16, borderTop: '1px solid rgba(31, 64, 69, 0.14)',
+          marginTop: 16, borderTop: '1px solid var(--paper-line)',
         }}>
           {[
-            { big: '5/7', label: 'evenings kept' },
-            { big: '14',  label: 'goods named' },
-            { big: '32m', label: 'of writing' },
-            { big: '+1.4', label: 'avg shift' },
+            { big: `${w.daysWritten}/7`, label: 'days kept' },
+            { big: String(w.totalEntries), label: w.totalEntries === 1 ? 'entry' : 'entries' },
+            { big: w.writingMinutes ? `${w.writingMinutes}m` : '—', label: 'of writing' },
+            { big: w.avgShift !== null ? `${w.avgShift > 0 ? '+' : ''}${w.avgShift.toFixed(1)}` : '—', label: 'avg shift' },
           ].map((s, i) => (
             <div key={i} style={{
               padding: '20px 0',
-              borderBottom: '1px solid rgba(31, 64, 69, 0.14)',
-              borderRight: i % 2 === 0 ? '1px solid rgba(31, 64, 69, 0.14)' : 'none',
+              borderBottom: '1px solid var(--paper-line)',
+              borderRight: i % 2 === 0 ? '1px solid var(--paper-line)' : 'none',
               paddingLeft: i % 2 === 0 ? 0 : 18,
               paddingRight: i % 2 === 0 ? 18 : 0,
             }}>
@@ -540,89 +755,170 @@ function WeeklyDigestScreen({ go }) {
         </div>
       </section>
 
-      {/* Mood arc — minimal editorial chart */}
+      {/* Mood arc */}
       <section style={{ padding: '36px 22px 0' }}>
         <Kicker>Mood arc</Kicker>
-        <div style={{ marginTop: 18, position: 'relative' }}>
+        <div style={{ marginTop: 18 }}>
           <svg viewBox="0 0 300 110" style={{ width: '100%', height: 130 }}>
-            {/* baseline grid */}
             {[14, 38, 62, 86].map(y => (
               <line key={y} x1="0" x2="300" y1={y} y2={y} stroke="rgba(31, 64, 69, 0.08)" strokeWidth="0.5"/>
             ))}
-            {/* line */}
-            <path d={`M ${days.map((_, i) => `${20 + i * 43} ${yFor(moods[i])}`).join(' L ')}`}
-              stroke="var(--hh-green)" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-            {/* dots */}
-            {days.map((_, i) => (
-              <g key={i}>
-                <circle cx={20 + i * 43} cy={yFor(moods[i])} r={kept[i] ? 4 : 3}
-                  fill={kept[i] ? 'var(--hh-green)' : 'var(--hh-lace)'}
-                  stroke={kept[i] ? 'var(--hh-green)' : 'var(--paper-mute)'} strokeWidth="1"/>
-              </g>
-            ))}
+            {/* zero line */}
+            <line x1="0" x2="300" y1={50} y2={50} stroke="rgba(31, 64, 69, 0.20)" strokeDasharray="2 4" strokeWidth="0.6"/>
+            {linePath && (
+              <path d={linePath} stroke="var(--hh-green)" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            )}
+            {arcPoints.map((p, i) => {
+              const x = 20 + i * 43;
+              if (!p) {
+                return <circle key={i} cx={x} cy={50} r={3} fill="var(--hh-lace)" stroke="var(--paper-faint)" strokeWidth="1"/>;
+              }
+              return <circle key={i} cx={p.x} cy={p.y} r={4} fill="var(--hh-green)" stroke="var(--hh-green)" strokeWidth="1"/>;
+            })}
           </svg>
           <div style={{
             display: 'flex', justifyContent: 'space-between', marginTop: 4,
             fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.14em',
             color: 'var(--paper-mute)', padding: '0 14px',
           }}>
-            {days.map(d => <span key={d}>{d}</span>)}
+            {w.perDay.map(d => <span key={d.key}>{d.label}</span>)}
           </div>
         </div>
         <p className="body" style={{ margin: '18px 0 0', fontSize: 14, color: 'var(--paper-mute)' }}>
-          Filled marks are evenings you wrote. The line lifted on Thursday — you noted the call with M.
+          {arcLine} Filled dots are days you wrote.
         </p>
       </section>
 
-      {/* What was alive — editorial pull */}
+      {/* What was alive — themes */}
+      {(w.topTags.length > 0 || w.topLineages.length > 0) && (
+        <section style={{ padding: '40px 22px 0' }}>
+          <Rule/>
+          <Kicker style={{ marginTop: 26 }}>What was alive</Kicker>
+          {w.topTags.length > 0 && (
+            <Headline size="section" style={{ marginTop: 14, fontWeight: 380 }}>
+              You wrote about{' '}
+              {w.topTags.map(([t], i) => (
+                <span key={t}>
+                  <span style={{ color: 'var(--hh-ecru-deep)', fontStyle: 'italic' }}>{t}</span>
+                  {i < w.topTags.length - 2 ? ', ' : i === w.topTags.length - 2 ? ', and ' : ''}
+                </span>
+              ))}
+              {' '}most.
+            </Headline>
+          )}
+          {w.topLineages.length > 0 && (
+            <p className="body" style={{ margin: '16px 0 0' }}>
+              Practices used: {w.topLineages.map(([l, n], i) => (
+                <span key={l}>
+                  {l}{n > 1 ? ` (${n})` : ''}{i < w.topLineages.length - 1 ? ', ' : '.'}
+                </span>
+              ))}
+            </p>
+          )}
+        </section>
+      )}
+
+      {/* A phrase from the week */}
+      {w.phrase && (
+        <section style={{ padding: '36px 0 0' }}>
+          <ColorBlock accent="green" bleed style={{ padding: '38px 28px' }}>
+            <Kicker accent="ecru" style={{ color: 'var(--hh-ecru)' }}>From your own page</Kicker>
+            <p className="serif" style={{
+              margin: '14px 0 0', fontSize: 24, fontStyle: 'italic',
+              fontWeight: 360, lineHeight: 1.32, color: 'var(--hh-lace)',
+            }}>
+              &ldquo;{w.phrase}&rdquo;
+            </p>
+          </ColorBlock>
+        </section>
+      )}
+
+      {/* What was attuned — saved this week */}
+      {(w.attuneSaves.length > 0 || w.homeSaves.length > 0) && (
+        <section style={{ padding: '40px 22px 0' }}>
+          <Rule/>
+          <Kicker style={{ marginTop: 26 }}>What was attuned</Kicker>
+          <p className="body" style={{ margin: '14px 0 18px' }}>
+            {w.weekBookmarks.length} {w.weekBookmarks.length === 1 ? 'piece kept' : 'pieces kept'} in the Nook this week.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {w.weekBookmarks.slice(0, 6).map(b => (
+              <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, padding: '10px 0', borderBottom: '1px solid var(--paper-line-2)' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                    {b.kind}{b.source ? ` · ${b.source}` : ''}
+                  </div>
+                  <div className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 400, color: 'var(--hh-green)', marginTop: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {b.title}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          {w.weekBookmarks.length > 6 && (
+            <button className="btn btn-ghost" onClick={() => go('bookmarks')} style={{ marginTop: 18 }}>
+              See all in Nook
+            </button>
+          )}
+        </section>
+      )}
+
+      {/* Recent entries this week */}
+      {w.weekEntries.length > 0 && (
+        <section style={{ padding: '40px 22px 0' }}>
+          <Rule/>
+          <Kicker style={{ marginTop: 26 }}>This week's entries</Kicker>
+          <div style={{ marginTop: 14, display: 'flex', flexDirection: 'column' }}>
+            {w.weekEntries.slice(0, 5).map(e => (
+              <div key={e.id} onClick={() => go('entry-detail', { entry: {
+                id: e.id,
+                date: new Date(e.createdAt).toLocaleDateString(undefined, { weekday: 'short' }) + ' · ' + (new Date(e.createdAt).getHours() < 12 ? 'morning' : new Date(e.createdAt).getHours() < 18 ? 'afternoon' : 'evening'),
+                title: e.title || 'Untitled',
+                mood: e.mood,
+                shift: e.shift !== null && e.shift !== undefined ? `${e.shift > 0 ? '+' : ''}${e.shift}` : '',
+                tone: 'wisteria',
+                body: e.body, tags: e.tags || [], lineage: e.promptLineage,
+              } })}
+                style={{ padding: '14px 0', borderBottom: '1px solid var(--paper-line-2)', cursor: 'pointer' }}>
+                <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                  {new Date(e.createdAt).toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' })}
+                </div>
+                <div className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 400, color: 'var(--hh-green)', marginTop: 6 }}>
+                  {e.title || 'Untitled'}
+                </div>
+                {e.mood && (
+                  <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', color: 'var(--hh-green)', textTransform: 'uppercase', marginTop: 6 }}>
+                    {e.mood}{e.shift !== null && e.shift !== undefined ? ` · ${e.shift > 0 ? '+' : ''}${e.shift}` : ''}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* The week ahead */}
       <section style={{ padding: '40px 22px 0' }}>
         <Rule/>
-        <Kicker style={{ marginTop: 26 }}>What was alive</Kicker>
-        <Headline size="section" style={{ marginTop: 14 }}>
-          You wrote about <span style={{ color: 'var(--hh-ecru-deep)' }}>care</span>, <span style={{ color: 'var(--hh-ecru-deep)' }}>craft</span>, and <span style={{ color: 'var(--hh-ecru-deep)' }}>patience</span> most.
-        </Headline>
-        <p className="body" style={{ margin: '16px 0 0' }}>
-          Wonder showed up twice. Discipline didn't this week — and that's information, not a verdict.
-        </p>
-      </section>
-
-      {/* A phrase you wrote twice */}
-      <section style={{ padding: '36px 0 0' }}>
-        <ColorBlock accent="green" bleed style={{ padding: '38px 28px' }}>
-          <Kicker accent="ecru">A phrase you wrote twice</Kicker>
-          <p className="serif" style={{
-            margin: '14px 0 0', fontSize: 26, fontStyle: 'italic',
-            fontWeight: 360, lineHeight: 1.22, color: 'var(--hh-lace)',
-          }}>
-            "I don't have to earn the evening."
-          </p>
-        </ColorBlock>
-      </section>
-
-      {/* The week ahead — gentle suggestion */}
-      <section style={{ padding: '36px 22px 0' }}>
-        <Kicker>For the week ahead</Kicker>
+        <Kicker style={{ marginTop: 26 }}>For the week ahead</Kicker>
         <Headline size="section" italic style={{ marginTop: 14 }}>
-          One small move.
+          {w.daysWritten === 0 ? 'A first quiet entry.' : w.daysWritten >= 5 ? 'Keep the rhythm gentle.' : 'One small move.'}
         </Headline>
         <p className="body" style={{ margin: '14px 0 18px' }}>
-          Box breathing on Tuesday morning, before the meeting that tightens you. Four minutes is enough.
+          {w.daysWritten === 0
+            ? 'Pick one prompt that feels easy and write four sentences. The shape of the practice is built first, before the weight.'
+            : w.daysWritten >= 5
+              ? 'You wrote often this week. Let some days be empty without making it a verdict.'
+              : 'Two more days kept this week would be enough. Pick the days you already feel quietest.'}
         </p>
-        <button className="btn btn-ghost" onClick={() => go('rituals')} style={{ width: '100%', justifyContent: 'space-between' }}>
-          <span>Open Rituals</span> {Icon.arrow(14, 'currentColor')}
-        </button>
-      </section>
-
-      <section style={{ padding: '32px 22px 0' }}>
-        <button onClick={() => go('home')} style={{
-          width: '100%', padding: '16px 20px',
-          background: 'var(--hh-green)', color: 'var(--hh-lace)',
-          border: 0, borderRadius: 0, cursor: 'pointer',
-          fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.18em',
-          textTransform: 'uppercase',
-        }}>
-          Begin Sunday
-        </button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn btn-ember" onClick={() => go('journal')}>
+            Open journal
+          </button>
+          <button className="btn btn-ghost" onClick={() => go('rituals')}>
+            Open rituals
+          </button>
+        </div>
       </section>
     </div>
   );

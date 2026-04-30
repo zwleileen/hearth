@@ -25,9 +25,10 @@ import { api, getToken, clearToken } from './api.js';
 
 const TABS = [
   { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
-  { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, a ? 'var(--sig)' : 'currentColor'),     route: 'journal' },
-  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, a ? 'var(--sig)' : 'currentColor'),    route: 'attune' },
-  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, a ? 'var(--sig)' : 'currentColor'),    route: 'rituals' },
+  { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, a ? 'var(--sig)' : 'currentColor'),       route: 'journal' },
+  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, a ? 'var(--sig)' : 'currentColor'),      route: 'attune' },
+  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, a ? 'var(--sig)' : 'currentColor'),      route: 'rituals' },
+  { key: 'nook',     label: 'Nook',     icon: (a) => Icon.bookmark(18, a ? 'var(--sig)' : 'currentColor'),  route: 'bookmarks' },
 ];
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -122,9 +123,10 @@ function App() {
   // tab inference (Discover removed — Home is the editorial spread)
   const tab = ['home','journal','attune','rituals','settings'].includes(route)
     ? route
+    : route === 'bookmarks' ? 'nook'
     : (route.startsWith('journal') || route === 'entry-detail' ? 'journal'
       : route.startsWith('ritual') || route === 'weekly-digest' ? 'rituals'
-      : route === 'article' || route === 'discover' || route === 'bookmarks' ? 'home'
+      : route === 'article' || route === 'discover' ? 'home'
       : route === 'attune-history' ? 'attune'
       : route === 'settings-notifications' || route === 'settings-profile' ? 'settings'
       : 'home');
@@ -182,10 +184,6 @@ function App() {
               ))}
             </nav>
             <div className="hearth-sidebar-foot">
-              <button onClick={() => go('journal-archive')}>
-                {Icon.bookmark(16, 'currentColor')}
-                <span>Bookmarks</span>
-              </button>
               <button onClick={() => go('settings')}>
                 {Icon.more(16, 'currentColor')}
                 <span>Settings</span>
