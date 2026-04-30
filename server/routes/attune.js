@@ -20,7 +20,7 @@ attune.post('/', async (req, res) => {
 ${mood.trim()}
 """
 
-Recommend three songs, three books, and three poems that meet this mood specifically. Match the texture of what they shared, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
+Recommend exactly two songs, two books, and two poems that meet this mood specifically. Choose the two best fits in each category — pieces with genuine craft and depth that match the texture of what they shared, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
 
 Open with a moodSummary: a quiet, two- or three-sentence reflection that names what you're hearing in their words. No advice. No fixing. Just a clear seeing.
 

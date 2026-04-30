@@ -26,9 +26,8 @@ import { api, getToken, clearToken } from './api.js';
 const TABS = [
   { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
   { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, a ? 'var(--sig)' : 'currentColor'),     route: 'journal' },
-  { key: 'discover', label: 'Discover', icon: (a) => Icon.compass(18, a ? 'var(--sig)' : 'currentColor'),  route: 'discover' },
-  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, a ? 'var(--sig)' : 'currentColor'), route: 'attune' },
-  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, a ? 'var(--sig)' : 'currentColor'),   route: 'rituals' },
+  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, a ? 'var(--sig)' : 'currentColor'),    route: 'attune' },
+  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, a ? 'var(--sig)' : 'currentColor'),    route: 'rituals' },
 ];
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -120,12 +119,12 @@ function App() {
     setTimeout(() => setToast(null), 2200);
   }
 
-  // tab inference
-  const tab = ['home','journal','discover','attune','rituals','settings'].includes(route)
+  // tab inference (Discover removed — Home is the editorial spread)
+  const tab = ['home','journal','attune','rituals','settings'].includes(route)
     ? route
     : (route.startsWith('journal') || route === 'entry-detail' ? 'journal'
       : route.startsWith('ritual') || route === 'weekly-digest' ? 'rituals'
-      : route === 'article' || route === 'bookmarks' ? 'discover'
+      : route === 'article' || route === 'discover' || route === 'bookmarks' ? 'home'
       : route === 'attune-history' ? 'attune'
       : route === 'settings-notifications' || route === 'settings-profile' ? 'settings'
       : 'home');
@@ -282,7 +281,7 @@ function App() {
             {value:'journal',label:'Journal'},
             {value:'journal-archive',label:'Journal · Archive'},
             {value:'entry-detail',label:'Entry detail'},
-            {value:'discover',label:'Discover'},
+            {value:'discover',label:'Discover (legacy)'},
             {value:'article',label:'Article'},
             {value:'bookmarks',label:'Bookmarks'},
             {value:'attune',label:'Attune'},

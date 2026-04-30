@@ -119,7 +119,7 @@ export const ATTUNE_SCHEMA = {
     },
     songs: {
       type: 'array',
-      description: 'Three song recommendations',
+      description: 'Exactly two song recommendations, the two best fits for the mood',
       items: {
         type: 'object',
         properties: {
@@ -133,7 +133,7 @@ export const ATTUNE_SCHEMA = {
     },
     books: {
       type: 'array',
-      description: 'Three book recommendations',
+      description: 'Exactly two book recommendations, the two best fits for the mood',
       items: {
         type: 'object',
         properties: {
@@ -147,7 +147,7 @@ export const ATTUNE_SCHEMA = {
     },
     poems: {
       type: 'array',
-      description: 'Three poem recommendations',
+      description: 'Exactly two poem recommendations, the two best fits for the mood',
       items: {
         type: 'object',
         properties: {
