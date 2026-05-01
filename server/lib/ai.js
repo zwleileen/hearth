@@ -57,13 +57,50 @@ Never invent studies. If you do not know a citation, do not pretend to. Either s
 
 # Mood-based recommendations
 
-When recommending songs, books, or poems for a mood, choose specifically and explain briefly why each one fits this particular emotional state. Match texture, not just topic. A grieving person does not want a song about grief, they may want a song that holds the silence around it.
+When recommending songs, books, or poems for a mood, first read the texture honestly. A grieving person does not want a song about grief, they may want a song that holds the silence around it. A celebratory person doesn't want restraint, they want music that meets the energy. A restless person doesn't want stillness, they want sound that rides the edge with them. Match the register first; pick the title second.
 
-For songs: prefer artists with depth and craft. Mix familiar (Nick Drake, Sufjan Stevens, Joni Mitchell, Phoebe Bridgers, Bon Iver, Jeff Buckley, Joanna Newsom, Aldous Harding, Big Thief, Adrianne Lenker, Mitski, Bach, Debussy, Chopin, Arvo Part, Henryk Gorecki, Caroline Shaw, Max Richter) with the less obvious. Avoid top-40 unless it genuinely fits.
+Two readers describing different moods should get materially different recommendations. If two responses converge on the same artists, you are reading the moods less specifically than the writer of the input deserves.
 
-For books: prefer durable, thoughtful work. Essayists (Ross Gay, Maggie Nelson, Annie Dillard, Mary Oliver, Marilynne Robinson, John Berger, Rebecca Solnit, Robin Wall Kimmerer), fiction with weight (Gilead, Stoner, A Gentleman in Moscow, Klara and the Sun), wisdom literature where it fits. Avoid generic self-help.
+## For songs
 
-For poems: lean into the canon plus contemporaries. Mary Oliver, Ross Gay, Ada Limon, Naomi Shihab Nye, Hafiz, Rumi, Wendell Berry, Jane Kenyon, Mark Strand, Jack Gilbert, Linda Pastan, Galway Kinnell, Lucille Clifton, Marie Howe, Wislawa Szymborska, Tomas Transtromer, Rilke, William Stafford. Pick the specific poem when you can.
+Reference points across registers (use as starting points, not as a fixed pool):
+
+- Holding silence, considered, melancholy: Nick Drake, Sufjan Stevens, Bon Iver, Phoebe Bridgers, Big Thief, Adrianne Lenker, Mitski, Joanna Newsom, Aldous Harding, Jeff Buckley, Elliott Smith, Iron and Wine
+- Modern classical, restraint, structure: Bach, Debussy, Chopin, Arvo Part, Henryk Gorecki, Caroline Shaw, Max Richter, Olafur Arnalds, Nils Frahm, Hildur Gudnadottir
+- Joy, celebration, kinetic: Stevie Wonder, Outkast, Anais Mitchell, Solange, Vampire Weekend, Paul Simon (Graceland), Bill Withers, Khruangbin, Yola, Janelle Monae
+- Restless, urgent, alive: Cocteau Twins, Talk Talk, Radiohead, Mount Eerie, Beach House, Frank Ocean, Kendrick Lamar, Fiona Apple, PJ Harvey, Patti Smith
+- Tender, warm, inviting: Joni Mitchell, Aretha Franklin, Sam Cooke, Otis Redding, Sade, Karen Dalton, Nina Simone, Roberta Flack, Donny Hathaway
+- Awake, hopeful, walking-out-the-door: Paul Simon, Caetano Veloso, Lianne La Havas, Norah Jones, Andrew Bird, Joao Gilberto, Vince Guaraldi
+- Unresolved, dark, sitting with weight: Leonard Cohen, Tom Waits, Scott Walker, Anohni, Sharon Van Etten, Cat Power, Lhasa de Sela
+- Devotional, hymn-like, quiet praise: Sufjan Stevens (Seven Swans), Hildegard von Bingen, Hauschka, Jeff Buckley (Hallelujah), Brian Eno (ambient), Beverly Glenn-Copeland
+
+These registers are not exhaustive. When a mood asks for something none of them serve, go elsewhere. Avoid top-40 unless it genuinely fits.
+
+## For books
+
+Reference points across registers:
+
+- Durable essayists for slow company: Ross Gay, Maggie Nelson, Annie Dillard, Mary Oliver, Marilynne Robinson, John Berger, Rebecca Solnit, Robin Wall Kimmerer
+- Fiction with weight: Gilead, Stoner, A Gentleman in Moscow, Klara and the Sun, A Little Life, The Remains of the Day
+- Wisdom literature when it fits the texture: Marcus Aurelius, Pema Chodron, Thich Nhat Hanh, Rilke (Letters), Boethius
+- Joy and the kinetic life: Ross Gay (Book of Delights), Zadie Smith essays, James Baldwin essays
+- The unsentimental real: Joan Didion, Annie Ernaux, Olivia Laing, Vivian Gornick
+
+Avoid generic self-help. Pick a specific title and edition where you can.
+
+## For poems
+
+Reference points across registers:
+
+- Stillness and noticing: Mary Oliver, William Stafford, Jane Kenyon, Linda Pastan, Wendell Berry
+- Joy, gratitude, the small daily good: Ross Gay, Ada Limon, Naomi Shihab Nye, Lucille Clifton
+- Devotional and translated: Hafiz, Rumi, Rilke, Hildegard, Mirabai
+- Loss, weight, distance: Mark Strand, Jack Gilbert, Galway Kinnell, Marie Howe, W.S. Merwin
+- Awake, lit, honest: Marie Howe, Tracy K. Smith, Ocean Vuong, Danez Smith, Patricia Smith
+- The cool eye: Wislawa Szymborska, Tomas Transtromer, Czeslaw Milosz, Adam Zagajewski
+- The kinetic, the urgent: Patti Smith, Allen Ginsberg, Anne Sexton, Sharon Olds
+
+Pick the specific poem when you can.
 
 # Daily content curation (Discover)
 
@@ -117,6 +154,10 @@ export const ATTUNE_SCHEMA = {
       type: 'string',
       description: 'A short, gentle reflection on the mood, two or three sentences',
     },
+    register: {
+      type: 'string',
+      description: 'A short phrase (3 to 6 words, lowercase) naming the register this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". The songs, books, and poems must match this register, not default to introspective. Two materially different moods must produce materially different registers.',
+    },
     songs: {
       type: 'array',
       description: 'Exactly two song recommendations, the two best fits for the mood',
@@ -160,6 +201,6 @@ export const ATTUNE_SCHEMA = {
       },
     },
   },
-  required: ['moodSummary', 'songs', 'books', 'poems'],
+  required: ['moodSummary', 'register', 'songs', 'books', 'poems'],
   additionalProperties: false,
 };

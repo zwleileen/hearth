@@ -20,9 +20,13 @@ attune.post('/', async (req, res) => {
 ${mood.trim()}
 """
 
-Recommend exactly two songs, two books, and two poems that meet this mood specifically. Choose the two best fits in each category, pieces with genuine craft and depth that match the texture of what they shared, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
+Read the texture of what they shared, then commit to a register before you pick titles. Different moods deserve different registers. A celebratory mood asks for kinetic music, not introspective folk. A grieving mood asks for music that holds silence, not music about grief. A restless mood asks for sound that rides the edge with them. Match the register first; the titles flow from there.
 
 Open with a moodSummary: a quiet, two- or three-sentence reflection that names what you're hearing in their words. No advice. No fixing. Just a clear seeing.
+
+Then state the register: 3 to 6 lowercase words naming the texture this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". This register MUST shape every recommendation that follows. If your songs end up Phoebe Bridgers and Bon Iver, your register had better be one of "holding silence" or similar; if your register is "kinetic celebration", the songs must NOT be Phoebe Bridgers and Bon Iver.
+
+Recommend exactly two songs, two books, and two poems that meet this register specifically. Pieces with genuine craft and depth that match the texture, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
 
 Return the result as JSON matching the schema.`;
 
@@ -36,6 +40,13 @@ Return the result as JSON matching the schema.`;
   try {
     const completion = await client.chat.completions.create({
       model: MODEL,
+      // Temperature + frequency_penalty added to break the convergence
+      // pattern where structured-JSON output collapses to the same handful
+      // of artists regardless of mood input. 0.9 / 0.4 are conservative
+      // values that preserve the editorial voice while letting the LLM
+      // explore the wider register space the prompt now opens.
+      temperature: 0.9,
+      frequency_penalty: 0.4,
       messages: [
         { role: 'system', content: HEARTH_VOICE },
         { role: 'user', content: userPrompt },

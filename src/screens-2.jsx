@@ -269,7 +269,7 @@ function AttuneScreen({ go }) {
           }}>A reading</span>
         </section>
 
-        {/* Mood summary */}
+        {/* Mood summary + register */}
         <section style={{ padding: '36px 22px 0' }}>
           <Kicker>What I'm hearing</Kicker>
           <p className="serif" style={{
@@ -279,6 +279,17 @@ function AttuneScreen({ go }) {
           }}>
             {reading.moodSummary}
           </p>
+          {reading.register && (
+            <div className="mono" style={{
+              marginTop: 18,
+              fontSize: 9.5,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: 'var(--paper-mute)',
+            }}>
+              Register · {reading.register}
+            </div>
+          )}
         </section>
 
         {/* Songs, Pale Dogwood block */}
