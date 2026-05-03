@@ -84,12 +84,6 @@ function HomeScreen({ go, user }) {
     if (part === 'evening')   return `Good evening${tail}.`;
     return `Welcome back${tail}.`; // night / late
   })();
-  const intro = (() => {
-    if (part === 'morning')   return 'A quiet hour, before the day asks anything of you.';
-    if (part === 'afternoon') return 'The day is mid-stride. A small return, on your terms.';
-    if (part === 'evening')   return 'The light is going. The kettle is on. There is no hurry tonight.';
-    return 'The world is quiet. You are still here, and that is something.';
-  })();
   const quote = pickDailyQuote(D.dailyQuotes, user);
 
   const [items, setItems] = useState1(null);
@@ -148,9 +142,6 @@ function HomeScreen({ go, user }) {
         <Headline size="display" style={{ marginTop: 14 }}>
           {greet}
         </Headline>
-        <p className="body" style={{ margin: '14px 0 0', maxWidth: 380 }}>
-          {intro}
-        </p>
       </section>
 
       {/* ── 2. Daily quote (replaces the prompt block) ── */}
