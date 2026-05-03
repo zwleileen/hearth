@@ -131,7 +131,7 @@ function App() {
 
       {/* Main */}
       {route === 'home' && <HomeScreen go={go} user={user}/>}
-      {route === 'journal' && <JournalScreen go={go}/>}
+      {route === 'journal' && <JournalScreen go={go} user={user}/>}
       {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
       {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}
       {route === 'entry-detail' && <EntryDetailScreen go={go} payload={payload}/>}

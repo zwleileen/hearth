@@ -436,10 +436,22 @@ function formatJournalListDate(iso) {
   return `${weekday} · ${partOfDay}`;
 }
 
-function JournalScreen({ go }) {
+// Score a prompt against the user's signal tags. Each match counts 1.
+// Onboarding reasons are durable signals (set once, persist); recent
+// moods are situational (last few entries). We weight them equally and
+// let stronger overlap rise to the top. Ties preserve original order
+// via a stable sort (Array.prototype.sort is stable in V8/Node since
+// 2018), so the original editorial sequence remains the tiebreaker.
+function scorePromptForUser(prompt, signalTags) {
+  if (!Array.isArray(prompt?.tags) || signalTags.size === 0) return 0;
+  let score = 0;
+  for (const t of prompt.tags) if (signalTags.has(t)) score += 1;
+  return score;
+}
+
+function JournalScreen({ go, user }) {
   const D = HEARTH_DATA;
   const [tab, setTab] = useState1('evening');
-  const list = tab === 'morning' ? D.morningPrompts : D.eveningPrompts;
   const [recent, setRecent] = useState1(null);
   const [recentError, setRecentError] = useState1(null);
 
@@ -456,16 +468,39 @@ function JournalScreen({ go }) {
     return () => { cancelled = true; };
   }, []);
 
+  // Build the per-user signal tag set from onboarding reasons (durable)
+  // plus the most recent 5 entries' moods (situational). When the user
+  // has no signals yet, the list renders in original editorial order.
+  const signalTags = (() => {
+    const tags = new Set();
+    const reasons = user?.onboarding?.reasons || [];
+    for (const r of reasons) tags.add(r);
+    if (Array.isArray(recent)) {
+      for (const e of recent.slice(0, 5)) if (e?.mood) tags.add(e.mood);
+    }
+    return tags;
+  })();
+
+  const baseList = tab === 'morning' ? D.morningPrompts : D.eveningPrompts;
+  // Score-then-sort. We tag each item with its score to drive the
+  // "for you" eyebrow on the top match (only when score > 0 — no
+  // misleading hints when there are no signals).
+  const scoredList = baseList.map(p => ({ ...p, _score: scorePromptForUser(p, signalTags) }));
+  const list = signalTags.size > 0
+    ? [...scoredList].sort((a, b) => b._score - a._score)
+    : scoredList;
+  const topScore = list.length > 0 ? list[0]._score : 0;
+
   return (
     <div className="fade-in">
       {/* Cover */}
       <section style={{ padding: '14px 22px 32px' }}>
-        <Kicker>The journal · Five & five</Kicker>
+        <Kicker>The journal · A curated bench</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
           Write yourself<br/>warm.
         </Headline>
-        <p className="body" style={{ margin: '14px 0 0', maxWidth: 320 }}>
-          Five prompts for the morning, five for the evening. Drawn from the most replicated work in positive and clinical psychology: Seligman, Pennebaker, Neff, and King.
+        <p className="body" style={{ margin: '14px 0 0', maxWidth: 340 }}>
+          Fifteen prompts, drawn from the most replicated work in positive and clinical psychology: Seligman, Pennebaker, Neff, King, Lyubomirsky, Gollwitzer, Oettingen, Borkovec. We surface the ones closest to where you are today.
         </p>
       </section>
 
@@ -484,29 +519,42 @@ function JournalScreen({ go }) {
         </div>
       </section>
 
-      {/* Prompt list, numbered editorial */}
+      {/* Prompt list, numbered editorial. Top match (score > 0)
+          gets a subtle italic eyebrow above the title — a soft
+          "this one fits where you are" cue, no algorithmic chrome. */}
       <section style={{ padding: '0 22px' }}>
-        {list.map((p, i) => (
-          <button key={p.title} onClick={() => go('journal-write', { mode: tab, prompt: p })}
-            style={{
-              display: 'block', width: '100%', textAlign: 'left',
-              background: 'transparent', border: 0,
-              borderBottom: '1px solid rgba(31, 64, 69, 0.14)',
-              padding: '26px 0', cursor: 'pointer',
-            }}>
-            <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
-              <div className="mono" style={{
-                fontSize: 11, fontWeight: 500, color: 'var(--hh-green)',
-                letterSpacing: '0.06em', minWidth: 28, paddingTop: 6,
-              }}>{String(i + 1).padStart(2, '0')}</div>
-              <div style={{ flex: 1 }}>
-                <Headline size="section" italic style={{ fontWeight: 380 }}>{p.title}.</Headline>
-                <p className="body" style={{ margin: '8px 0 12px' }}>{p.prompt}</p>
-                <Kicker accent="mute" style={{ fontSize: 9.5 }}>{p.lineage}</Kicker>
+        {list.map((p, i) => {
+          const isTopMatch = i === 0 && topScore > 0 && p._score === topScore;
+          return (
+            <button key={p.title} onClick={() => go('journal-write', { mode: tab, prompt: p })}
+              style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                background: 'transparent', border: 0,
+                borderBottom: '1px solid rgba(31, 64, 69, 0.14)',
+                padding: '26px 0', cursor: 'pointer',
+              }}>
+              <div style={{ display: 'flex', gap: 18, alignItems: 'flex-start' }}>
+                <div className="mono" style={{
+                  fontSize: 11, fontWeight: 500, color: 'var(--hh-green)',
+                  letterSpacing: '0.06em', minWidth: 28, paddingTop: 6,
+                }}>{String(i + 1).padStart(2, '0')}</div>
+                <div style={{ flex: 1 }}>
+                  {isTopMatch && (
+                    <p className="serif" style={{
+                      margin: '0 0 6px', fontSize: 12, fontStyle: 'italic',
+                      fontWeight: 400, color: 'var(--ember)', letterSpacing: '0.01em',
+                    }}>
+                      {tab === 'morning' ? 'For you, this morning' : 'For you, tonight'}
+                    </p>
+                  )}
+                  <Headline size="section" italic style={{ fontWeight: 380 }}>{p.title}.</Headline>
+                  <p className="body" style={{ margin: '8px 0 12px' }}>{p.prompt}</p>
+                  <Kicker accent="mute" style={{ fontSize: 9.5 }}>{p.lineage}</Kicker>
+                </div>
               </div>
-            </div>
-          </button>
-        ))}
+            </button>
+          );
+        })}
       </section>
 
       {/* Recent entries, only what the user has actually saved */}

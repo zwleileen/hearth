@@ -1133,10 +1133,11 @@ function LandingScreen({ go }) {
             Write yourself<br/><span style={{ fontStyle: 'italic' }}>warm.</span>
           </h2>
           <p className="serif hearth-landing-feature-body">
-            Five prompts for the morning, five for the evening. Drawn from the most
-            replicated work in positive and clinical psychology: Seligman, Pennebaker,
-            Neff, and King. After writing, name how the page sat with you. The arc
-            of the week shows up gently, on Sunday.
+            A curated bench of fifteen prompts, drawn from the most replicated work
+            in positive and clinical psychology: Seligman, Pennebaker, Neff, King,
+            Lyubomirsky, Gollwitzer. The ones closest to where you are today rise
+            to the top. After writing, name how the page sat with you. The arc of
+            the week shows up gently, on Sunday.
           </p>
           <div className="hearth-landing-prompt-card">
             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>

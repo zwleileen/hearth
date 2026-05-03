@@ -6,43 +6,73 @@ export const HEARTH_DATA = {
   // ─────────────────────────────────────────────────────────────
   // JOURNAL PROMPTS — drawn from the most cited, evidence-supported
   // protocols in positive psychology + clinical writing research.
+  // Each prompt carries `tags` mapping it to the user's reasons (set
+  // during onboarding) and recent mood tags. JournalScreen scores
+  // and reorders the list per-user; the routing layer is purely
+  // additive, no prompts are hidden.
   //
-  // Morning lineage: Implementation intentions (Gollwitzer, 1999),
-  // self-affirmation (Cohen & Sherman, 2014), best possible self
-  // (King, 2001 — improved well-being in RCTs), savoring (Bryant
-  // & Veroff, 2007), and mental contrasting / WOOP (Oettingen).
+  // Morning lineage:
+  //   - Best possible self  (King, 2001; Sheldon & Lyubomirsky 2006)
+  //   - Implementation intentions  (Gollwitzer, 1999; meta d≈0.65)
+  //   - Values in action  (ACT; Hayes et al.)
+  //   - WOOP / mental contrasting  (Oettingen; multi-domain RCTs)
+  //   - Anchor of gratitude  (Emmons & McCullough, 2003)
+  //   - Self-affirmation  (Cohen & Sherman, 2014)  ← added
+  //   - Anticipatory savoring  (Bryant & Veroff, 2007)  ← added
   //
-  // Evening lineage: Three good things (Seligman et al., 2005 —
-  // sustained well-being gains at 6 months), expressive writing
-  // (Pennebaker, 1997), self-compassion (Neff, 2003), gratitude
-  // letter (Lyubomirsky), and cognitive reappraisal (Gross).
+  // Evening lineage:
+  //   - Three good things  (Seligman et al., 2005; 6-month follow-up)
+  //   - Expressive writing  (Pennebaker, 1997; 200+ studies)
+  //   - Self-compassion letter  (Neff, 2003)
+  //   - Cognitive reappraisal  (Gross; emotion regulation)
+  //   - Constructive worry  (Borkovec 1983; McGowan & Behar 2013) ← replaces Newport
+  //   - Gratitude letter  (Lyubomirsky 2005; weeks-long lift)  ← added
+  //   - Kindness reflection  (Lyubomirsky 2005)  ← added
+  //   - Forgiveness writing  (Worthington REACH; Wade 2014 d≈0.56) ← added
   // ─────────────────────────────────────────────────────────────
 
   morningPrompts: [
     {
       title: "Best possible self",
       lineage: "King, 2001",
-      prompt: "Imagine yourself a year from now, having lived this year well. What does your day look like, who are you with, what are you working on, what feels different in your body?"
+      prompt: "Imagine yourself a year from now, having lived this year well. What does your day look like, who are you with, what are you working on, what feels different in your body?",
+      tags: ["wonder", "clarity", "hopeful", "uncertain", "open"]
     },
     {
       title: "One small intention",
       lineage: "Gollwitzer · implementation intentions",
-      prompt: "Today, when ___ happens, I will ___. Pick one situation you can predict, and one response you'd be proud of."
+      prompt: "Today, when ___ happens, I will ___. Pick one situation you can predict, and one response you'd be proud of.",
+      tags: ["focus", "clarity", "restless", "hopeful"]
     },
     {
       title: "What matters today",
       lineage: "ACT · values in action",
-      prompt: "Of everything on your plate, what would make today feel meaningful even if nothing else gets done? Why does that one thing matter to you?"
+      prompt: "Of everything on your plate, what would make today feel meaningful even if nothing else gets done? Why does that one thing matter to you?",
+      tags: ["clarity", "focus", "uncertain", "restless"]
     },
     {
       title: "WOOP",
       lineage: "Oettingen · mental contrasting",
-      prompt: "Wish, what do you want today? Outcome, how will you feel when it's done? Obstacle, what inside you might get in the way? Plan, what will you do when the obstacle arrives?"
+      prompt: "Wish, what do you want today? Outcome, how will you feel when it's done? Obstacle, what inside you might get in the way? Plan, what will you do when the obstacle arrives?",
+      tags: ["focus", "clarity", "restless", "uncertain"]
     },
     {
       title: "Anchor of gratitude",
       lineage: "Emmons & McCullough, 2003",
-      prompt: "Name one ordinary thing already true this morning that you'd miss if it were gone. Sit with it for a breath before you write."
+      prompt: "Name one ordinary thing already true this morning that you'd miss if it were gone. Sit with it for a breath before you write.",
+      tags: ["gratitude", "wonder", "tender", "tired", "grateful", "open"]
+    },
+    {
+      title: "Standing on what matters",
+      lineage: "Cohen & Sherman · self-affirmation",
+      prompt: "Name a value you hold that nothing today can take from you. Write a sentence or two about a time you lived it. Keep it close as the day begins.",
+      tags: ["focus", "clarity", "hopeful", "raw", "tender"]
+    },
+    {
+      title: "Savouring the day ahead",
+      lineage: "Bryant & Veroff · anticipatory savoring",
+      prompt: "Pick one moment in today that you know you'll enjoy. Picture it in detail, the colours, sounds, who is there. Let yourself look forward to it for a full minute.",
+      tags: ["wonder", "gratitude", "alight", "hopeful", "open"]
     },
   ],
 
@@ -50,27 +80,50 @@ export const HEARTH_DATA = {
     {
       title: "Three good things",
       lineage: "Seligman et al., 2005",
-      prompt: "Three things that went well today, however small. For each, why did it go well? What part did you play?"
+      prompt: "Three things that went well today, however small. For each, why did it go well? What part did you play?",
+      tags: ["gratitude", "wonder", "grateful", "alight", "hopeful"]
     },
     {
       title: "Expressive writing",
       lineage: "Pennebaker, 1997",
-      prompt: "Write continuously for the next ten minutes about something on your mind. Don't edit. Don't worry about grammar. Let the deepest layer surface."
+      prompt: "Write continuously for the next ten minutes about something on your mind. Don't edit. Don't worry about grammar. Let the deepest layer surface.",
+      tags: ["clarity", "rest", "grief", "heavy", "raw", "tender", "uncertain", "restless"]
     },
     {
       title: "Letter of self-compassion",
       lineage: "Neff, 2003",
-      prompt: "If a dear friend had your day, what would you say to them tonight? Now, write that, to yourself."
+      prompt: "If a dear friend had your day, what would you say to them tonight? Now, write that, to yourself.",
+      tags: ["rest", "grief", "tender", "raw", "heavy"]
     },
     {
       title: "What did you learn?",
       lineage: "Cognitive reappraisal · Gross",
-      prompt: "Pick one moment that didn't go the way you hoped. What's a more generous reading of it? What did it teach you about yourself?"
+      prompt: "Pick one moment that didn't go the way you hoped. What's a more generous reading of it? What did it teach you about yourself?",
+      tags: ["clarity", "grief", "uncertain", "heavy", "raw"]
     },
     {
-      title: "Tomorrow, lighter",
-      lineage: "Newport · shutdown ritual",
-      prompt: "What's left on your mind from today? Write it down so you don't have to carry it through the night."
+      title: "Constructive worry",
+      lineage: "Borkovec · worry postponement",
+      prompt: "List what's still looping in your head. For each, write the very next concrete step you could take, or the words 'nothing tonight'. Then close the page; the loop has somewhere to live now.",
+      tags: ["rest", "tired", "restless", "heavy", "uncertain"]
+    },
+    {
+      title: "Gratitude letter",
+      lineage: "Lyubomirsky, 2005",
+      prompt: "Choose one person who has shaped your life in a way they may not realise. Write them a letter, naming what they did and what it gave you. Send it or keep it; either works.",
+      tags: ["gratitude", "wonder", "grateful", "tender", "open"]
+    },
+    {
+      title: "An act of kindness",
+      lineage: "Lyubomirsky · kindness reflection",
+      prompt: "Recall one kind thing you did today, however small. What did you notice in yourself before, during, after? Write it down; this is how kindness becomes a practice.",
+      tags: ["gratitude", "wonder", "alight", "grateful", "open"]
+    },
+    {
+      title: "Letting one thing go",
+      lineage: "Worthington REACH · forgiveness writing",
+      prompt: "Bring to mind one resentment you've been carrying. Without minimising the hurt, write what you are willing to release tonight, just for tonight. You can pick it back up tomorrow if you need to.",
+      tags: ["rest", "grief", "heavy", "raw", "tender"]
     },
   ],
 
