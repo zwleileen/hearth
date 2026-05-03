@@ -19,29 +19,6 @@ const { useState: useState1, useEffect: useEffect1 } = React;
 //   4. Three-up index of practices
 //   5. Closing line
 // ─────────────────────────────────────────────────────────────
-function computeJournalStats(entries) {
-  const total = entries.length;
-  const now = new Date();
-  const startOfWeek = new Date(now);
-  startOfWeek.setDate(now.getDate() - now.getDay());
-  startOfWeek.setHours(0, 0, 0, 0);
-  const thisWeek = entries.filter(e => new Date(e.createdAt) >= startOfWeek).length;
-
-  const dayKey = (d) => d.toDateString();
-  const dates = new Set(entries.map(e => dayKey(new Date(e.createdAt))));
-  let streak = 0;
-  const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-  if (!dates.has(dayKey(cursor))) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  while (dates.has(dayKey(cursor))) {
-    streak++;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return { total, thisWeek, streak };
-}
-
 // Local-time greeting buckets. Reads the user's machine timezone.
 function timeOfDay() {
   const h = new Date().getHours();
@@ -115,7 +92,6 @@ function HomeScreen({ go, user }) {
   })();
   const quote = pickDailyQuote(D.dailyQuotes, user);
 
-  const [stats, setStats] = useState1({ total: 0, thisWeek: 0, streak: 0 });
   const [items, setItems] = useState1(null);
   const [issueNote, setIssueNote] = useState1('');
   const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
@@ -144,14 +120,6 @@ function HomeScreen({ go, user }) {
 
   useEffect1(() => {
     let cancelled = false;
-    (async () => {
-      try {
-        const { entries } = await api.journal.list();
-        if (!cancelled) setStats(computeJournalStats(entries));
-      } catch {
-        // not authed or error: keep zeros
-      }
-    })();
     (async () => {
       try {
         const data = await api.discover.today();
@@ -183,11 +151,6 @@ function HomeScreen({ go, user }) {
         <p className="body" style={{ margin: '14px 0 0', maxWidth: 380 }}>
           {intro}
         </p>
-        <div style={{ display: 'flex', gap: 28, marginTop: 26 }}>
-          <HomeStat n={stats.streak} label="day streak"/>
-          <HomeStat n={stats.total} label="entries kept"/>
-          <HomeStat n={stats.thisWeek} label="this week"/>
-        </div>
       </section>
 
       {/* ── 2. Daily quote (replaces the prompt block) ── */}
@@ -399,22 +362,6 @@ function HomeScreen({ go, user }) {
   );
 }
 
-// Small editorial stat — number in serif, label all-caps below
-function HomeStat({ n, label }) {
-  return (
-    <div>
-      <div className="serif" style={{
-        fontSize: 28, fontWeight: 360, color: 'var(--hh-green)',
-        lineHeight: 1, letterSpacing: '-0.01em',
-      }}>{n}</div>
-      <div style={{
-        fontFamily: 'var(--sans)', fontSize: 9.5, fontWeight: 500,
-        letterSpacing: '0.18em', textTransform: 'uppercase',
-        color: 'var(--paper-mute)', marginTop: 6,
-      }}>{label}</div>
-    </div>
-  );
-}
 
 // ─────────────────────────────────────────────────────────────
 // JOURNAL — editorial
