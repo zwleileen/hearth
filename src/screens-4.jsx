@@ -652,7 +652,9 @@ function computeWeekly(entries, bookmarks) {
 function WeeklyDigestScreen({ go }) {
   const [entries, setEntries] = React.useState(null);
   const [bookmarks, setBookmarks] = React.useState(null);
+  const [biblio, setBiblio] = React.useState(null);
   const [unauthed, setUnauthed] = React.useState(false);
+  const [savedBooks, setSavedBooks] = React.useState({}); // key -> true
 
   React.useEffect(() => {
     let cancelled = false;
@@ -668,8 +670,39 @@ function WeeklyDigestScreen({ go }) {
         else { setEntries([]); setBookmarks([]); }
       }
     })();
+    // Bibliotherapy is a separate, slower call. Don't block the rest of
+    // the digest on it. Failures here are silent — a missing section
+    // is preferable to a noisy error on a reflective surface.
+    (async () => {
+      try {
+        const data = await api.digest.bibliotherapy();
+        if (!cancelled) setBiblio(data);
+      } catch {
+        if (!cancelled) setBiblio({ themes: [], books: [] });
+      }
+    })();
     return () => { cancelled = true; };
   }, []);
+
+  async function saveBook(book) {
+    const key = `book-${book.title}`;
+    if (savedBooks[key]) return;
+    try {
+      await api.bookmarks.create({
+        kind: 'book',
+        title: book.title,
+        source: book.author || '',
+        url: book.url || '',
+        excerpt: book.why || '',
+        meta: { savedFrom: 'digest-bibliotherapy' },
+      });
+      setSavedBooks(prev => ({ ...prev, [key]: true }));
+    } catch (err) {
+      if (err.status === 409) {
+        setSavedBooks(prev => ({ ...prev, [key]: true }));
+      }
+    }
+  }
 
   if (unauthed) {
     return (
@@ -844,6 +877,95 @@ function WeeklyDigestScreen({ go }) {
               ))}
             </p>
           )}
+        </section>
+      )}
+
+      {/* Bibliotherapy · books that meet the week's themes.
+          Section hides itself entirely when there's no signal: cold-start,
+          empty themes, or LLM returned nothing coherent. Better silent than
+          fabricated. */}
+      {biblio && Array.isArray(biblio.themes) && biblio.themes.length > 0 && Array.isArray(biblio.books) && biblio.books.length > 0 && (
+        <section style={{ padding: '40px 22px 0' }}>
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title" style={{ color: 'var(--hh-blue-deep)' }}>What your week was asking for</span>
+            <span className="hearth-dept-head-meta">books</span>
+          </div>
+          {biblio.reflection && (
+            <p className="serif" style={{
+              margin: '14px 0 0', fontSize: 17, fontStyle: 'italic',
+              fontWeight: 380, color: 'var(--paper-2)', maxWidth: 540, lineHeight: 1.5,
+            }}>
+              {biblio.reflection}
+            </p>
+          )}
+          {biblio.themes.length > 0 && (
+            <div style={{ marginTop: 18 }}>
+              {biblio.themes.map((t, i) => (
+                <div key={i} style={{ marginTop: i === 0 ? 0 : 14 }}>
+                  <div className="mono" style={{
+                    fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
+                    textTransform: 'uppercase', marginBottom: 6,
+                  }}>Thread · {String(i + 1).padStart(2, '0')}</div>
+                  <Headline size="section" italic style={{ fontWeight: 380 }}>
+                    {t.name}
+                  </Headline>
+                  {t.summary && (
+                    <p className="body" style={{ margin: '8px 0 0', maxWidth: 540 }}>{t.summary}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop: 28 }}>
+            {biblio.books.map((b, i) => {
+              const key = `book-${b.title}`;
+              const isSaved = savedBooks[key];
+              return (
+                <div key={key} style={{
+                  paddingTop: i === 0 ? 0 : 22,
+                  paddingBottom: 22,
+                  borderBottom: i < (biblio.books.length - 1) ? '1px solid var(--paper-line-2)' : 0,
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                    <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </div>
+                    <button onClick={() => saveBook(b)} disabled={isSaved}
+                      className="hearth-save-btn" data-saved={isSaved}>
+                      {Icon.bookmark(12, 'currentColor')}
+                      <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
+                    </button>
+                  </div>
+                  <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
+                    {b.title}
+                  </Headline>
+                  <p className="serif" style={{
+                    margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                    color: 'var(--hh-green-3)', fontWeight: 380,
+                  }}>{b.author}</p>
+                  <p className="body" style={{ margin: 0, maxWidth: 540 }}>{b.why}</p>
+                  {b.url && (
+                    <a href={b.url} target="_blank" rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-block', marginTop: 10, color: 'var(--ember)',
+                        fontFamily: 'var(--sans)', fontSize: 11,
+                        fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase',
+                        textDecoration: 'none', borderBottom: '1px solid currentColor',
+                        paddingBottom: 2,
+                      }}>
+                      More about this book →
+                    </a>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className="serif" style={{
+            margin: '20px 0 0', fontSize: 13, fontStyle: 'italic',
+            color: 'var(--paper-mute)', maxWidth: 480,
+          }}>
+            Books are suggested from what threads through your writing. They aren't a prescription. Pick one if it calls; let the others wait.
+          </p>
         </section>
       )}
 

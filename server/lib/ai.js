@@ -147,6 +147,70 @@ export const DISCOVER_SCHEMA = {
   additionalProperties: false,
 };
 
+// ─── Bibliotherapy (Weekly Digest) ───────────────────────────────────────
+//
+// Reads the user's recent journal entries, surfaces 1-2 themes the writer
+// has been sitting with, and recommends 2-3 books that have been used in
+// bibliotherapy practice to keep company in those places. Voice is
+// editorial: a thoughtful friend who reads your letters, not an algorithm
+// that tags you. Themes use the writer's own register where possible.
+//
+// Empty arrays are valid output: if the entries are too few, too sparse,
+// or too varied to find a coherent thread, the model should return
+// themes:[] and books:[] rather than fabricate a theme. The frontend
+// hides the section when there's nothing to say.
+export const BIBLIOTHERAPY_SCHEMA = {
+  type: 'object',
+  properties: {
+    reflection: {
+      type: 'string',
+      description: 'One short editorial line introducing the reading, written in voice (e.g., "A thread runs through your week"). Empty string if themes is empty.',
+    },
+    themes: {
+      type: 'array',
+      description: 'One to two themes the writer has been sitting with. Use the writer\'s own register where possible (concrete, not pop-psych labels). Return empty array if entries are too few, too sparse, or too varied for a coherent read.',
+      items: {
+        type: 'object',
+        properties: {
+          name: {
+            type: 'string',
+            description: 'A short phrase naming the thread, lowercase, 2 to 6 words (e.g., "the slow goodbye", "rebuilding after a season of doubt", "noticing again"). Not a clinical label.',
+          },
+          summary: {
+            type: 'string',
+            description: 'One or two sentences describing what you noticed in the writing, in voice. Specific to what the writer wrote, not generic. No advice, no fixing.',
+          },
+        },
+        required: ['name', 'summary'],
+        additionalProperties: false,
+      },
+    },
+    books: {
+      type: 'array',
+      description: 'Two to three books that have been used in bibliotherapy practice for these themes. Prefer literature over self-help. If themes is empty, books must also be empty.',
+      items: {
+        type: 'object',
+        properties: {
+          title: { type: 'string' },
+          author: { type: 'string' },
+          why: {
+            type: 'string',
+            description: 'Two sentences. Why this book meets the theme, grounded in what the book actually does (not generic praise). Avoid prescriptive language ("you should read"); prefer the bookseller register ("this one keeps company with").',
+          },
+          url: {
+            type: 'string',
+            description: 'Optional link to a publisher page, thoughtful review, or essay about the book. Empty string if none.',
+          },
+        },
+        required: ['title', 'author', 'why', 'url'],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ['reflection', 'themes', 'books'],
+  additionalProperties: false,
+};
+
 export const ATTUNE_SCHEMA = {
   type: 'object',
   properties: {

@@ -73,4 +73,9 @@ export const api = {
   attune: {
     recommend: (mood) => request('/attune', { method: 'POST', body: { mood } }),
   },
+
+  digest: {
+    bibliotherapy: ({ refresh = false } = {}) =>
+      request(`/digest/bibliotherapy${refresh ? '?refresh=1' : ''}`),
+  },
 };

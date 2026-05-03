@@ -8,6 +8,7 @@ import { profile } from './routes/profile.js';
 import { bookmarks } from './routes/bookmarks.js';
 import { discover } from './routes/discover.js';
 import { attune } from './routes/attune.js';
+import { digest } from './routes/digest.js';
 
 const app = express();
 
@@ -49,6 +50,7 @@ app.use('/api/profile', profile);
 app.use('/api/bookmarks', bookmarks);
 app.use('/api/discover', discover);
 app.use('/api/attune', attune);
+app.use('/api/digest', digest);
 
 app.use((err, req, res, _next) => {
   console.error('[server error]', err);
