@@ -26,7 +26,11 @@ Open with a moodSummary: a quiet, two- or three-sentence reflection that names w
 
 Then state the register: 3 to 6 lowercase words naming the texture this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". This register MUST shape every recommendation that follows. If your songs end up Phoebe Bridgers and Bon Iver, your register had better be one of "holding silence" or similar; if your register is "kinetic celebration", the songs must NOT be Phoebe Bridgers and Bon Iver.
 
-Recommend exactly two songs, two books, and two poems that meet this register specifically. Pieces with genuine craft and depth that match the texture, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
+Recommend exactly three songs and three poems that meet this register specifically. Pieces with genuine craft and depth that match the texture, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
+
+For each poem, prefer to include the full text inline ONLY when the poem is unambiguously in the public domain (typically pre-1929 in the US; classical translations; Whitman, Dickinson, early Frost, Hopkins, Tennyson, Donne, Yeats early work, etc.) AND you know it verbatim. Reproduce line breaks accurately using \\n. NEVER paraphrase or reconstruct a poem from memory; misquoting a poem is worse than linking out to it. When in doubt, leave the text field as an empty string and provide a url to a reputable source instead (poetryfoundation.org, poets.org, the poet's own page, the publisher). At least one of the two fields (text or url) must be non-empty for every poem.
+
+Books are no longer part of this reading. Don't include them.
 
 Return the result as JSON matching the schema.`;
 

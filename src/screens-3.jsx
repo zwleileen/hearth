@@ -1179,10 +1179,10 @@ function LandingScreen({ go }) {
             For the texture<br/><span style={{ fontStyle: 'italic' }}>of the mood.</span>
           </h2>
           <p className="serif hearth-landing-feature-body">
-            Tell Hearth how you're feeling, in your own words. It returns two songs,
-            two books, and two poems chosen for the texture of the mood, each with a
-            short reason grounded in research on music, reading, and emotion. Save
-            what fits.
+            Tell Hearth how you're feeling, in your own words. It returns three songs
+            and three poems chosen for the texture of the mood, each with a short
+            reason grounded in research on music, reading, and emotion. Public-domain
+            poems open in place; the rest link to a reputable source. Save what fits.
           </p>
         </div>
       </section>

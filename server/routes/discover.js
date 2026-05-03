@@ -32,7 +32,13 @@ The reader has expressed these interests during onboarding: ${interests.length >
 Their preferred reading time is ${dailyTime}. Their signature is "${flower}".
 Today's date: ${date}.
 
-Use the web_search tool to find 6 to 10 specific, recently-published or recently-relevant pieces of content that fit Hearth's editorial register and the reader's interests. Mix kinds: a long-form essay, a poem worth sharing, a book worth knowing about, a piece of slow news, a thoughtful interview. Avoid hot takes, listicles, partisan content, and AI/tech hype.
+Use the web_search tool to find 6 to 10 specific, recently-published or recently-relevant pieces of content that fit Hearth's editorial register and the reader's interests. Mix kinds, with these requirements:
+  - At LEAST one item with kind="book" — a specific book worth knowing about that fits the reader's interests. This can be a recent release (within the last 6-12 months) reviewed in a reputable outlet, OR a quieter back-catalog book the reader likely hasn't found. The url should point to a publisher page, an essay about the book, or a thoughtful review (NYRB, LARB, The Marginalian, Lit Hub, Granta, Paris Review interviews).
+  - At LEAST one long-form essay
+  - At least one poem worth sharing (poetryfoundation.org, poets.org, etc.)
+  - Optionally: a piece of slow news, a thoughtful interview, an in-depth profile
+
+Avoid hot takes, listicles, partisan content, and AI/tech hype.
 
 Search broadly across reputable editorial outlets. Prefer specificity (a real article with a real URL) over generic recommendations.
 

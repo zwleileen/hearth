@@ -200,7 +200,10 @@ function DiscoverScreen({ go }) {
 // ATTUNE — quiet input → reading
 // Editorial: full-page question, large textarea, seed phrases as
 // a flat list. Reading screen uses Pale Dogwood color block for
-// the song and Old Lace for the book.
+// the songs section. Poems section follows on the cream paper.
+// Books moved to the home reading room (DiscoverScreen) so the
+// bench here stays focused on what fits an in-the-moment mood:
+// listen now, read in a sitting. Long-form lives upstairs.
 // ─────────────────────────────────────────────────────────────
 function AttuneScreen({ go }) {
   const D = HEARTH_DATA;
@@ -209,6 +212,7 @@ function AttuneScreen({ go }) {
   const [busy, setBusy] = useState2(false);
   const [error, setError] = useState2(null);
   const [saved, setSaved] = React.useState({}); // saveKey -> true
+  const [expandedPoems, setExpandedPoems] = React.useState({}); // saveKey -> bool
 
   async function generateReading() {
     if (busy) return;
@@ -294,7 +298,7 @@ function AttuneScreen({ go }) {
 
         {/* Songs, Pale Dogwood block */}
         <ColorBlock accent="dogwood" style={{ marginTop: 40 }}>
-          <Kicker>Songs · for your ears, now</Kicker>
+          <Kicker>Songs · for your ears</Kicker>
           <div style={{ marginTop: 18 }}>
             {(reading.songs || []).map((s, i) => {
               const key = `song-${i}-${s.title}`;
@@ -329,50 +333,24 @@ function AttuneScreen({ go }) {
           </div>
         </ColorBlock>
 
-        {/* Books */}
+        {/* Poems · text inline when public-domain & known verbatim,
+            otherwise a "Read at <source>" link out. The expand state
+            is per-card so multiple poems can be open simultaneously. */}
         <section style={{ padding: '40px 22px 0' }}>
-          <Kicker>Books · for your hands, later</Kicker>
-          <div style={{ marginTop: 18 }}>
-            {(reading.books || []).map((b, i) => {
-              const key = `book-${i}-${b.title}`;
-              const isSaved = saved[key];
-              return (
-                <div key={key} style={{
-                  paddingTop: i === 0 ? 0 : 22,
-                  paddingBottom: 22,
-                  borderBottom: i < (reading.books.length - 1) ? '1px solid var(--paper-line-2)' : 0,
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                      {String(i + 1).padStart(2, '0')}
-                    </div>
-                    <button onClick={() => saveItem('book', b, key)} disabled={isSaved}
-                      className="hearth-save-btn" data-saved={isSaved}>
-                      {Icon.bookmark(12, 'currentColor')}
-                      <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
-                    </button>
-                  </div>
-                  <Headline size="section" italic style={{ marginTop: 6, fontWeight: 380 }}>
-                    {b.title}
-                  </Headline>
-                  <p className="serif" style={{
-                    margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
-                    color: 'var(--hh-green-3)', fontWeight: 380,
-                  }}>{b.author}</p>
-                  <p className="body" style={{ margin: 0, maxWidth: 540 }}>{b.why}</p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        {/* Poems */}
-        <section style={{ padding: '24px 22px 0' }}>
           <Kicker>Poems · for the page</Kicker>
           <div style={{ marginTop: 18 }}>
             {(reading.poems || []).map((p, i) => {
               const key = `poem-${i}-${p.title}`;
               const isSaved = saved[key];
+              const hasText = typeof p.text === 'string' && p.text.trim().length > 0;
+              const hasUrl = typeof p.url === 'string' && p.url.trim().length > 0;
+              const isExpanded = expandedPoems[key];
+              let sourceLabel = '';
+              if (hasUrl) {
+                try {
+                  sourceLabel = new URL(p.url).hostname.replace(/^www\./, '');
+                } catch { sourceLabel = 'source'; }
+              }
               return (
                 <div key={key} style={{
                   paddingTop: i === 0 ? 0 : 22,
@@ -396,7 +374,42 @@ function AttuneScreen({ go }) {
                     margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
                     color: 'var(--hh-green-3)', fontWeight: 380,
                   }}>{p.poet}</p>
-                  <p className="body" style={{ margin: 0, maxWidth: 540 }}>{p.why}</p>
+                  <p className="body" style={{ margin: '0 0 14px', maxWidth: 540 }}>{p.why}</p>
+
+                  {hasText && (
+                    <>
+                      <button onClick={() => setExpandedPoems(prev => ({ ...prev, [key]: !prev[key] }))}
+                        style={{
+                          background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+                          color: 'var(--ember)', fontFamily: 'var(--sans)', fontSize: 11,
+                          fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase',
+                        }}>
+                        {isExpanded ? 'Close poem' : 'Read poem'}
+                      </button>
+                      {isExpanded && (
+                        <pre className="serif" style={{
+                          marginTop: 14, marginBottom: 0,
+                          fontSize: 16, lineHeight: 1.7, fontStyle: 'italic',
+                          fontWeight: 380, color: 'var(--hh-green)',
+                          whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                          fontFamily: 'inherit', maxWidth: 560,
+                          padding: '14px 0 4px', borderTop: '1px solid var(--paper-line-2)',
+                        }}>{p.text}</pre>
+                      )}
+                    </>
+                  )}
+                  {!hasText && hasUrl && (
+                    <a href={p.url} target="_blank" rel="noopener noreferrer"
+                      style={{
+                        display: 'inline-block', color: 'var(--ember)',
+                        fontFamily: 'var(--sans)', fontSize: 11,
+                        fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase',
+                        textDecoration: 'none', borderBottom: '1px solid currentColor',
+                        paddingBottom: 2,
+                      }}>
+                      Read at {sourceLabel} →
+                    </a>
+                  )}
                 </div>
               );
             })}
@@ -447,7 +460,7 @@ function AttuneScreen({ go }) {
           How are you,<br/><span style={{ fontStyle: 'italic' }}>really?</span>
         </Headline>
         <p className="body" style={{ margin: '18px 0 28px', maxWidth: 380 }}>
-          Tell me in a sentence. I'll find songs for now, books for after, and poems for the page. Chosen on what the research says actually helps.
+          Tell me in a sentence. I'll find three songs and three poems shaped to where you are. Chosen on what the research says actually helps.
         </p>
 
         <textarea

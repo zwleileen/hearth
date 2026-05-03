@@ -156,11 +156,11 @@ export const ATTUNE_SCHEMA = {
     },
     register: {
       type: 'string',
-      description: 'A short phrase (3 to 6 words, lowercase) naming the register this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". The songs, books, and poems must match this register, not default to introspective. Two materially different moods must produce materially different registers.',
+      description: 'A short phrase (3 to 6 words, lowercase) naming the register this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". The songs and poems must match this register, not default to introspective. Two materially different moods must produce materially different registers.',
     },
     songs: {
       type: 'array',
-      description: 'Exactly two song recommendations, the two best fits for the mood',
+      description: 'Exactly three song recommendations, the three best fits for the mood',
       items: {
         type: 'object',
         properties: {
@@ -172,35 +172,29 @@ export const ATTUNE_SCHEMA = {
         additionalProperties: false,
       },
     },
-    books: {
-      type: 'array',
-      description: 'Exactly two book recommendations, the two best fits for the mood',
-      items: {
-        type: 'object',
-        properties: {
-          title: { type: 'string' },
-          author: { type: 'string' },
-          why: { type: 'string' },
-        },
-        required: ['title', 'author', 'why'],
-        additionalProperties: false,
-      },
-    },
     poems: {
       type: 'array',
-      description: 'Exactly two poem recommendations, the two best fits for the mood',
+      description: 'Exactly three poem recommendations, the three best fits for the mood. Each must include either text (for unambiguously public-domain poems you know verbatim) or url (a reputable source where the reader can read it). Empty string for the field you are not providing.',
       items: {
         type: 'object',
         properties: {
           title: { type: 'string' },
           poet: { type: 'string' },
           why: { type: 'string' },
+          text: {
+            type: 'string',
+            description: 'Full poem text, line-broken with \\n. ONLY include for poems that are unambiguously in the public domain (typically pre-1929 in the US; classical translations; Whitman, Dickinson, early Frost, Hopkins, Tennyson, Donne, etc.) AND that you know verbatim. NEVER paraphrase or reconstruct from memory. When in doubt, leave this as an empty string and provide url instead. Misquoting a poem is worse than linking out to it.',
+          },
+          url: {
+            type: 'string',
+            description: 'Direct link to the poem on a reputable source (poetryfoundation.org, poets.org, allpoetry.com, the publisher\'s site, the poet\'s own page). Empty string if you provided full text instead. At least one of text or url MUST be non-empty.',
+          },
         },
-        required: ['title', 'poet', 'why'],
+        required: ['title', 'poet', 'why', 'text', 'url'],
         additionalProperties: false,
       },
     },
   },
-  required: ['moodSummary', 'register', 'songs', 'books', 'poems'],
+  required: ['moodSummary', 'register', 'songs', 'poems'],
   additionalProperties: false,
 };
