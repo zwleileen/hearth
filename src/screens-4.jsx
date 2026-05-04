@@ -3,7 +3,7 @@
 import React from 'react';
 import { BackRow, ColorBlock, Eyebrow, Headline, Icon, Kicker, LeafMark, Ph, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
-import { api } from './api.js';
+import { api, isItemBookmarked } from './api.js';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers — format backend records for display
@@ -654,7 +654,6 @@ function WeeklyDigestScreen({ go }) {
   const [bookmarks, setBookmarks] = React.useState(null);
   const [biblio, setBiblio] = React.useState(null);
   const [unauthed, setUnauthed] = React.useState(false);
-  const [savedBooks, setSavedBooks] = React.useState({}); // key -> true
 
   React.useEffect(() => {
     let cancelled = false;
@@ -685,10 +684,10 @@ function WeeklyDigestScreen({ go }) {
   }, []);
 
   async function saveBook(book) {
-    const key = `book-${book.title}`;
-    if (savedBooks[key]) return;
+    const probe = { kind: 'book', title: book.title, source: book.author, url: book.url };
+    if (isItemBookmarked(bookmarks, probe)) return;
     try {
-      await api.bookmarks.create({
+      const { bookmark } = await api.bookmarks.create({
         kind: 'book',
         title: book.title,
         source: book.author || '',
@@ -696,10 +695,13 @@ function WeeklyDigestScreen({ go }) {
         excerpt: book.why || '',
         meta: { savedFrom: 'digest-bibliotherapy' },
       });
-      setSavedBooks(prev => ({ ...prev, [key]: true }));
+      if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
     } catch (err) {
       if (err.status === 409) {
-        setSavedBooks(prev => ({ ...prev, [key]: true }));
+        try {
+          const { bookmarks: latest } = await api.bookmarks.list();
+          setBookmarks(latest || []);
+        } catch {}
       }
     }
   }
@@ -919,7 +921,7 @@ function WeeklyDigestScreen({ go }) {
           <div style={{ marginTop: 28 }}>
             {biblio.books.map((b, i) => {
               const key = `book-${b.title}`;
-              const isSaved = savedBooks[key];
+              const isSaved = isItemBookmarked(bookmarks, { kind: 'book', title: b.title, source: b.author, url: b.url });
               return (
                 <div key={key} style={{
                   paddingTop: i === 0 ? 0 : 22,

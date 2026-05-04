@@ -1,6 +1,59 @@
 // Hearth API client. Calls go through Vite's /api proxy in dev,
 // and to the same origin in production.
 
+// ─── Bookmark identity helpers ───────────────────────────────────────
+// Match an item being rendered on a Save-able surface (home reading
+// room item, attune song/poem, digest book) against the bookmarks
+// list, so the "Saved" state survives navigation. The bug we're
+// fixing: per-screen `saved` maps reset when the component unmounts,
+// causing the same item to be savable multiple times.
+//
+// Bookmark.kind is one of: 'article' | 'song' | 'book' | 'poem'
+// Item.kind on the wire can also be 'essay' or 'news' from the
+// discover schema, both of which collapse to 'article' on save.
+
+export function bookmarkKindFor(item) {
+  if (!item || !item.kind) return null;
+  if (item.kind === 'essay' || item.kind === 'news') return 'article';
+  return item.kind;
+}
+
+// The item's "second name" — the artist for a song, poet for a poem,
+// author for a book, source/publication for an article. Used as a
+// secondary match signal when titles collide (common for one-word
+// poem titles like "Wild geese" or generic article titles).
+export function itemAuthor(item) {
+  if (!item) return '';
+  return item.artist || item.poet || item.author || item.source || '';
+}
+
+// Find an existing bookmark that represents this item, or null.
+// Match priority: same-url first (most specific), then (kind, title)
+// with author confirmation when both sides have one.
+export function findBookmarkFor(bookmarks, item) {
+  if (!Array.isArray(bookmarks) || !item) return null;
+  const wantKind = bookmarkKindFor(item);
+  if (!wantKind) return null;
+  const wantUrl = (item.url || '').trim();
+  const wantAuthor = itemAuthor(item).trim().toLowerCase();
+  for (const b of bookmarks) {
+    if (b.kind !== wantKind) continue;
+    if (wantUrl && b.url && b.url === wantUrl) return b;
+    if (!b.title || !item.title) continue;
+    if (b.title.trim().toLowerCase() !== item.title.trim().toLowerCase()) continue;
+    // Title match. Confirm with author if both sides have one;
+    // otherwise accept the title match (no author available).
+    const haveAuthor = (b.source || '').trim().toLowerCase();
+    if (!haveAuthor || !wantAuthor) return b;
+    if (haveAuthor === wantAuthor) return b;
+  }
+  return null;
+}
+
+export function isItemBookmarked(bookmarks, item) {
+  return !!findBookmarkFor(bookmarks, item);
+}
+
 const TOKEN_KEY = 'hearth.token';
 
 export function getToken() {

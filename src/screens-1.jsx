@@ -5,7 +5,7 @@
 import React from 'react';
 import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
-import { api } from './api.js';
+import { api, bookmarkKindFor, isItemBookmarked } from './api.js';
 
 const { useState: useState1, useEffect: useEffect1 } = React;
 
@@ -89,14 +89,17 @@ function HomeScreen({ go, user }) {
   const [items, setItems] = useState1(null);
   const [issueNote, setIssueNote] = useState1('');
   const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
-  const [savedFeed, setSavedFeed] = React.useState({}); // url -> true
+  // Bookmarks are the source of truth for "Saved" buttons. Per-screen
+  // `saved` maps used to lose state on unmount, so users could save
+  // the same item multiple times by navigating away and back. The
+  // bookmarks list is fetched on mount and updated locally on save.
+  const [bookmarks, setBookmarks] = React.useState([]);
 
   async function saveDiscoverItem(item) {
-    const key = item.url || `${item.kind}:${item.title}`;
-    if (savedFeed[key]) return;
+    if (isItemBookmarked(bookmarks, item)) return;
     try {
-      const kind = ['article', 'essay', 'news'].includes(item.kind) ? 'article' : item.kind;
-      await api.bookmarks.create({
+      const kind = bookmarkKindFor(item);
+      const { bookmark } = await api.bookmarks.create({
         kind,
         title: item.title,
         source: item.source || '',
@@ -104,10 +107,15 @@ function HomeScreen({ go, user }) {
         excerpt: item.dek || '',
         meta: { savedFrom: 'home', readTime: item.readTime, image: item.image },
       });
-      setSavedFeed(prev => ({ ...prev, [key]: true }));
+      if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
     } catch (err) {
+      // 409 on URL uniqueness collision. Refetch to sync the in-memory
+      // list with the server-side state so the button flips to Saved.
       if (err.status === 409) {
-        setSavedFeed(prev => ({ ...prev, [key]: true }));
+        try {
+          const { bookmarks: latest } = await api.bookmarks.list();
+          setBookmarks(latest || []);
+        } catch {}
       }
     }
   }
@@ -126,6 +134,15 @@ function HomeScreen({ go, user }) {
         if (cancelled) return;
         if (err.status === 401) setFeedState('unauthed');
         else setFeedState('empty');
+      }
+    })();
+    (async () => {
+      try {
+        const { bookmarks: list } = await api.bookmarks.list();
+        if (!cancelled) setBookmarks(list || []);
+      } catch {
+        // Unauth or transient — render with empty bookmarks; saving
+        // will fail with 401 if user isn't signed in, which is fine.
       }
     })();
     return () => { cancelled = true; };
@@ -210,8 +227,7 @@ function HomeScreen({ go, user }) {
 
         {/* Hero article — magazine cover treatment */}
         {feedState === 'ready' && hero && (() => {
-          const heroKey = hero.url || `${hero.kind}:${hero.title}`;
-          const heroSaved = savedFeed[heroKey];
+          const heroSaved = isItemBookmarked(bookmarks, hero);
           return (
             <article style={{ marginTop: 28 }}>
               <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
@@ -290,7 +306,7 @@ function HomeScreen({ go, user }) {
             <div className="hearth-feed-grid" style={{ marginTop: 28 }}>
               {rest.map((it, i) => {
                 const itemKey = it.url || `${it.kind}:${it.title}:${i}`;
-                const itemSaved = savedFeed[itemKey];
+                const itemSaved = isItemBookmarked(bookmarks, it);
                 const accent = ACCENTS[i % ACCENTS.length];
                 return (
                   <article key={itemKey} className="hearth-article"

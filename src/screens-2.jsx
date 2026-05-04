@@ -7,7 +7,7 @@
 import React from 'react';
 import { BackRow, ColorBlock, Headline, Icon, Kicker, Ph, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
-import { api } from './api.js';
+import { api, isItemBookmarked, bookmarkKindFor } from './api.js';
 
 const { useState: useState2 } = React;
 
@@ -211,8 +211,22 @@ function AttuneScreen({ go }) {
   const [reading, setReading] = useState2(null);
   const [busy, setBusy] = useState2(false);
   const [error, setError] = useState2(null);
-  const [saved, setSaved] = React.useState({}); // saveKey -> true
-  const [expandedPoems, setExpandedPoems] = React.useState({}); // saveKey -> bool
+  // Bookmarks list is the source of truth for "Saved" state, so the
+  // button doesn't reset when the user navigates away and back. See
+  // bookmarkKindFor / isItemBookmarked in api.js for the matcher.
+  const [bookmarks, setBookmarks] = React.useState([]);
+  const [expandedPoems, setExpandedPoems] = React.useState({});
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { bookmarks: list } = await api.bookmarks.list();
+        if (!cancelled) setBookmarks(list || []);
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   async function generateReading() {
     if (busy) return;
@@ -221,7 +235,6 @@ function AttuneScreen({ go }) {
     try {
       const data = await api.attune.recommend(text.trim());
       setReading(data);
-      setSaved({});
     } catch (err) {
       if (err.status === 401) {
         setError({ kind: 'unauthed' });
@@ -235,20 +248,28 @@ function AttuneScreen({ go }) {
     }
   }
 
-  async function saveItem(kind, item, key) {
-    if (saved[key]) return;
+  async function saveItem(kind, item) {
+    // Build a normalised item shape so the matcher and the create call
+    // agree on author/source for songs (artist), poems (poet), books (author).
+    const author = item.artist || item.author || item.poet || '';
+    const probe = { kind, title: item.title, source: author, url: item.url || '' };
+    if (isItemBookmarked(bookmarks, probe)) return;
     try {
-      await api.bookmarks.create({
+      const { bookmark } = await api.bookmarks.create({
         kind,
         title: item.title,
-        source: item.artist || item.author || item.poet || '',
+        source: author,
+        url: item.url || '',
         excerpt: item.why || '',
         meta: { savedFrom: 'attune' },
       });
-      setSaved(prev => ({ ...prev, [key]: true }));
+      if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
     } catch (err) {
       if (err.status === 409) {
-        setSaved(prev => ({ ...prev, [key]: true }));
+        try {
+          const { bookmarks: latest } = await api.bookmarks.list();
+          setBookmarks(latest || []);
+        } catch {}
       }
     }
   }
@@ -302,7 +323,7 @@ function AttuneScreen({ go }) {
           <div style={{ marginTop: 18 }}>
             {(reading.songs || []).map((s, i) => {
               const key = `song-${i}-${s.title}`;
-              const isSaved = saved[key];
+              const isSaved = isItemBookmarked(bookmarks, { kind: 'song', title: s.title, source: s.artist });
               return (
                 <div key={key} style={{
                   paddingTop: i === 0 ? 0 : 22,
@@ -313,7 +334,7 @@ function AttuneScreen({ go }) {
                     <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
                       {String(i + 1).padStart(2, '0')}
                     </div>
-                    <button onClick={() => saveItem('song', s, key)} disabled={isSaved}
+                    <button onClick={() => saveItem('song', s)} disabled={isSaved}
                       className="hearth-save-btn" data-saved={isSaved}>
                       {Icon.bookmark(12, 'currentColor')}
                       <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
@@ -341,7 +362,7 @@ function AttuneScreen({ go }) {
           <div style={{ marginTop: 18 }}>
             {(reading.poems || []).map((p, i) => {
               const key = `poem-${i}-${p.title}`;
-              const isSaved = saved[key];
+              const isSaved = isItemBookmarked(bookmarks, { kind: 'poem', title: p.title, source: p.poet, url: p.url });
               const hasText = typeof p.text === 'string' && p.text.trim().length > 0;
               const hasUrl = typeof p.url === 'string' && p.url.trim().length > 0;
               const isExpanded = expandedPoems[key];
@@ -361,7 +382,7 @@ function AttuneScreen({ go }) {
                     <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
                       {String(i + 1).padStart(2, '0')}
                     </div>
-                    <button onClick={() => saveItem('poem', p, key)} disabled={isSaved}
+                    <button onClick={() => saveItem('poem', p)} disabled={isSaved}
                       className="hearth-save-btn" data-saved={isSaved}>
                       {Icon.bookmark(12, 'currentColor')}
                       <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
