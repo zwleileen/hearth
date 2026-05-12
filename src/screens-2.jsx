@@ -205,6 +205,79 @@ function DiscoverScreen({ go }) {
 // bench here stays focused on what fits an in-the-moment mood:
 // listen now, read in a sitting. Long-form lives upstairs.
 // ─────────────────────────────────────────────────────────────
+
+// Small chip-row used for the Attune preferences (genre + vocals).
+// Single-select, click to toggle. Matches the seed-phrase row's quiet
+// editorial register: hairline border, mono label, no bold colour.
+function PreferenceRow({ label, value, onChange, options, style }) {
+  return (
+    <div style={style}>
+      <div className="mono" style={{
+        fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
+        textTransform: 'uppercase', marginBottom: 10,
+      }}>
+        {label}
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+        {options.map((opt) => {
+          const active = value === opt.value;
+          return (
+            <button
+              key={opt.value}
+              type="button"
+              onClick={() => onChange(opt.value)}
+              style={{
+                background: active ? 'var(--hh-green)' : 'transparent',
+                color: active ? 'var(--hh-lace)' : 'var(--hh-green)',
+                border: '1px solid ' + (active ? 'var(--hh-green)' : 'rgba(31, 64, 69, 0.22)'),
+                padding: '7px 14px',
+                cursor: 'pointer',
+                fontFamily: 'var(--sans)',
+                fontSize: 11,
+                fontWeight: active ? 500 : 400,
+                letterSpacing: '0.08em',
+                transition: 'background 200ms ease, color 200ms ease, border-color 200ms ease',
+              }}
+            >
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// Human-readable labels for the saved preferences shown on logbook
+// rows + the past-reading view. Mirrors the option labels in
+// PreferenceRow above but lives next to the place that renders them
+// so both stay in sync at a glance.
+const GENRE_LABEL = {
+  any: 'Any genre',
+  folk: 'Folk',
+  classical: 'Classical',
+  jazz: 'Jazz',
+  soul: 'Soul & R&B',
+  electronic: 'Electronic',
+  indie: 'Indie',
+  hiphop: 'Hip-hop',
+  world: 'World',
+};
+const VOCALS_LABEL = {
+  either: 'Either',
+  with: 'With vocals',
+  without: 'Instrumental',
+};
+// Reader-friendly: returns null when nothing was constrained, so the
+// caller can skip rendering rather than print "Any genre · Either".
+function formatPreferences(prefs) {
+  if (!prefs) return null;
+  const parts = [];
+  if (prefs.genre && prefs.genre !== 'any') parts.push(GENRE_LABEL[prefs.genre] || prefs.genre);
+  if (prefs.vocals && prefs.vocals !== 'either') parts.push(VOCALS_LABEL[prefs.vocals] || prefs.vocals);
+  return parts.length > 0 ? parts.join(' · ') : null;
+}
+
 function AttuneScreen({ go }) {
   const D = HEARTH_DATA;
   // View state machine: 'input' → user is typing or seed-picking;
@@ -216,6 +289,11 @@ function AttuneScreen({ go }) {
   const [reading, setReading] = useState2(null);
   const [busy, setBusy] = useState2(false);
   const [error, setError] = useState2(null);
+  // Preferences: genre + vocals. Defaults to "no constraint" so the
+  // model has full freedom unless the reader narrows the field. Reset
+  // on "Try again" so each reading starts from a clean slate.
+  const [genre, setGenre] = useState2('any');
+  const [vocals, setVocals] = useState2('either');
   // Bookmarks list is the source of truth for "Saved" state, so the
   // button doesn't reset when the user navigates away and back. See
   // bookmarkKindFor / isItemBookmarked in api.js for the matcher.
@@ -288,6 +366,7 @@ function AttuneScreen({ go }) {
       _fromLogbook: true,
       _logbookMood: entry.mood,
       _logbookCreatedAt: entry.createdAt,
+      _preferences: entry.preferences,
     });
     setView('reading');
   }
@@ -306,8 +385,8 @@ function AttuneScreen({ go }) {
     setBusy(true);
     setError(null);
     try {
-      const data = await api.attune.recommend(text.trim());
-      setReading(data);
+      const data = await api.attune.recommend({ mood: text.trim(), genre, vocals });
+      setReading({ ...data, _preferences: { genre, vocals } });
       setView('reading');
       // Invalidate cached logbook so the new entry shows next time the
       // user opens it. Cheap: just resets the loaded flag.
@@ -367,6 +446,8 @@ function AttuneScreen({ go }) {
             } else {
               setReading(null);
               setText('');
+              setGenre('any');
+              setVocals('either');
               setView('input');
             }
           }} style={{
@@ -395,6 +476,12 @@ function AttuneScreen({ go }) {
               {new Date(reading._logbookCreatedAt).toLocaleDateString(undefined, {
                 year: 'numeric', month: 'long', day: 'numeric',
               })}
+              {formatPreferences(reading._preferences) && (
+                <>
+                  <span style={{ margin: '0 8px', opacity: 0.5 }}>·</span>
+                  {formatPreferences(reading._preferences)}
+                </>
+              )}
             </div>
             <p className="body" style={{ margin: 0, fontStyle: 'italic', color: 'var(--paper-mute)' }}>
               "{reading._logbookMood}"
@@ -645,6 +732,17 @@ function AttuneScreen({ go }) {
                     </span>
                   )}
                 </div>
+                {/* Saved preferences strip. Only renders when the
+                    reader actually narrowed the field (not "any /
+                    either" defaults). */}
+                {formatPreferences(entry.preferences) && (
+                  <div className="mono" style={{
+                    marginTop: 8, fontSize: 9, letterSpacing: '0.12em',
+                    color: 'var(--paper-mute)', textTransform: 'uppercase',
+                  }}>
+                    {formatPreferences(entry.preferences)}
+                  </div>
+                )}
                 {entry.moodSummary && (
                   <p className="serif" style={{
                     margin: '12px 0 0', fontSize: 16, lineHeight: 1.55,
@@ -752,6 +850,43 @@ function AttuneScreen({ go }) {
           placeholder="I feel…"
           style={{ minHeight: 140, background: 'var(--hh-isabel)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '18px 18px' }}
         />
+
+        {/* ── Preferences ───────────────────────────────────
+            Two rows of chips that scope the song picks: a genre
+            and a vocals preference. Both default to the
+            "no constraint" option so the reading stays as wide
+            as before unless the reader narrows. The chips render
+            in the same quiet editorial register as the seed-
+            phrase row below. */}
+        <div style={{ marginTop: 26 }}>
+          <PreferenceRow
+            label="Genre"
+            value={genre}
+            onChange={setGenre}
+            options={[
+              { value: 'any',         label: 'Any' },
+              { value: 'folk',        label: 'Folk' },
+              { value: 'classical',   label: 'Classical' },
+              { value: 'jazz',        label: 'Jazz' },
+              { value: 'soul',        label: 'Soul & R&B' },
+              { value: 'electronic',  label: 'Electronic' },
+              { value: 'indie',       label: 'Indie' },
+              { value: 'hiphop',      label: 'Hip-hop' },
+              { value: 'world',       label: 'World' },
+            ]}
+          />
+          <PreferenceRow
+            label="Vocals"
+            value={vocals}
+            onChange={setVocals}
+            options={[
+              { value: 'either',  label: 'Either' },
+              { value: 'with',    label: 'With vocals' },
+              { value: 'without', label: 'Instrumental' },
+            ]}
+            style={{ marginTop: 14 }}
+          />
+        </div>
 
         <div style={{ marginTop: 22, display: 'flex', alignItems: 'center', gap: 16 }}>
           {text.trim().length < 6 ? (

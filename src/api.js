@@ -124,7 +124,10 @@ export const api = {
   },
 
   attune: {
-    recommend: (mood) => request('/attune', { method: 'POST', body: { mood } }),
+    // Generate a reading. Preferences are optional; defaults preserve
+    // pre-preferences behaviour (any genre, either vocals).
+    recommend: ({ mood, genre = 'any', vocals = 'either' } = {}) =>
+      request('/attune', { method: 'POST', body: { mood, genre, vocals } }),
     // Logbook: returns the user's past Attune entries in reverse-chrono
     // order. moodSummary on each entry is the AI's interpretation the
     // reader liked enough to want preserved.

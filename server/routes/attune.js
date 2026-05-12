@@ -18,19 +18,66 @@ const DIVERSITY_WINDOW = 5;
 const LOG_DEFAULT_LIMIT = 30;
 const LOG_MAX_LIMIT = 100;
 
+// Preference vocabularies. Mirror the AttuneEntry schema enums and the
+// frontend chips. Validation here keeps the prompt-injection block clean.
+const GENRE_VALUES = ['any', 'folk', 'classical', 'jazz', 'soul', 'electronic', 'indie', 'hiphop', 'world'];
+const VOCALS_VALUES = ['either', 'with', 'without'];
+
+// Map enum → human-readable phrase the model can read. The "any" /
+// "either" values resolve to null so we can skip the line entirely
+// rather than instruct the model with a no-op.
+const GENRE_PHRASE = {
+  any: null,
+  folk: 'folk, singer-songwriter, or contemporary acoustic',
+  classical: 'classical, modern classical, or chamber music',
+  jazz: 'jazz, in any of its eras',
+  soul: 'soul, R&B, or related vocal traditions',
+  electronic: 'electronic, ambient, or contemporary instrumental',
+  indie: 'indie, alt-rock, or art-rock',
+  hiphop: 'hip-hop or contemporary rap',
+  world: 'music from outside the Anglophone canon (Brazilian, African, Latin, Asian traditions, etc.)',
+};
+const VOCALS_PHRASE = {
+  either: null,
+  with: 'songs that have a clear vocal lead; no purely instrumental pieces',
+  without: 'instrumental pieces only; no vocals or spoken-word',
+};
+
+function buildPreferenceBlock(prefs) {
+  const lines = [];
+  const genreLine = GENRE_PHRASE[prefs.genre];
+  const vocalsLine = VOCALS_PHRASE[prefs.vocals];
+  if (!genreLine && !vocalsLine) return '';
+  lines.push('');
+  lines.push('The reader has set these preferences for the music in this reading. These are hard constraints, not suggestions:');
+  if (genreLine) lines.push(`  Genre: ${genreLine}.`);
+  if (vocalsLine) lines.push(`  Vocals: ${vocalsLine}.`);
+  lines.push('Every song you recommend MUST satisfy these. Choose the register honestly within those bounds, then pick titles that meet both the register and the preferences. If the preferences narrow the field hard enough that the obvious register answer is no longer available, find the corner of that genre/vocal space that still meets the register honestly.');
+  return lines.join('\n');
+}
+
 // ── POST /api/attune ──────────────────────────────────────────────────
 // Generate a reading for the user's current mood. After success, save
 // the entry as a logbook record and use the most recent entries to
 // nudge the next call away from familiar artists/poets.
 attune.post('/', async (req, res) => {
   const userId = req.user._id;
-  const { mood } = req.body || {};
+  const { mood, genre, vocals } = req.body || {};
   if (!mood || typeof mood !== 'string' || !mood.trim()) {
     return res.status(400).json({ error: 'mood (free text) is required' });
   }
   if (mood.length > 1000) {
     return res.status(400).json({ error: 'mood is too long, please keep it under 1000 characters' });
   }
+
+  // Normalise preferences. Anything unrecognised falls back to the
+  // "no constraint" default rather than 400-ing, so the API stays
+  // forgiving to older clients that don't send these fields yet.
+  const prefs = {
+    genre: GENRE_VALUES.includes(genre) ? genre : 'any',
+    vocals: VOCALS_VALUES.includes(vocals) ? vocals : 'either',
+  };
+  const preferenceBlock = buildPreferenceBlock(prefs);
 
   // ── Diversity context ──────────────────────────────────────────────
   // Pull the last N entries for this user. Collect the distinct artists,
@@ -93,7 +140,7 @@ Open with a moodSummary: a quiet, two- or three-sentence reflection that names w
 
 Then state the register: 3 to 6 lowercase words naming the texture this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". This register MUST shape every recommendation that follows. The register tells you which corner of the reference points to draw from; do not pull artists from a register that does not match the mood.
 
-The register choice is the most important choice in this reading. If the mood is celebratory or kinetic, the songs must be celebratory or kinetic, not introspective folk under any banner. If the mood is restless, the songs must ride that edge, not pull toward stillness. If the mood is tender or warm, draw from soul, jazz, classic R&B; do not default to melancholic indie folk because it is familiar. Match the register honestly.${diversityBlock}
+The register choice is the most important choice in this reading. If the mood is celebratory or kinetic, the songs must be celebratory or kinetic, not introspective folk under any banner. If the mood is restless, the songs must ride that edge, not pull toward stillness. If the mood is tender or warm, draw from soul, jazz, classic R&B; do not default to melancholic indie folk because it is familiar. Match the register honestly.${preferenceBlock}${diversityBlock}
 
 Recommend exactly three songs and three poems that meet this register specifically. Pieces with genuine craft and depth that match the texture, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
 
@@ -146,7 +193,7 @@ Return the result as JSON matching the schema.`;
   }
 
   // Save the entry as a logbook record. Failures here do not break the
-  // user's response — they still see their reading. We just lose the
+  // user's response, they still see their reading. We just lose the
   // ability to feed it back into the next call's diversity context.
   try {
     await AttuneEntry.create({
@@ -156,6 +203,7 @@ Return the result as JSON matching the schema.`;
       register: data.register || '',
       songs: Array.isArray(data.songs) ? data.songs : [],
       poems: Array.isArray(data.poems) ? data.poems : [],
+      preferences: prefs,
     });
   } catch (err) {
     console.warn('[attune] failed to save log entry:', err.message);
@@ -194,6 +242,10 @@ attune.get('/log', async (req, res) => {
       register: e.register || '',
       songs: e.songs || [],
       poems: e.poems || [],
+      preferences: {
+        genre: e.preferences?.genre || 'any',
+        vocals: e.preferences?.vocals || 'either',
+      },
       createdAt: e.createdAt,
     }));
     res.json({ entries: page, hasMore });

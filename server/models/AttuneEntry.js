@@ -62,6 +62,35 @@ const attuneEntrySchema = new mongoose.Schema(
     // a re-roll.
     songs: { type: [songSchema], default: [] },
     poems: { type: [poemSchema], default: [] },
+
+    // Optional preferences the reader set for this reading. Both
+    // default to the "no constraint" value when omitted, so older
+    // entries that pre-date this feature read back as "any genre,
+    // either vocals" without needing a migration.
+    preferences: {
+      type: new mongoose.Schema(
+        {
+          // Genre vocabulary kept small + opinionated. Maps onto the
+          // existing register taxonomy in HEARTH_VOICE rather than
+          // re-inventing music classification. "any" = no constraint.
+          genre: {
+            type: String,
+            enum: ['any', 'folk', 'classical', 'jazz', 'soul', 'electronic', 'indie', 'hiphop', 'world'],
+            default: 'any',
+          },
+          // Three states keeps the model from over-rotating. "either"
+          // = no constraint; "with" = vocal-led; "without" = strictly
+          // instrumental.
+          vocals: {
+            type: String,
+            enum: ['either', 'with', 'without'],
+            default: 'either',
+          },
+        },
+        { _id: false }
+      ),
+      default: () => ({}),
+    },
   },
   { timestamps: true }
 );
@@ -71,7 +100,7 @@ const attuneEntrySchema = new mongoose.Schema(
 attuneEntrySchema.index({ userId: 1, createdAt: -1 });
 
 attuneEntrySchema.method('toClient', function () {
-  const { _id, userId, mood, moodSummary, register, songs, poems, createdAt } = this;
+  const { _id, userId, mood, moodSummary, register, songs, poems, preferences, createdAt } = this;
   return {
     id: _id.toString(),
     userId: userId.toString(),
@@ -80,6 +109,10 @@ attuneEntrySchema.method('toClient', function () {
     register,
     songs: (songs || []).map((s) => ({ title: s.title, artist: s.artist, why: s.why })),
     poems: (poems || []).map((p) => ({ title: p.title, poet: p.poet, why: p.why, text: p.text, url: p.url })),
+    preferences: {
+      genre: preferences?.genre || 'any',
+      vocals: preferences?.vocals || 'either',
+    },
     createdAt,
   };
 });
