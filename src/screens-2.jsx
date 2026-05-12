@@ -207,6 +207,11 @@ function DiscoverScreen({ go }) {
 // ─────────────────────────────────────────────────────────────
 function AttuneScreen({ go }) {
   const D = HEARTH_DATA;
+  // View state machine: 'input' → user is typing or seed-picking;
+  // 'reading' → the AI returned and we're rendering the response;
+  // 'logbook' → user is browsing past entries; 'detail' → user is
+  // looking at one past entry from the logbook.
+  const [view, setView] = useState2('input');
   const [text, setText] = useState2('');
   const [reading, setReading] = useState2(null);
   const [busy, setBusy] = useState2(false);
@@ -216,6 +221,10 @@ function AttuneScreen({ go }) {
   // bookmarkKindFor / isItemBookmarked in api.js for the matcher.
   const [bookmarks, setBookmarks] = React.useState([]);
   const [expandedPoems, setExpandedPoems] = React.useState({});
+  // Logbook state: loaded on demand when the user opens the logbook
+  // view. The entries are reverse-chronological; moodSummary is what
+  // the reader wanted preserved.
+  const [logbook, setLogbook] = React.useState({ entries: [], hasMore: false, loading: false, error: null });
 
   React.useEffect(() => {
     let cancelled = false;
@@ -228,6 +237,70 @@ function AttuneScreen({ go }) {
     return () => { cancelled = true; };
   }, []);
 
+  async function openLogbook() {
+    setView('logbook');
+    if (logbook.entries.length > 0 || logbook.loading) return;
+    setLogbook((s) => ({ ...s, loading: true, error: null }));
+    try {
+      const data = await api.attune.log({ limit: 30 });
+      setLogbook({
+        entries: data.entries || [],
+        hasMore: !!data.hasMore,
+        loading: false,
+        error: null,
+      });
+    } catch (err) {
+      setLogbook({
+        entries: [],
+        hasMore: false,
+        loading: false,
+        error: err.status === 401 ? 'Sign in to see your logbook.' : (err.data?.error || 'Could not load logbook.'),
+      });
+    }
+  }
+
+  async function loadMoreLog() {
+    if (logbook.loading || !logbook.hasMore || logbook.entries.length === 0) return;
+    const oldest = logbook.entries[logbook.entries.length - 1];
+    setLogbook((s) => ({ ...s, loading: true }));
+    try {
+      const data = await api.attune.log({ limit: 30, before: oldest.createdAt });
+      setLogbook((s) => ({
+        entries: [...s.entries, ...(data.entries || [])],
+        hasMore: !!data.hasMore,
+        loading: false,
+        error: null,
+      }));
+    } catch (err) {
+      setLogbook((s) => ({ ...s, loading: false, error: err.data?.error || 'Could not load more.' }));
+    }
+  }
+
+  function openLogEntry(entry) {
+    // Reuse the reading-view rendering for past entries. The reading
+    // shape is the same JSON the model returns, so we just hand it to
+    // setReading and flip the view.
+    setReading({
+      moodSummary: entry.moodSummary,
+      register: entry.register,
+      songs: entry.songs,
+      poems: entry.poems,
+      _fromLogbook: true,
+      _logbookMood: entry.mood,
+      _logbookCreatedAt: entry.createdAt,
+    });
+    setView('reading');
+  }
+
+  async function deleteLogEntry(id) {
+    try {
+      await api.attune.deleteEntry(id);
+      setLogbook((s) => ({ ...s, entries: s.entries.filter((e) => e.id !== id) }));
+    } catch (err) {
+      console.warn('Failed to delete log entry', err);
+    }
+  }
+
   async function generateReading() {
     if (busy) return;
     setBusy(true);
@@ -235,6 +308,10 @@ function AttuneScreen({ go }) {
     try {
       const data = await api.attune.recommend(text.trim());
       setReading(data);
+      setView('reading');
+      // Invalidate cached logbook so the new entry shows next time the
+      // user opens it. Cheap: just resets the loaded flag.
+      setLogbook({ entries: [], hasMore: false, loading: false, error: null });
     } catch (err) {
       if (err.status === 401) {
         setError({ kind: 'unauthed' });
@@ -275,24 +352,55 @@ function AttuneScreen({ go }) {
   }
 
   // ── Reading view ───────────────────────────────
-  if (reading) {
+  if (view === 'reading' && reading) {
+    const fromLog = !!reading._fromLogbook;
     return (
       <div className="fade-in" style={{ paddingBottom: 32 }}>
         {/* breadcrumb */}
         <section style={{ padding: '4px 22px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <button onClick={() => { setReading(null); setText(''); }} style={{
+          <button onClick={() => {
+            // From the logbook: return to the logbook list.
+            // From a fresh reading: return to the input view.
+            if (fromLog) {
+              setReading(null);
+              setView('logbook');
+            } else {
+              setReading(null);
+              setText('');
+              setView('input');
+            }
+          }} style={{
             background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
             fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
             letterSpacing: '0.22em', textTransform: 'uppercase',
           }}>
-            {Icon.back(18, 'currentColor')}<span>Try again</span>
+            {Icon.back(18, 'currentColor')}<span>{fromLog ? 'Logbook' : 'Try again'}</span>
           </button>
           <span className="mono" style={{
             fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
             textTransform: 'uppercase',
-          }}>A reading</span>
+          }}>{fromLog ? 'A past reading' : 'A reading'}</span>
         </section>
+
+        {/* When viewing a past reading, surface the original mood and date
+            above the moodSummary so the reader sees what they typed and
+            when. Keeps the logbook entries grounded in time. */}
+        {fromLog && (
+          <section style={{ padding: '24px 22px 0' }}>
+            <div className="mono" style={{
+              fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
+              textTransform: 'uppercase', marginBottom: 8,
+            }}>
+              {new Date(reading._logbookCreatedAt).toLocaleDateString(undefined, {
+                year: 'numeric', month: 'long', day: 'numeric',
+              })}
+            </div>
+            <p className="body" style={{ margin: 0, fontStyle: 'italic', color: 'var(--paper-mute)' }}>
+              "{reading._logbookMood}"
+            </p>
+          </section>
+        )}
 
         {/* Mood summary + register */}
         <section style={{ padding: '36px 22px 0' }}>
@@ -452,6 +560,147 @@ function AttuneScreen({ go }) {
     );
   }
 
+  // ── Logbook view ───────────────────────────────
+  // Reverse-chronological list of past readings. Each row shows the
+  // date, the register chip, the moodSummary the reader liked, and the
+  // beginning of their original mood text. Tap a row to revisit the
+  // full reading. The list is paginated server-side (30 per page).
+  if (view === 'logbook') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 32 }}>
+        <section style={{ padding: '4px 22px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button onClick={() => setView('input')} style={{
+            background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
+            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+            letterSpacing: '0.22em', textTransform: 'uppercase',
+          }}>
+            {Icon.back(18, 'currentColor')}<span>Attune</span>
+          </button>
+          <span className="mono" style={{
+            fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
+            textTransform: 'uppercase',
+          }}>Logbook</span>
+        </section>
+
+        <section style={{ padding: '36px 22px 0' }}>
+          <Kicker>Past readings</Kicker>
+          <Headline size="display" italic style={{ marginTop: 14 }}>
+            Where you've been.
+          </Headline>
+          <p className="body" style={{ margin: '18px 0 28px', maxWidth: 380 }}>
+            Each reading saved with the words you wrote and what was heard back. Tap any entry to open the full reading.
+          </p>
+        </section>
+
+        <section style={{ padding: '12px 22px 0' }}>
+          {logbook.loading && logbook.entries.length === 0 && (
+            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 18, width: '80%' }}/>
+          )}
+
+          {logbook.error && (
+            <div style={{ padding: 16, background: 'var(--hh-isabel)', borderLeft: '2px solid var(--ember)' }}>
+              <p className="body" style={{ margin: 0 }}>{logbook.error}</p>
+            </div>
+          )}
+
+          {!logbook.loading && !logbook.error && logbook.entries.length === 0 && (
+            <div style={{ padding: '28px 0' }}>
+              <p className="body" style={{ margin: 0, color: 'var(--paper-mute)' }}>
+                No readings yet. The first one you write will appear here.
+              </p>
+            </div>
+          )}
+
+          {logbook.entries.length > 0 && (
+            <Rule/>
+          )}
+
+          {logbook.entries.map((entry) => (
+            <div key={entry.id} style={{
+              borderBottom: '1px solid rgba(31, 64, 69, 0.10)',
+              padding: '22px 0',
+              position: 'relative',
+            }}>
+              <button onClick={() => openLogEntry(entry)} style={{
+                display: 'block', width: '100%', textAlign: 'left',
+                background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                  <span className="mono" style={{
+                    fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)',
+                    textTransform: 'uppercase',
+                  }}>
+                    {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                      month: 'short', day: 'numeric', year: 'numeric',
+                    })}
+                  </span>
+                  {entry.register && (
+                    <span className="mono" style={{
+                      fontSize: 9, letterSpacing: '0.14em', color: 'var(--hh-green)',
+                      textTransform: 'uppercase', padding: '2px 10px',
+                      border: '1px solid rgba(31, 64, 69, 0.18)',
+                    }}>
+                      {entry.register}
+                    </span>
+                  )}
+                </div>
+                {entry.moodSummary && (
+                  <p className="serif" style={{
+                    margin: '12px 0 0', fontSize: 16, lineHeight: 1.55,
+                    fontWeight: 380, fontStyle: 'italic', color: 'var(--hh-green-2, var(--hh-green))',
+                  }}>
+                    {entry.moodSummary}
+                  </p>
+                )}
+                {entry.mood && (
+                  <p className="body" style={{
+                    margin: '10px 0 0', color: 'var(--paper-mute)',
+                    fontSize: 12.5, lineHeight: 1.55,
+                  }}>
+                    You wrote: <span style={{ fontStyle: 'italic' }}>"{entry.mood.length > 140 ? entry.mood.slice(0, 140) + '…' : entry.mood}"</span>
+                  </p>
+                )}
+              </button>
+              <button onClick={() => deleteLogEntry(entry.id)}
+                aria-label="Delete entry"
+                style={{
+                  position: 'absolute', top: 22, right: 0,
+                  background: 'transparent', border: 0, padding: '4px 8px',
+                  cursor: 'pointer', color: 'var(--paper-mute)',
+                  fontFamily: 'var(--mono)', fontSize: 9.5,
+                  letterSpacing: '0.16em', textTransform: 'uppercase',
+                  opacity: 0,
+                  transition: 'opacity 200ms ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
+                onFocus={(e) => e.currentTarget.style.opacity = 1}
+                onBlur={(e) => e.currentTarget.style.opacity = 0}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+
+          {logbook.hasMore && (
+            <div style={{ padding: '24px 0', textAlign: 'center' }}>
+              <button onClick={loadMoreLog} disabled={logbook.loading} style={{
+                background: 'transparent', border: '1px solid rgba(31, 64, 69, 0.18)',
+                padding: '12px 22px', cursor: logbook.loading ? 'wait' : 'pointer',
+                color: 'var(--hh-green)',
+                fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+                letterSpacing: '0.22em', textTransform: 'uppercase',
+              }}>
+                {logbook.loading ? 'Loading…' : 'Show more'}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    );
+  }
+
   // ── Loading view ──────────────────────────────
   if (busy) {
     return (
@@ -476,7 +725,19 @@ function AttuneScreen({ go }) {
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       <section style={{ padding: '14px 22px 0' }}>
-        <Kicker>Attune</Kicker>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <Kicker>Attune</Kicker>
+          <button onClick={openLogbook} style={{
+            background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+            color: 'var(--hh-green)',
+            fontFamily: 'var(--mono)', fontSize: 9.5, fontWeight: 500,
+            letterSpacing: '0.18em', textTransform: 'uppercase',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+          }}>
+            <span>Logbook</span>
+            <span style={{ width: 14, height: 1, background: 'currentColor' }}/>
+          </button>
+        </div>
         <Headline size="display" style={{ marginTop: 14 }}>
           How are you,<br/><span style={{ fontStyle: 'italic' }}>really?</span>
         </Headline>

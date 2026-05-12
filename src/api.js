@@ -125,6 +125,17 @@ export const api = {
 
   attune: {
     recommend: (mood) => request('/attune', { method: 'POST', body: { mood } }),
+    // Logbook: returns the user's past Attune entries in reverse-chrono
+    // order. moodSummary on each entry is the AI's interpretation the
+    // reader liked enough to want preserved.
+    log: ({ limit = 30, before = null } = {}) => {
+      const qs = new URLSearchParams();
+      if (limit) qs.set('limit', String(limit));
+      if (before) qs.set('before', new Date(before).toISOString());
+      const path = qs.toString() ? `/attune/log?${qs.toString()}` : '/attune/log';
+      return request(path);
+    },
+    deleteEntry: (id) => request(`/attune/log/${id}`, { method: 'DELETE' }),
   },
 
   digest: {

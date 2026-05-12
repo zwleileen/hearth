@@ -1,0 +1,87 @@
+// server/models/AttuneEntry.js
+//
+// One record per Attune reading. Captures what the reader shared, the
+// AI's interpretation of that mood, the register it chose, and the
+// titles it recommended. Two purposes:
+//   1. Logbook — the reader can revisit past readings and their own
+//      mood as the model heard it (the moodSummary field is what they
+//      asked to preserve).
+//   2. Diversity context — the most recent N entries feed back into
+//      the next Attune call as "recently recommended; avoid repeating
+//      these unless the mood specifically calls for them". This is
+//      the mechanism that breaks the convergence pattern where every
+//      input produced Bon Iver and Phoebe Bridgers.
+
+import mongoose from 'mongoose';
+
+const songSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: '' },
+    artist: { type: String, default: '' },
+    why: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
+const poemSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: '' },
+    poet: { type: String, default: '' },
+    why: { type: String, default: '' },
+    text: { type: String, default: '' },
+    url: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
+const attuneEntrySchema = new mongoose.Schema(
+  {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+      index: true,
+    },
+    // What the reader typed in their own words. Trimmed but not edited.
+    mood: { type: String, required: true },
+
+    // What the AI heard back. The two- or three-sentence reflection
+    // that names the texture of the mood. This is the field the reader
+    // asked to preserve as logbook content.
+    moodSummary: { type: String, default: '' },
+
+    // The register the model committed to before picking titles
+    // ("holding silence", "kinetic celebration", etc.). Useful for the
+    // logbook listing (a chip on each entry) and for diversity context
+    // (preventing the same register from being chosen back-to-back when
+    // the mood materially differs).
+    register: { type: String, default: '' },
+
+    // The full reading the model returned. Stored so the reader can
+    // open a past entry and see exactly what they were offered, not
+    // a re-roll.
+    songs: { type: [songSchema], default: [] },
+    poems: { type: [poemSchema], default: [] },
+  },
+  { timestamps: true }
+);
+
+// Compound index for the primary read pattern: "this user's recent
+// entries in reverse-chronological order".
+attuneEntrySchema.index({ userId: 1, createdAt: -1 });
+
+attuneEntrySchema.method('toClient', function () {
+  const { _id, userId, mood, moodSummary, register, songs, poems, createdAt } = this;
+  return {
+    id: _id.toString(),
+    userId: userId.toString(),
+    mood,
+    moodSummary,
+    register,
+    songs: (songs || []).map((s) => ({ title: s.title, artist: s.artist, why: s.why })),
+    poems: (poems || []).map((p) => ({ title: p.title, poet: p.poet, why: p.why, text: p.text, url: p.url })),
+    createdAt,
+  };
+});
+
+export const AttuneEntry = mongoose.model('AttuneEntry', attuneEntrySchema);
