@@ -32,8 +32,8 @@
 // 8 calls = ~$0.40-0.80. Use --short for a 3-call sanity check.
 
 import 'dotenv/config';
-import { getOpenAI, MODEL, HEARTH_VOICE, ATTUNE_SCHEMA } from '../server/lib/ai.js';
-import { buildAttuneUserPrompt } from '../server/lib/attunePrompt.js';
+import { getOpenAI, MODEL } from '../server/lib/ai.js';
+import { generateAttuneReading } from '../server/lib/attuneRunner.js';
 
 const args = new Set(process.argv.slice(2));
 const SHORT = args.has('--short');
@@ -169,28 +169,16 @@ async function runScenario(client, scenario, diversityFromPrevious) {
     ? diversityFromPrevious
     : {};
 
-  const userPrompt = buildAttuneUserPrompt({
+  const t0 = Date.now();
+  // Goes through the same call+retry pipeline production uses, so
+  // simulator output reflects what real users will see (including
+  // duplicate-artist correction).
+  const { data, retried } = await generateAttuneReading(client, {
     mood: scenario.mood,
     preferences: scenario.preferences || {},
     diversity,
   });
-
-  const t0 = Date.now();
-  const completion = await client.chat.completions.create({
-    model: MODEL,
-    temperature: 0.9,
-    frequency_penalty: 0.4,
-    messages: [
-      { role: 'system', content: HEARTH_VOICE },
-      { role: 'user', content: userPrompt },
-    ],
-    response_format: {
-      type: 'json_schema',
-      json_schema: { name: 'attune_response', strict: true, schema: ATTUNE_SCHEMA },
-    },
-  });
   const ms = Date.now() - t0;
-  const data = JSON.parse(completion.choices[0].message.content);
 
   // ── Score ────────────────────────────────────────────────────────
   const registerCheck = classifyRegister(data.register, scenario.valid_registers, scenario.invalid_registers);
@@ -222,6 +210,7 @@ async function runScenario(client, scenario, diversityFromPrevious) {
     songs: data.songs.map((s) => ({ artist: s.artist, title: s.title })),
     poems: data.poems.map((p) => ({ poet: p.poet, title: p.title })),
     ms,
+    retried,
     scoring: {
       register: registerCheck,
       genres: genreClassifications,
@@ -289,7 +278,7 @@ async function main() {
     console.log(`\n── ${r.scenario} ────────────────────────────────────────`);
     console.log(`Mood:      "${r.mood}"`);
     console.log(`Summary:   ${r.moodSummary}`);
-    console.log(`Register:  ${r.register}   ${r.scoring.register.matched_valid ? '✓ matches expected' : '⚠ register may be off'}${r.scoring.register.matched_invalid ? '  ⚠ HIT INVALID' : ''}`);
+    console.log(`Register:  ${r.register}   ${r.scoring.register.matched_valid ? '✓ matches expected' : '⚠ register may be off'}${r.scoring.register.matched_invalid ? '  ⚠ HIT INVALID' : ''}${r.retried ? '   (corrected on retry)' : ''}`);
     if (r.preferences) {
       console.log(`Prefs:     genre=${r.preferences.genre || 'any'}  vocals=${r.preferences.vocals || 'either'}`);
     }

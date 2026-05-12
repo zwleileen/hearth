@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { getOpenAI, MODEL, HEARTH_VOICE, ATTUNE_SCHEMA } from '../lib/ai.js';
-import { buildAttuneUserPrompt, normalisePreferences } from '../lib/attunePrompt.js';
+import { getOpenAI } from '../lib/ai.js';
+import { normalisePreferences } from '../lib/attunePrompt.js';
+import { generateAttuneReading } from '../lib/attuneRunner.js';
 import { AttuneEntry } from '../models/AttuneEntry.js';
 
 export const attune = Router();
@@ -68,14 +69,6 @@ attune.post('/', async (req, res) => {
     console.warn('[attune] failed to load diversity context:', err.message);
   }
 
-  // Build the user prompt via the shared library function so the
-  // simulator and production traffic stay in lock-step.
-  const userPrompt = buildAttuneUserPrompt({
-    mood,
-    preferences: prefs,
-    diversity: { recentArtists, recentPoets, recentRegisters },
-  });
-
   let client;
   try {
     client = getOpenAI();
@@ -85,34 +78,12 @@ attune.post('/', async (req, res) => {
 
   let data;
   try {
-    const completion = await client.chat.completions.create({
-      model: MODEL,
-      // Temperature 0.9 + frequency_penalty 0.4 open up the register
-      // space the prompt now invites. The bigger anti-convergence lever
-      // is the diversityBlock above, which feeds the user's recent
-      // history back into the prompt so the model has concrete names
-      // to avoid rather than relying on temperature alone.
-      temperature: 0.9,
-      frequency_penalty: 0.4,
-      messages: [
-        { role: 'system', content: HEARTH_VOICE },
-        { role: 'user', content: userPrompt },
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'attune_response',
-          strict: true,
-          schema: ATTUNE_SCHEMA,
-        },
-      },
+    const result = await generateAttuneReading(client, {
+      mood,
+      preferences: prefs,
+      diversity: { recentArtists, recentPoets, recentRegisters },
     });
-
-    const text = completion.choices?.[0]?.message?.content;
-    if (!text) {
-      return res.status(502).json({ error: 'Empty response from AI service' });
-    }
-    data = JSON.parse(text);
+    data = result.data;
   } catch (err) {
     console.error('[attune]', err);
     return res.status(500).json({ error: 'Failed to generate recommendations', detail: err.message });
