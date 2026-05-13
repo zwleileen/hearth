@@ -25,7 +25,7 @@ const LOG_MAX_LIMIT = 100;
 // the entry as a logbook record and use the most recent entries to
 // nudge the next call away from familiar artists/poets.
 attune.post('/', async (req, res) => {
-  const userId = req.user._id;
+  const userId = req.userId;
   const { mood, genre, vocals } = req.body || {};
   if (!mood || typeof mood !== 'string' || !mood.trim()) {
     return res.status(400).json({ error: 'mood (free text) is required' });
@@ -113,7 +113,7 @@ attune.post('/', async (req, res) => {
 // Returns the user's Attune entries in reverse-chronological order.
 // Supports ?limit= (capped at 100) and ?before=ISO for pagination.
 attune.get('/log', async (req, res) => {
-  const userId = req.user._id;
+  const userId = req.userId;
   const limit = Math.min(
     Math.max(parseInt(req.query.limit) || LOG_DEFAULT_LIMIT, 1),
     LOG_MAX_LIMIT
@@ -156,7 +156,7 @@ attune.get('/log', async (req, res) => {
 // Lets a reader remove an entry from their own logbook. Useful when an
 // entry feels too raw to keep, or simply doesn't deserve a return.
 attune.delete('/log/:id', async (req, res) => {
-  const userId = req.user._id;
+  const userId = req.userId;
   const { id } = req.params;
   try {
     const r = await AttuneEntry.deleteOne({ _id: id, userId });
