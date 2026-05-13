@@ -235,9 +235,7 @@ export const ATTUNE_SCHEMA = {
     },
     songs: {
       type: 'array',
-      description: 'Exactly three song recommendations, the three best fits for the mood. Three different artists; no artist appears twice.',
-      minItems: 3,
-      maxItems: 3,
+      description: 'Exactly three song recommendations, the three best fits for the mood. Three different artists; no artist appears twice. The array must contain exactly three items.',
       items: {
         type: 'object',
         properties: {
@@ -251,9 +249,7 @@ export const ATTUNE_SCHEMA = {
     },
     poems: {
       type: 'array',
-      description: 'Exactly three poem recommendations, the three best fits for the mood. Three different poets; no poet appears twice. Each must include either text (for unambiguously public-domain poems you know verbatim) or url (a reputable source where the reader can read it). Empty string for the field you are not providing.',
-      minItems: 3,
-      maxItems: 3,
+      description: 'Exactly three poem recommendations, the three best fits for the mood. Three different poets; no poet appears twice. The array must contain exactly three items. Each must include either text (for unambiguously public-domain poems you know verbatim) or url (a reputable source where the reader can read it). Empty string for the field you are not providing.',
       items: {
         type: 'object',
         properties: {
