@@ -23,13 +23,21 @@ discover.get('/today', async (req, res) => {
   if (!user) return res.status(404).json({ error: 'User not found' });
 
   const interests = user.onboarding?.interests || [];
-  const flower = user.onboarding?.flower || 'wisteria';
   const dailyTime = user.onboarding?.dailyTime || 'morning';
+
+  // Note: onboarding.flower is intentionally NOT injected here. It's a
+  // UI/aesthetic personalisation (which tints home-screen colours), not
+  // a content-curation signal. Earlier versions of this prompt included
+  // it as "their signature is wisteria/poppy/cornflower" — the LLM read
+  // that as a thematic preference and over-rotated on literal wisteria
+  // articles every day, especially because the legacy storage keys
+  // (wisteria/poppy/cornflower) diverged from the renamed display labels
+  // (Oak/Birch/Pine) without the prompt ever being updated.
 
   const userPrompt = `Curate today's reading room for a Hearth reader.
 
 The reader has expressed these interests during onboarding: ${interests.length > 0 ? interests.join(', ') : 'no specific interests yet, default to thoughtful general culture'}.
-Their preferred reading time is ${dailyTime}. Their signature is "${flower}".
+Their preferred reading time is ${dailyTime}.
 Today's date: ${date}.
 
 Use the web_search tool to find 6 to 10 specific, recently-published or recently-relevant pieces of content that fit Hearth's editorial register and the reader's interests. Mix kinds:
