@@ -12,6 +12,31 @@ function todayISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
+// Deterministic hash of a YYYY-MM-DD string. Stable per day (so the cache
+// key and the generated issue stay consistent within a day) but different
+// across consecutive days.
+function seedFromDate(date) {
+  let h = 0;
+  for (let i = 0; i < date.length; i++) h = (h * 31 + date.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+// Foreground a rotating 2-3 interest subset for the day. Dumping the full
+// interest list every day let the most literal, most searchable token
+// (e.g. "repair") dominate every issue while the abstract interests
+// ("ideas", "wisdom") got folded into its frame. Seeding from the date
+// keeps a given day stable while consecutive days lead with a different
+// slice. Same literal-token trap the `flower` field hit (see note below).
+function rotateInterests(interests, date) {
+  if (interests.length <= 3) return interests;
+  const seed = seedFromDate(date);
+  const start = seed % interests.length;
+  const count = 2 + (seed % 2); // 2 or 3
+  const picked = [];
+  for (let i = 0; i < count; i++) picked.push(interests[(start + i) % interests.length]);
+  return picked;
+}
+
 discover.get('/today', async (req, res) => {
   const date = todayISO();
   const cached = await DailyDiscover.findOne({ userId: req.userId, date });
@@ -22,7 +47,7 @@ discover.get('/today', async (req, res) => {
   const user = await User.findById(req.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const interests = user.onboarding?.interests || [];
+  const allInterests = user.onboarding?.interests || [];
   const dailyTime = user.onboarding?.dailyTime || 'morning';
 
   // Note: onboarding.flower is intentionally NOT injected here. It's a
@@ -34,11 +59,26 @@ discover.get('/today', async (req, res) => {
   // (wisteria/poppy/cornflower) diverged from the renamed display labels
   // (Oak/Birch/Pine) without the prompt ever being updated.
 
+  // Lead with a rotating subset so one literal interest can't dominate
+  // every issue (the "repair" trap: a reader who listed repair/craft/
+  // ideas/justice/wisdom/place was getting a daily file on mending).
+  const leadInterests = rotateInterests(allInterests, date);
+
+  // Anti-repetition memory: each daily issue is generated independently,
+  // so without a record of what recently ran it reconverges on the same
+  // dominant theme. Feed the last few issues' framing back as an explicit
+  // "go elsewhere" signal.
+  const recent = await DailyDiscover.find({ userId: req.userId, date: { $lt: date } })
+    .sort({ date: -1 }).limit(5).lean();
+  const recentThemes = recent.map((d) => d.issueNote).filter(Boolean);
+
   const userPrompt = `Curate today's reading room for a Hearth reader.
 
-The reader has expressed these interests during onboarding: ${interests.length > 0 ? interests.join(', ') : 'no specific interests yet, default to thoughtful general culture'}.
+The reader expressed these interests during onboarding: ${allInterests.length > 0 ? allInterests.join(', ') : 'no specific interests yet, default to thoughtful general culture'}. Treat the full list as a palette to range ACROSS over time, not a fixed recipe for every issue.
+Today, lead with: ${leadInterests.length > 0 ? leadInterests.join(', ') : 'thoughtful general culture'}. Let the other interests appear lightly, if at all. Do not let any single literal interest (for example "repair") become the frame for the whole room; a reader who listed "repair" wants a reading life, not a daily dossier on mending. Pull the abstract interests ("ideas", "wisdom", "place") toward concrete, surprising subjects rather than collapsing them into whichever interest is easiest to search.
 Their preferred reading time is ${dailyTime}.
 Today's date: ${date}.
+${recentThemes.length > 0 ? `\nRecent issues already circled these framings, most recent first:\n${recentThemes.map((t, i) => `  ${i + 1}. ${t}`).join('\n')}\nDeliberately go elsewhere today. Choose different subjects, registers, and source outlets so the room feels new. If recent issues leaned hard on one motif, do not return to it.\n` : ''}
 
 Use the web_search tool to find 6 to 10 specific, recently-published or recently-relevant pieces of content that fit Hearth's editorial register and the reader's interests. Mix kinds:
   - At LEAST one long-form essay
