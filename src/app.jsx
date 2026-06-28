@@ -16,6 +16,7 @@ import {
   OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen,
   NotificationsScreen, ProfileScreen,
 } from './screens-3.jsx';
+import { KindleScreen } from './screens-5.jsx';
 import {
   JournalArchiveScreen, EntryDetailScreen, ArticleScreen,
   BookmarksScreen, WeeklyDigestScreen, StreakBrokenScreen,
@@ -29,6 +30,7 @@ const TABS = [
   { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
   { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, 'currentColor'),       route: 'journal' },
   { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, 'currentColor'),      route: 'attune' },
+  { key: 'kindle',   label: 'Kindle',   icon: (a) => Icon.dawn(18, 'currentColor'),      route: 'kindle' },
   { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, 'currentColor'),      route: 'rituals' },
   { key: 'nook',     label: 'Nook',     icon: (a) => Icon.bookmark(18, 'currentColor'),  route: 'bookmarks' },
 ];
@@ -108,7 +110,7 @@ function App() {
   }
 
   // tab inference (Discover removed — Home is the editorial spread)
-  const tab = ['home','journal','attune','rituals','settings'].includes(route)
+  const tab = ['home','journal','attune','kindle','rituals','settings'].includes(route)
     ? route
     : route === 'bookmarks' ? 'nook'
     : (route.startsWith('journal') || route === 'entry-detail' ? 'journal'
@@ -140,6 +142,7 @@ function App() {
       {route === 'bookmarks' && <BookmarksScreen go={go}/>}
       {route === 'attune' && <AttuneScreen go={go}/>}
       {route === 'attune-history' && <AttuneHistoryScreen go={go}/>}
+      {route === 'kindle' && <KindleScreen go={go}/>}
       {route === 'rituals' && <RitualsScreen go={go}/>}
       {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}
       {route === 'ritual-builder' && <RitualBuilderScreen go={go}/>}
@@ -269,6 +272,7 @@ function App() {
             {value:'bookmarks',label:'Bookmarks'},
             {value:'attune',label:'Attune'},
             {value:'attune-history',label:'Attune · history'},
+            {value:'kindle',label:'Kindle'},
             {value:'rituals',label:'Rituals'},
             {value:'ritual-builder',label:'Rituals · Build'},
             {value:'weekly-digest',label:'Weekly digest'},

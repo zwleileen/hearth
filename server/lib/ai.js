@@ -54,6 +54,7 @@ Hearth's positioning rests on research-backed recommendations. When a research l
 - Iso principle (Altshuler 1948, formalised across music therapy practice): match the listener's current emotional state first, then allow the music to move them only if the texture invites it. The historical foundation underneath everything in this section.
 - Reading and wellbeing: Billington et al. (shared reading and mental health), Mar et al. (fiction and empathy)
 - Poetry and mood: Croom (positive psychology and poetry)
+- Meaning and suffering: Frankl (logotherapy; Man's Search for Meaning, 1946) — the three avenues to meaning are creating or doing (a work, a deed), experiencing or loving (a person, beauty, truth), and the attitude we take toward unavoidable suffering. Wong (meaning-centred therapy; tragic optimism: saying yes to life in spite of suffering, turning suffering into achievement, guilt into change, transitoriness into responsible action). Suffering can be borne when it is given meaning; despair is suffering without meaning.
 
 Never invent studies. If you do not know a citation, do not pretend to. Either skip the citation or use general phrasing like "research on expressive writing suggests..." rather than a fake one. When you do cite in a "why" field for a song or poem recommendation, prefer the specific lineages above; do not reach for citations outside this list to sound more authoritative.
 
@@ -271,5 +272,159 @@ export const ATTUNE_SCHEMA = {
     },
   },
   required: ['moodSummary', 'register', 'songs', 'poems'],
+  additionalProperties: false,
+};
+
+// ─── Kindle (guided logotherapy session) ─────────────────────────────────
+//
+// A reader types how they feel; the model guides them through one
+// logotherapy session in Frankl's method, moving from where they are
+// toward something lighter by way of meaning (not by denial or cheer).
+//
+// The session is one structured pass with five movements:
+//   seeing    — meet them where they are; name the feeling honestly
+//   widening  — Socratic reflection + one question posed back to them
+//   companion — a named real or literary figure who faced the same
+//               predicament or worse and still carried light
+//   turning   — Frankl's three avenues applied to THIS feeling
+//   step      — one concrete, outward-turning thing for today
+//
+// careFlag is the model's read on whether the input shows signs of
+// acute crisis (self-harm, suicidal intent). The route NEVER trusts
+// this alone; a server-side keyword scan runs alongside it, and the
+// resources block is composed server-side so hotline numbers are never
+// model-generated.
+export const KINDLE_SESSION_SCHEMA = {
+  type: 'object',
+  properties: {
+    feelingName: {
+      type: 'string',
+      description: 'A short lowercase phrase naming the feeling honestly, 3 to 6 words. Not a clinical label. Examples: "a quiet hopelessness", "frayed and overstretched", "the ache after losing them", "stuck and going nowhere".',
+    },
+    seeing: {
+      type: 'string',
+      description: 'Two or three sentences that meet the reader exactly where they are. Reflect what they said back accurately, without minimising, without fixing, without "at least". A clear, warm seeing. This is the iso-principle: match first.',
+    },
+    widening: {
+      type: 'object',
+      description: 'Socratic opening. Loosen the grip of the feeling and point toward what it guards.',
+      properties: {
+        reflection: {
+          type: 'string',
+          description: 'One or two sentences. What might this feeling be pointing to, what does it suggest the reader cares about or has lost. Frankl: pain reveals what matters. No advice.',
+        },
+        question: {
+          type: 'string',
+          description: 'One open, gentle question posed to the reader, in second person. Not rhetorical, not leading toward a fixed answer. Something they could genuinely answer in a sentence.',
+        },
+      },
+      required: ['reflection', 'question'],
+      additionalProperties: false,
+    },
+    companion: {
+      type: 'object',
+      description: 'A named figure, real or from a named literary work, who faced the same predicament or heavier and still found a way to carry meaning. Chosen for the FORM of their turning, never to rank or minimise the reader\'s suffering.',
+      properties: {
+        name: { type: 'string', description: 'The figure\'s name.' },
+        source: {
+          type: 'string',
+          description: 'Where they are from: "real life" with a brief identifier (e.g. "Viktor Frankl, psychiatrist and camp survivor"), or a named work (e.g. "from Marilynne Robinson\'s Gilead").',
+        },
+        predicament: {
+          type: 'string',
+          description: 'Two or three sentences, honest and unflinching, on what they faced. The same shape as the reader\'s, or heavier. Never frame as a comparison that diminishes the reader.',
+        },
+        turning: {
+          type: 'string',
+          description: 'Three or four sentences on how they found or held meaning inside it. Specific and grounded in what they actually did or chose. No platitude, no "and everything was fine".',
+        },
+        line: {
+          type: 'string',
+          description: 'Optional. A short line genuinely attributable to them, quoted exactly, OR a clearly-marked paraphrase. NEVER fabricate a quote. Empty string if you are not certain of the wording.',
+        },
+      },
+      required: ['name', 'source', 'predicament', 'turning', 'line'],
+      additionalProperties: false,
+    },
+    turning: {
+      type: 'object',
+      description: 'Frankl\'s three avenues to meaning, applied to this specific feeling.',
+      properties: {
+        avenue: {
+          type: 'string',
+          enum: ['creating', 'experiencing', 'attitude'],
+          description: 'Which avenue is most alive to this feeling: creating/doing (a work, a deed), experiencing/loving (a person, beauty, truth), or the attitude taken toward unavoidable suffering.',
+        },
+        insight: {
+          type: 'string',
+          description: 'Three or four sentences framing what life might be asking of the reader here, through that avenue. Not advice ("you should"), not a command. An invitation to meaning. Honest that the feeling may not vanish, but it can be carried differently.',
+        },
+      },
+      required: ['avenue', 'insight'],
+      additionalProperties: false,
+    },
+    step: {
+      type: 'object',
+      description: 'One small, concrete, doable-today act that turns attention outward, toward meaning or another person.',
+      properties: {
+        invitation: {
+          type: 'string',
+          description: 'One or two sentences. A specific small thing they could do today. Outward-turning (dereflection), within reach, never a chore or a self-improvement task.',
+        },
+        keepsake: {
+          type: 'string',
+          description: 'Optional short phrase or line the reader can carry through the day. Empty string if none fits.',
+        },
+      },
+      required: ['invitation', 'keepsake'],
+      additionalProperties: false,
+    },
+    closing: {
+      type: 'string',
+      description: 'One quiet closing line, in voice. Not a sign-off, not "you got this". A door left open.',
+    },
+    careFlag: {
+      type: 'boolean',
+      description: 'True if the reader\'s words show signs of acute crisis: intent to harm themselves, suicidal ideation, or being in immediate danger. A meaning session is not crisis care; this flag lets the app surface real help.',
+    },
+  },
+  required: ['feelingName', 'seeing', 'widening', 'companion', 'turning', 'step', 'closing', 'careFlag'],
+  additionalProperties: false,
+};
+
+// The follow-up turning, generated after the reader answers the
+// widening question. One final, personal movement from their own words
+// toward something lighter.
+export const KINDLE_TURNING_SCHEMA = {
+  type: 'object',
+  properties: {
+    acknowledgement: {
+      type: 'string',
+      description: 'One or two sentences reflecting what the reader wrote back, honestly and without flattery. Receive their answer before moving.',
+    },
+    turning: {
+      type: 'string',
+      description: 'Three to five sentences that take the reader\'s own answer and move with it toward meaning and a little more light. Grounded in what they said, in Frankl\'s register. Honest, never denial. Does not promise the feeling is gone; shows it can be carried toward something.',
+    },
+    step: {
+      type: 'object',
+      description: 'A refined or new small step, shaped by what the reader said.',
+      properties: {
+        invitation: { type: 'string', description: 'One or two sentences. A concrete, outward-turning thing for today.' },
+        keepsake: { type: 'string', description: 'Optional short phrase to carry. Empty string if none fits.' },
+      },
+      required: ['invitation', 'keepsake'],
+      additionalProperties: false,
+    },
+    closing: {
+      type: 'string',
+      description: 'One quiet closing line, in voice. A door left open.',
+    },
+    careFlag: {
+      type: 'boolean',
+      description: 'True if the reader\'s reply shows signs of acute crisis or intent to harm themselves.',
+    },
+  },
+  required: ['acknowledgement', 'turning', 'step', 'closing', 'careFlag'],
   additionalProperties: false,
 };

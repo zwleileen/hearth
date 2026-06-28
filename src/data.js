@@ -295,6 +295,17 @@ export const HEARTH_DATA = {
     "I don't know what I want. Just sitting with that.",
   ],
 
+  // Kindle seeds — heavier starting points than Attune's, since Kindle
+  // is for the harder feelings. Borrow-a-phrase for readers who can't
+  // find the first words.
+  kindleSeeds: [
+    "I feel like I'm failing at the thing I most wanted to be good at.",
+    "Everything feels pointless lately. I go through the motions and nothing lands.",
+    "I'm exhausted from carrying everyone, and no one is carrying me.",
+    "Someone I love is gone and I don't know how to live in the space they left.",
+    "I'm stuck. The life I imagined isn't happening and I don't know who I am without it.",
+  ],
+
   // ─────────────────────────────────────────────────────────────
   // RITUALS — short, science-backed practices.
   // ─────────────────────────────────────────────────────────────

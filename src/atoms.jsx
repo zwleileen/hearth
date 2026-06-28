@@ -30,6 +30,13 @@ const Icon = {
       <path d="M4 13a8 8 0 1 1 16 0v4a2 2 0 0 1-2 2h-2v-7h4M4 13v4a2 2 0 0 0 2 2h2v-7H4"/>
     </svg>
   ),
+  // Kindle tab — a sun rising over a horizon (light, not flame; the
+  // editorial direction bans fire metaphors in chrome). Dawn after dark.
+  dawn: (s = 18, c = 'currentColor') => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 18h18"/><path d="M12 9v-5M5.5 11.5l-2-2M18.5 11.5l2-2"/><path d="M7 18a5 5 0 0 1 10 0"/>
+    </svg>
+  ),
   // Hearth tab — a single horizontal line over a square (a hearth/mantel)
   home: (s = 18, c = 'currentColor') => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">

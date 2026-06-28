@@ -145,4 +145,24 @@ export const api = {
     bibliotherapy: ({ refresh = false } = {}) =>
       request(`/digest/bibliotherapy${refresh ? '?refresh=1' : ''}`),
   },
+
+  kindle: {
+    // Start a guided logotherapy session for how the reader feels now.
+    // Returns { id, session, care, createdAt }. `care` is non-null only
+    // when acute distress was detected; it carries real crisis lines.
+    session: ({ feeling } = {}) =>
+      request('/kindle', { method: 'POST', body: { feeling } }),
+    // Answer the session's one question and receive the closing turning.
+    reply: (id, { reply } = {}) =>
+      request(`/kindle/${id}/reply`, { method: 'POST', body: { reply } }),
+    // Logbook: past sessions, reverse-chronological.
+    log: ({ limit = 30, before = null } = {}) => {
+      const qs = new URLSearchParams();
+      if (limit) qs.set('limit', String(limit));
+      if (before) qs.set('before', new Date(before).toISOString());
+      const path = qs.toString() ? `/kindle/log?${qs.toString()}` : '/kindle/log';
+      return request(path);
+    },
+    deleteEntry: (id) => request(`/kindle/log/${id}`, { method: 'DELETE' }),
+  },
 };
