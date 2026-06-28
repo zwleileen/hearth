@@ -280,7 +280,7 @@ digest.get('/journal-brief', async (req, res) => {
 ${corpus}
 """
 
-Read across all of them and write ONE concise paragraph, three to five sentences, that mirrors back what has been on their mind. Hold what soothes them, what they return to with gratitude, the weather of their moods, the things they are quietly working through. Make it specific to what they actually wrote, in their own register, so they would read it and feel known. This is a reflection, not a summary and not a list. No advice, no diagnosis, no praise, no "you should". Hearth's voice: quiet, warm, specific, no em dashes.
+Read across all of them and write ONE short paragraph, two or three sentences, that mirrors back what has been on their mind. It will be read on a phone, so keep it brief and easy to take in at a glance: choose the one or two truest threads rather than naming everything. Touch what soothes them, or what they return to with gratitude, or the weather of their moods, whichever is most alive in the writing. Make it specific to what they actually wrote, in their own register, so they would read it and feel known. A reflection, not a summary and not a list. Warm, kind, gentle. No advice, no diagnosis, no praise, no "you should". Hearth's voice, no em dashes.
 
 If the entries are too few or too scattered to say anything true, return an empty string rather than inventing a thread.
 
@@ -311,7 +311,7 @@ digest.get('/nook-brief', async (req, res) => {
 ${corpus}
 """
 
-Write ONE concise paragraph, three to five sentences, that reflects what this collection says about what matters to them right now: the textures they are drawn to, the questions they seem to be sitting with, what they reach for when they want company or comfort. Read the shape of the whole shelf, not each item. Make it specific and true, something they would recognise. A reflection, not an inventory. No advice, no praise. Hearth's voice: quiet, warm, specific, no em dashes.
+Write ONE short paragraph, two or three sentences, that reflects what this collection says about what matters to them right now. It will be read on a phone, so keep it brief and easy to take in at a glance: name the one clearest thread, the texture they keep reaching for, rather than cataloguing the shelf. Make it specific and true, something they would recognise. A reflection, not an inventory. Warm, kind, gentle. No advice, no praise. Hearth's voice, no em dashes.
 
 If there is too little here to read honestly, return an empty string.
 

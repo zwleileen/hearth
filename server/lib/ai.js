@@ -232,7 +232,7 @@ export const WEEKLY_BRIEF_SCHEMA = {
   properties: {
     brief: {
       type: 'string',
-      description: 'One concise paragraph (three to five sentences) in Hearth\'s voice. A true, specific mirror, not a summary or a list. No advice, no diagnosis, no praise. Empty string if there is too little to read honestly.',
+      description: 'One short paragraph, two or three sentences, read on a phone. In Hearth\'s voice: warm, kind, gentle. A true, specific mirror, not a summary or a list. Concise enough to take in at a glance. No advice, no diagnosis, no praise. Empty string if there is too little to read honestly.',
     },
   },
   required: ['brief'],
