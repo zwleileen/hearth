@@ -402,7 +402,7 @@ function KindleScreen({ go }) {
               )}
             </Movement>
             <section style={{ padding: '40px 22px 0' }}>
-              <button onClick={() => go('journal-write', { seedFromKindle: true, feeling: current.feeling })} style={{
+              <button onClick={() => go('journal')} style={{
                 background: 'transparent', border: '1px solid rgba(31, 64, 69, 0.18)',
                 padding: '13px 22px', cursor: 'pointer', color: 'var(--hh-green)',
                 fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
