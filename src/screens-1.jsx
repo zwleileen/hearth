@@ -408,6 +408,9 @@ function JournalScreen({ go, user }) {
   const [tab, setTab] = useState1('evening');
   const [recent, setRecent] = useState1(null);
   const [recentError, setRecentError] = useState1(null);
+  // Weekly reflection brief for the top of the page. Best-effort; a
+  // failure or cold start just leaves it empty and the section hides.
+  const [brief, setBrief] = useState1('');
 
   useEffect1(() => {
     let cancelled = false;
@@ -418,6 +421,12 @@ function JournalScreen({ go, user }) {
       } catch (err) {
         if (!cancelled) setRecentError(err);
       }
+    })();
+    (async () => {
+      try {
+        const { brief } = await api.digest.journalBrief();
+        if (!cancelled) setBrief(brief || '');
+      } catch { /* cold start / unauth: leave empty */ }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -457,6 +466,20 @@ function JournalScreen({ go, user }) {
           Fifteen prompts, drawn from the most replicated work in positive and clinical psychology: Seligman, Pennebaker, Neff, King, Lyubomirsky, Gollwitzer, Oettingen, Borkovec. We surface the ones closest to where you are today.
         </p>
       </section>
+
+      {/* Weekly reflection — what's been on your mind, across the journal */}
+      {brief && (
+        <section style={{ padding: '0 22px 20px' }}>
+          <div style={{ background: 'var(--hh-isabel)', padding: '20px 22px', borderLeft: '2px solid var(--hh-green)' }}>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
+              This season in your journal
+            </div>
+            <p className="serif" style={{ margin: 0, fontSize: 16.5, lineHeight: 1.65, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+              {brief}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Segmented, flat, editorial, no pill */}
       <section style={{ padding: '0 22px' }}>

@@ -144,6 +144,12 @@ export const api = {
   digest: {
     bibliotherapy: ({ refresh = false } = {}) =>
       request(`/digest/bibliotherapy${refresh ? '?refresh=1' : ''}`),
+    // Weekly reflection for the top of the Journal page. { brief, itemCount }.
+    journalBrief: ({ refresh = false } = {}) =>
+      request(`/digest/journal-brief${refresh ? '?refresh=1' : ''}`),
+    // Weekly reflection for the top of the Nook page. { brief, itemCount }.
+    nookBrief: ({ refresh = false } = {}) =>
+      request(`/digest/nook-brief${refresh ? '?refresh=1' : ''}`),
   },
 
   kindle: {

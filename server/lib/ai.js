@@ -223,6 +223,22 @@ export const BIBLIOTHERAPY_SCHEMA = {
   additionalProperties: false,
 };
 
+// A single concise reflective paragraph for the top of the Journal or
+// Nook page. Empty string is valid output (cold start: too little saved
+// or written to say anything true). The frontend hides the section when
+// brief is empty, so the model must never pad to fill the slot.
+export const WEEKLY_BRIEF_SCHEMA = {
+  type: 'object',
+  properties: {
+    brief: {
+      type: 'string',
+      description: 'One concise paragraph (three to five sentences) in Hearth\'s voice. A true, specific mirror, not a summary or a list. No advice, no diagnosis, no praise. Empty string if there is too little to read honestly.',
+    },
+  },
+  required: ['brief'],
+  additionalProperties: false,
+};
+
 export const ATTUNE_SCHEMA = {
   type: 'object',
   properties: {

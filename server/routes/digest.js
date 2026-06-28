@@ -12,9 +12,11 @@
 
 import { Router } from 'express';
 import { JournalEntry } from '../models/JournalEntry.js';
+import { Bookmark } from '../models/Bookmark.js';
 import { WeeklyBibliotherapy } from '../models/WeeklyBibliotherapy.js';
+import { WeeklyBrief } from '../models/WeeklyBrief.js';
 import { requireAuth } from '../middleware/auth.js';
-import { getOpenAI, MODEL, HEARTH_VOICE, BIBLIOTHERAPY_SCHEMA } from '../lib/ai.js';
+import { getOpenAI, MODEL, HEARTH_VOICE, BIBLIOTHERAPY_SCHEMA, WEEKLY_BRIEF_SCHEMA } from '../lib/ai.js';
 
 export const digest = Router();
 digest.use(requireAuth);
@@ -162,4 +164,157 @@ Return JSON matching the schema.`;
     console.error('[digest/bibliotherapy]', err);
     res.status(500).json({ error: 'Failed to compute bibliotherapy', detail: err.message });
   }
+});
+
+// ─── Weekly reflection briefs (Journal + Nook) ───────────────────────────
+//
+// A concise paragraph at the top of the Journal and Nook pages, mirroring
+// back what the body of writing / saving says about the reader. Cached per
+// (user, week, kind) like bibliotherapy, regenerated when the week rolls
+// over or on ?refresh=1. Empty brief on cold start; the frontend hides the
+// section.
+
+// How much to feed the model. Generous enough to capture the body of work,
+// capped so the prompt stays bounded.
+const BRIEF_JOURNAL_LIMIT = 50;
+const BRIEF_NOOK_LIMIT = 60;
+const BRIEF_MIN_JOURNAL_ENTRIES = 3;
+const BRIEF_MIN_JOURNAL_WORDS = 150;
+const BRIEF_MIN_NOOK_ITEMS = 3;
+
+// Shared cache + generation flow. loader() returns { count, corpus } where
+// corpus is the text handed to the model and count drives cold-start; it
+// returns null to signal cold start. buildPrompt(corpus) returns the user
+// prompt string.
+async function serveWeeklyBrief({ req, res, kind, loader, buildPrompt }) {
+  const ws = weekStartISO();
+  const refresh = !!req.query.refresh;
+
+  if (!refresh) {
+    const cached = await WeeklyBrief.findOne({ userId: req.userId, weekStart: ws, kind });
+    if (cached) {
+      return res.json({ weekStart: ws, brief: cached.brief, itemCount: cached.itemCount, cached: true });
+    }
+  }
+
+  let loaded;
+  try {
+    loaded = await loader(req.userId);
+  } catch (err) {
+    console.error(`[digest/${kind}-brief] load failed:`, err);
+    return res.status(500).json({ error: 'Failed to read your records' });
+  }
+
+  // Cold start: cache an empty brief so the frontend stops asking until
+  // the week rolls over or more is written/saved.
+  if (!loaded) {
+    await WeeklyBrief.findOneAndUpdate(
+      { userId: req.userId, weekStart: ws, kind },
+      { $set: { userId: req.userId, weekStart: ws, kind, brief: '', itemCount: 0 } },
+      { upsert: true, new: true },
+    );
+    return res.json({ weekStart: ws, brief: '', itemCount: 0, cached: false });
+  }
+
+  let client;
+  try {
+    client = getOpenAI();
+  } catch (err) {
+    return res.status(503).json({ error: 'AI service not configured', detail: err.message });
+  }
+
+  try {
+    const completion = await client.chat.completions.create({
+      model: MODEL,
+      temperature: 0.7,
+      messages: [
+        { role: 'system', content: HEARTH_VOICE },
+        { role: 'user', content: buildPrompt(loaded.corpus) },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: { name: 'weekly_brief', strict: true, schema: WEEKLY_BRIEF_SCHEMA },
+      },
+    });
+    const text = completion.choices?.[0]?.message?.content;
+    if (!text) return res.status(502).json({ error: 'Empty response from AI service' });
+    const data = JSON.parse(text);
+    const brief = (data.brief || '').trim();
+
+    await WeeklyBrief.findOneAndUpdate(
+      { userId: req.userId, weekStart: ws, kind },
+      { $set: { userId: req.userId, weekStart: ws, kind, brief, itemCount: loaded.count } },
+      { upsert: true, new: true },
+    );
+    res.json({ weekStart: ws, brief, itemCount: loaded.count, cached: false });
+  } catch (err) {
+    console.error(`[digest/${kind}-brief]`, err);
+    res.status(500).json({ error: 'Failed to compute brief', detail: err.message });
+  }
+}
+
+// ── GET /api/digest/journal-brief ─────────────────────────────────────
+digest.get('/journal-brief', async (req, res) => {
+  await serveWeeklyBrief({
+    req, res, kind: 'journal',
+    loader: async (userId) => {
+      const entries = await JournalEntry.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(BRIEF_JOURNAL_LIMIT)
+        .lean();
+      const totalWords = entries.reduce((sum, e) => {
+        const t = (e.body || '').trim();
+        return sum + (t ? t.split(/\s+/).length : 0);
+      }, 0);
+      if (entries.length < BRIEF_MIN_JOURNAL_ENTRIES || totalWords < BRIEF_MIN_JOURNAL_WORDS) return null;
+      const corpus = entries.map((e, i) => {
+        const when = new Date(e.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+        const body = (e.body || '').trim().replace(/\s+/g, ' ').slice(0, 700);
+        return `Entry ${i + 1} (${when}${e.mood ? ', mood: ' + e.mood : ''}${e.promptTitle ? ', prompt: ' + e.promptTitle : ''}):\n${body}`;
+      }).join('\n\n---\n\n');
+      return { count: entries.length, corpus };
+    },
+    buildPrompt: (corpus) => `A reader has been keeping a journal in Hearth. Below are their entries, most recent first.
+
+"""
+${corpus}
+"""
+
+Read across all of them and write ONE concise paragraph, three to five sentences, that mirrors back what has been on their mind. Hold what soothes them, what they return to with gratitude, the weather of their moods, the things they are quietly working through. Make it specific to what they actually wrote, in their own register, so they would read it and feel known. This is a reflection, not a summary and not a list. No advice, no diagnosis, no praise, no "you should". Hearth's voice: quiet, warm, specific, no em dashes.
+
+If the entries are too few or too scattered to say anything true, return an empty string rather than inventing a thread.
+
+Return JSON matching the schema.`,
+  });
+});
+
+// ── GET /api/digest/nook-brief ────────────────────────────────────────
+digest.get('/nook-brief', async (req, res) => {
+  await serveWeeklyBrief({
+    req, res, kind: 'nook',
+    loader: async (userId) => {
+      const items = await Bookmark.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(BRIEF_NOOK_LIMIT)
+        .lean();
+      if (items.length < BRIEF_MIN_NOOK_ITEMS) return null;
+      const corpus = items.map((b, i) => {
+        const bits = [b.kind, b.title && `"${b.title}"`, b.source && `by ${b.source}`].filter(Boolean).join(' · ');
+        const note = (b.excerpt || '').trim().replace(/\s+/g, ' ').slice(0, 200);
+        return `${i + 1}. ${bits}${note ? `\n   ${note}` : ''}`;
+      }).join('\n');
+      return { count: items.length, corpus };
+    },
+    buildPrompt: (corpus) => `A reader has been saving things to their Nook in Hearth: songs, poems, books, and articles they wanted to keep close. Below is what they have saved, most recent first.
+
+"""
+${corpus}
+"""
+
+Write ONE concise paragraph, three to five sentences, that reflects what this collection says about what matters to them right now: the textures they are drawn to, the questions they seem to be sitting with, what they reach for when they want company or comfort. Read the shape of the whole shelf, not each item. Make it specific and true, something they would recognise. A reflection, not an inventory. No advice, no praise. Hearth's voice: quiet, warm, specific, no em dashes.
+
+If there is too little here to read honestly, return an empty string.
+
+Return JSON matching the schema.`,
+  });
 });

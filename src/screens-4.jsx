@@ -400,6 +400,8 @@ function BookmarksScreen({ go }) {
   const [bookmarks, setBookmarks] = React.useState(null);
   const [loadError, setLoadError] = React.useState(null);
   const [filter, setFilter] = React.useState('all');
+  // Weekly reflection brief. Best-effort; empty on cold start / unauth.
+  const [brief, setBrief] = React.useState('');
 
   React.useEffect(() => {
     let cancelled = false;
@@ -410,6 +412,12 @@ function BookmarksScreen({ go }) {
       } catch (err) {
         if (!cancelled) setLoadError(err);
       }
+    })();
+    (async () => {
+      try {
+        const { brief } = await api.digest.nookBrief();
+        if (!cancelled) setBrief(brief || '');
+      } catch { /* cold start / unauth: leave empty */ }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -471,6 +479,18 @@ function BookmarksScreen({ go }) {
       <p className="body" style={{ margin: '0 0 18px', maxWidth: 420 }}>
         Songs, poems, books, and articles you've saved from Hearth and Attune. Yours alone, here whenever you want them.
       </p>
+
+      {/* Weekly reflection — what the shelf says about what matters now */}
+      {brief && (
+        <div style={{ background: 'var(--hh-isabel)', padding: '18px 20px', borderLeft: '2px solid var(--hh-green)', margin: '0 0 22px' }}>
+          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
+            What your shelf holds
+          </div>
+          <p className="serif" style={{ margin: 0, fontSize: 16.5, lineHeight: 1.65, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+            {brief}
+          </p>
+        </div>
+      )}
 
       {bookmarks !== null && list.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4, marginBottom: 22 }}>
