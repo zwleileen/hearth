@@ -37,30 +37,25 @@ const Icon = {
       <path d="M3 18h18"/><path d="M12 9v-5M5.5 11.5l-2-2M18.5 11.5l2-2"/><path d="M7 18a5 5 0 0 1 10 0"/>
     </svg>
   ),
-  // Give tab — an open hand offering a heart (giving).
+  // Give tab — an open hand (Heroicons hand-raised). Reads as a palm.
   giveHand: (s = 18, c = 'currentColor') => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <g transform="translate(7.4 1) scale(0.38)">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" strokeWidth="3.4"/>
-      </g>
-      <path d="M4 14.5c2.5 3 5 4.5 8 4.5s5.5-1.5 8-4.5"/>
-      <path d="M4 14.5v2.4M20 14.5v2.4"/>
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10.05 4.575a1.575 1.575 0 1 0-3.15 0v3m3.15-3v-1.5a1.575 1.575 0 0 1 3.15 0v1.5m-3.15 0 .075 5.925m3.075.75V4.575m0 0a1.575 1.575 0 0 1 3.15 0V15M6.9 7.575a1.575 1.575 0 1 0-3.15 0v8.175a6.75 6.75 0 0 0 6.75 6.75h2.018a5.25 5.25 0 0 0 3.712-1.538l1.732-1.732a5.25 5.25 0 0 0 1.538-3.712l.003-2.024a.668.668 0 0 1 .198-.471 1.575 1.575 0 1 0-2.228-2.228 3.818 3.818 0 0 0-1.12 2.687M6.9 7.575V12m6.27 4.318A4.49 4.49 0 0 1 16.35 15m.002 0h-.002"/>
     </svg>
   ),
-  // Receive tab — a flower (what you let in: beauty, the world reaching you).
+  // Receive tab — a five-petal flower (what you let in: beauty reaching you).
   flower: (s = 18, c = 'currentColor') => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 12c-1.6-1.2-1.6-5.5 0-8.5 1.6 3 1.6 7.3 0 8.5z"/>
-      <path d="M12 12c-1.6 1.2-1.6 5.5 0 8.5 1.6-3 1.6-7.3 0-8.5z"/>
-      <path d="M12 12c-1.2-1.6-5.5-1.6-8.5 0 3 1.6 7.3 1.6 8.5 0z"/>
-      <path d="M12 12c1.2-1.6 5.5-1.6 8.5 0-3 1.6-7.3 1.6-8.5 0z"/>
-      <circle cx="12" cy="12" r="2.1"/>
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+      {[0, 72, 144, 216, 288].map((a) => (
+        <path key={a} transform={`rotate(${a} 12 12)`} d="M12 12C8.5 9.5 8.5 4 12 3 15.5 4 15.5 9.5 12 12Z"/>
+      ))}
+      <circle cx="12" cy="12" r="2"/>
     </svg>
   ),
-  // Carry tab — a heart (how you hold what you cannot change).
+  // Carry tab — a heart (Heroicons). How you hold what you cannot change.
   heart: (s = 18, c = 'currentColor') => (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
     </svg>
   ),
   // Hearth tab — a single horizontal line over a square (a hearth/mantel)
