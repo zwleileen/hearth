@@ -53,7 +53,7 @@ narrative.get('/', async (req, res) => {
   if (cached && !refresh && cached.sourceCount === total && ageOk && hasShape) {
     return res.json({
       narrative: cached.narrative, give: cached.give || '', receive: cached.receive || '', carry: cached.carry || '',
-      threads: cached.threads || [], sourceCount: total, cached: true,
+      threads: cached.threads || [], sourceCount: total, generatedAt: cached.generatedAt, cached: true,
     });
   }
 
@@ -129,12 +129,13 @@ Return JSON matching the schema.`;
     const receive = (data.receive || '').trim();
     const carry = (data.carry || '').trim();
     const threads = Array.isArray(data.threads) ? data.threads.filter(Boolean).slice(0, 3) : [];
+    const generatedAt = new Date();
     await MeaningNarrative.findOneAndUpdate(
       { userId },
-      { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt: new Date() } },
+      { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt } },
       { upsert: true },
     );
-    res.json({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, cached: false });
+    res.json({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, cached: false });
   } catch (err) {
     console.error('[narrative]', err);
     res.status(500).json({ error: 'Failed to weave your meaning', detail: err.message });

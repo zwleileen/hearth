@@ -839,14 +839,6 @@ function ReceiveScreen({ go }) {
 // Mirror, and the reflective practices (values, the weekly review).
 // ─────────────────────────────────────────────────────────────
 function YoursScreen({ go }) {
-  const [brief, setBrief] = useState1('');
-  useEffect1(() => {
-    let cancelled = false;
-    (async () => {
-      try { const { brief } = await api.digest.journalBrief(); if (!cancelled) setBrief(brief || ''); } catch { /* cold start / unauth */ }
-    })();
-    return () => { cancelled = true; };
-  }, []);
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       <section style={{ padding: '14px 22px 0' }}>
@@ -858,19 +850,6 @@ function YoursScreen({ go }) {
           What you have written, kept, and noticed. Yours alone, here whenever you want it.
         </p>
       </section>
-
-      {brief && (
-        <section style={{ padding: '32px 22px 0' }}>
-          <div style={{ background: 'var(--hh-isabel)', padding: '22px 24px' }}>
-            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
-              The meaning mirror · this week
-            </div>
-            <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.6, fontStyle: 'italic', color: 'var(--hh-green)' }}>
-              {brief}
-            </p>
-          </div>
-        </section>
-      )}
 
       <section style={{ padding: '36px 22px 0' }}>
         <div className="hh-doors">
@@ -900,7 +879,6 @@ function YoursScreen({ go }) {
 // ─────────────────────────────────────────────────────────────
 function MeaningScreen({ go }) {
   const [narr, setNarr] = useState1(null);
-  const [refreshing, setRefreshing] = useState1(false);
   useEffect1(() => {
     let cancelled = false;
     api.narrative.get()
@@ -908,14 +886,6 @@ function MeaningScreen({ go }) {
       .catch(() => { if (!cancelled) setNarr({ narrative: '' }); });
     return () => { cancelled = true; };
   }, []);
-  function weave() {
-    if (refreshing) return;
-    setRefreshing(true);
-    api.narrative.get({ refresh: true })
-      .then((d) => setNarr(d || { narrative: '' }))
-      .catch(() => {})
-      .finally(() => setRefreshing(false));
-  }
   const rows = narr ? [
     { label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)' },
     { label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)' },
@@ -968,15 +938,8 @@ function MeaningScreen({ go }) {
             )}
           </section>
           <section style={{ padding: '34px 22px 0' }}>
-            <button onClick={weave} disabled={refreshing} style={{
-              background: 'transparent', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.25)',
-              padding: '12px 20px', cursor: refreshing ? 'wait' : 'pointer',
-              fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
-            }}>
-              {refreshing ? 'Weaving…' : 'Weave again'}
-            </button>
-            <p className="body-sm" style={{ margin: '14px 0 0', color: 'var(--paper-mute)', maxWidth: 420 }}>
-              This grows as you notice, write, and keep what moves you.
+            <p className="body-sm" style={{ margin: 0, color: 'var(--paper-mute)', maxWidth: 460, lineHeight: 1.6 }}>
+              This grows on its own as you notice, write, and keep what moves you. It re-weaves when you add something new, and at least once a week.{narr.generatedAt ? ` Last woven ${new Date(narr.generatedAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}.` : ''}
             </p>
           </section>
         </>
@@ -1195,7 +1158,7 @@ function JournalScreen({ go, user }) {
         <section style={{ padding: '0 22px 20px' }}>
           <div style={{ background: 'var(--hh-isabel)', padding: '22px 24px' }}>
             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
-              This season in your journal
+              Lately, in your journal
             </div>
             <p className="serif" style={{ margin: 0, fontSize: 16.5, lineHeight: 1.65, fontStyle: 'italic', color: 'var(--hh-green)' }}>
               {brief}
