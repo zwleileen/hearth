@@ -7,7 +7,7 @@ import {
   TweakToggle, TweakNumber, TweakButton,
 } from './tweaks-panel.jsx';
 import { HEARTH_DATA } from './data.js';
-import { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
+import { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
 import {
   DiscoverScreen, AttuneScreen, RitualsScreen,
   RitualDetailScreen, RitualBuilderScreen,
@@ -120,7 +120,7 @@ function App() {
     : route === 'kindle' ? 'carry'
     : (route === 'give' || route === 'rituals' || route.startsWith('ritual')) ? 'give'
     : (route === 'receive' || route === 'attune' || route === 'attune-history' || route === 'reading' || route === 'article' || route === 'discover') ? 'receive'
-    : (route === 'yours' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks' || route === 'weekly-digest') ? 'yours'
+    : (route === 'yours' || route === 'meaning-log' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks' || route === 'weekly-digest') ? 'yours'
     : route.startsWith('settings') ? 'settings'
     : 'today';
 
@@ -141,6 +141,7 @@ function App() {
       {route === 'give' && <GiveScreen go={go} user={user}/>}
       {route === 'receive' && <ReceiveScreen go={go}/>}
       {route === 'yours' && <YoursScreen go={go}/>}
+      {route === 'meaning-log' && <MeaningLogScreen go={go}/>}
       {route === 'journal' && <JournalScreen go={go} user={user}/>}
       {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
       {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}

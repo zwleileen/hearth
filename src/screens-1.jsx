@@ -209,11 +209,50 @@ function HomeScreen({ go, user }) {
         </section>
       )}
 
-      {/* ── The meaning of this moment: today's one invitation ── */}
+      {/* ── The meaning of this moment: prompt + answer, one block ── */}
       <section style={{ padding: '40px 22px 0' }}>
         <div className="hh-moment" style={{ background: moment.avenue.accent }}>
           <span className="hh-moment-eyebrow">The meaning of this moment</span>
           <p className="hh-moment-prompt">{moment.prompt}</p>
+
+          {keptToday ? (
+            <div style={{ marginBottom: 18 }}>
+              <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', opacity: 0.65, marginBottom: 8 }}>
+                Today, you noticed
+              </div>
+              <p className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+                {keptToday.text}
+              </p>
+            </div>
+          ) : (
+            <div style={{ marginBottom: 18 }}>
+              <textarea
+                className="hearth-input"
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Answer in a line, if it comes to you…"
+                style={{ minHeight: 64, background: 'var(--hh-lace)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}
+              />
+              <div style={{ marginTop: 14 }}>
+                {(() => {
+                  const ready = answer.trim().length >= 2 && !keeping;
+                  return (
+                    <button onClick={keepAnswer} disabled={!ready} style={{
+                      background: ready ? 'var(--hh-green)' : 'transparent',
+                      color: ready ? 'var(--hh-lace)' : 'var(--paper-mute)',
+                      border: ready ? 0 : '1px solid rgba(31, 64, 69, 0.25)',
+                      padding: '12px 20px', cursor: ready ? 'pointer' : (keeping ? 'wait' : 'not-allowed'),
+                      fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+                      letterSpacing: '0.22em', textTransform: 'uppercase',
+                    }}>
+                      {keeping ? 'Keeping…' : 'Keep it'}
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+          )}
+
           <button onClick={() => go(moment.avenue.route)} style={{
             background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
             color: 'var(--hh-green)', fontFamily: 'var(--mono)', fontSize: 10,
@@ -226,52 +265,15 @@ function HomeScreen({ go, user }) {
         </div>
       </section>
 
-      {/* ── Answer in a line: the daily loop, kept on this device ── */}
-      <section style={{ padding: '20px 22px 0' }}>
-        {keptToday ? (
-          <div style={{ padding: '4px 2px' }}>
-            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 8 }}>
-              Today, you noticed
-            </div>
-            <p className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
-              {keptToday.text}
-            </p>
-          </div>
-        ) : (
-          <div>
-            <textarea
-              className="hearth-input"
-              value={answer}
-              onChange={(e) => setAnswer(e.target.value)}
-              placeholder="Answer in a line, if it comes to you…"
-              style={{ minHeight: 68, background: 'var(--hh-isabel)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}
-            />
-            <div style={{ marginTop: 14 }}>
-              {(() => {
-                const ready = answer.trim().length >= 2 && !keeping;
-                return (
-                  <button onClick={keepAnswer} disabled={!ready} style={{
-                    background: ready ? 'var(--hh-green)' : 'transparent',
-                    color: ready ? 'var(--hh-lace)' : 'var(--paper-mute)',
-                    border: ready ? 0 : '1px solid rgba(31, 64, 69, 0.18)',
-                    padding: '12px 20px', cursor: ready ? 'pointer' : (keeping ? 'wait' : 'not-allowed'),
-                    fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-                    letterSpacing: '0.22em', textTransform: 'uppercase',
-                  }}>
-                    {keeping ? 'Keeping…' : 'Keep it'}
-                  </button>
-                );
-              })()}
-            </div>
-          </div>
-        )}
-      </section>
-
       {/* ── What you've been noticing: the meaning log ── */}
       {past.length > 0 && (
         <section style={{ padding: '34px 22px 0' }}>
           <div className="hearth-dept-head">
             <span className="hearth-dept-head-title">What you've been noticing</span>
+            <button onClick={() => go('meaning-log')} className="hearth-dept-head-meta"
+              style={{ background: 'transparent', border: 0, cursor: 'pointer' }}>
+              See all
+            </button>
           </div>
           <div style={{ marginTop: 4 }}>
             {past.map((e, i) => (
@@ -612,6 +614,7 @@ function GiveScreen({ go, user }) {
   ];
 
   const [chosen, setChosen] = useState1(null);
+  const captureRef = React.useRef(null);
   const activePrompt = chosen ? chosen.prompt : deed;
   const activeLabel = chosen ? chosen.word : 'The deed of the day';
   const [answer, setAnswer] = useState1('');
@@ -658,6 +661,7 @@ function GiveScreen({ go, user }) {
           <span className="hh-moment-eyebrow">{activeLabel}</span>
           <p className="hh-moment-prompt">{activePrompt}</p>
           <textarea
+            ref={captureRef}
             className="hearth-input"
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
@@ -689,11 +693,21 @@ function GiveScreen({ go, user }) {
           {ways.map((w) => {
             const on = chosen?.word === w.word;
             return (
-              <button key={w.word} className="hh-door" onClick={() => { setChosen(on ? null : w); setAnswer(''); }}
+              <button key={w.word} className="hh-door" onClick={() => {
+                  const next = on ? null : w;
+                  setChosen(next);
+                  setAnswer('');
+                  if (next && captureRef.current) {
+                    captureRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(() => { try { captureRef.current && captureRef.current.focus(); } catch {} }, 360);
+                  }
+                }}
                 style={on ? { background: 'rgba(225, 190, 116, 0.20)' } : undefined}>
                 <span className="hh-door-head">
                   <span className="hh-door-word" style={{ color: 'var(--hh-ecru-deep)' }}>{w.word}</span>
-                  {on && <span className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>chosen</span>}
+                  {on
+                    ? <span className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>chosen ↑</span>
+                    : <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>}
                 </span>
                 <span className="hh-door-meaning">{w.meaning}</span>
               </button>
@@ -805,6 +819,7 @@ function YoursScreen({ go }) {
       <section style={{ padding: '36px 22px 0' }}>
         <div className="hh-doors">
           <DoorRow word="Journal" meaning="Your reflections. The page where you write yourself a little clearer." onClick={() => go('journal')} />
+          <DoorRow word="The meaning log" meaning="Every line you've kept in answer to the meaning of the moment." onClick={() => go('meaning-log')} />
           <DoorRow word="Nook" meaning="Everything you have kept close. Your anthology of what matters." onClick={() => go('bookmarks')} />
         </div>
       </section>
@@ -817,6 +832,99 @@ function YoursScreen({ go }) {
           <DoorRow word="Values check-in" meaning="Name the values most alive this week, and one small move toward them." onClick={() => openRitual(go, 'values')} />
           <DoorRow word="The weekly review" meaning="A quiet look across your week: what threaded through, what kept company with you." onClick={() => go('weekly-digest')} />
         </div>
+      </section>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// MEANING LOG — the full record of lines kept in answer to the
+// meaning of the moment (and to giving). Lives under Yours.
+// ─────────────────────────────────────────────────────────────
+const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
+
+function MeaningLogScreen({ go }) {
+  const [entries, setEntries] = useState1(null);
+  const [error, setError] = useState1(null);
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try { const { entries } = await api.meaning.list({ limit: 100 }); if (!cancelled) setEntries(entries || []); }
+      catch (e) { if (!cancelled) setError(e); }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  async function remove(id) {
+    try { await api.meaning.remove(id); setEntries((prev) => (prev || []).filter((e) => e.id !== id)); } catch { /* leave as is */ }
+  }
+  return (
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      <section style={{ padding: '4px 22px 0' }}>
+        <button onClick={() => go('yours')} style={{
+          background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
+          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
+        }}>
+          {Icon.back(18, 'currentColor')}<span>Yours</span>
+        </button>
+      </section>
+      <section style={{ padding: '20px 22px 0' }}>
+        <Kicker>The meaning log</Kicker>
+        <Headline size="display" style={{ marginTop: 12 }}>What you've noticed.</Headline>
+        <p className="body" style={{ margin: '14px 0 0', maxWidth: 460 }}>
+          Every line you have kept, in answer to the meaning of the moment. Yours to return to.
+        </p>
+      </section>
+      <section style={{ padding: '32px 22px 0' }}>
+        {error && error.status === 401 && (
+          <p className="body" style={{ color: 'var(--paper-mute)' }}>
+            <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--ember)' }}>Sign in</span> to see your log.
+          </p>
+        )}
+        {!error && entries === null && (
+          <div>
+            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '50%' }}/>
+            <div style={{ height: 18, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '85%' }}/>
+          </div>
+        )}
+        {!error && Array.isArray(entries) && entries.length === 0 && (
+          <p className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
+            Nothing kept yet. Answer the meaning of the moment on the home page, and your lines will gather here.
+          </p>
+        )}
+        {Array.isArray(entries) && entries.length > 0 && entries.map((e) => (
+          <div key={e.id} style={{ borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '20px 0', position: 'relative' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+              <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
+                {new Date(e.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+              </span>
+              {AVENUE_WORD[e.avenue] && (
+                <span className="mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--hh-green)', textTransform: 'uppercase', padding: '2px 9px', border: '1px solid rgba(31, 64, 69, 0.18)' }}>
+                  {AVENUE_WORD[e.avenue]}
+                </span>
+              )}
+            </div>
+            <p className="serif" style={{ margin: '12px 0 0', fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+              {e.text}
+            </p>
+            {e.prompt && (
+              <p className="body-sm" style={{ margin: '8px 0 0', color: 'var(--paper-mute)' }}>
+                in answer to: {e.prompt}
+              </p>
+            )}
+            <button onClick={() => remove(e.id)} aria-label="Remove" style={{
+              position: 'absolute', top: 20, right: 0, background: 'transparent', border: 0,
+              padding: '4px 8px', cursor: 'pointer', color: 'var(--paper-mute)',
+              fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase',
+              opacity: 0, transition: 'opacity 200ms ease',
+            }}
+              onMouseEnter={(ev) => ev.currentTarget.style.opacity = 1}
+              onMouseLeave={(ev) => ev.currentTarget.style.opacity = 0}
+              onFocus={(ev) => ev.currentTarget.style.opacity = 1}
+              onBlur={(ev) => ev.currentTarget.style.opacity = 0}
+            >Remove</button>
+          </div>
+        ))}
       </section>
     </div>
   );
@@ -1258,4 +1366,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-export { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen };
+export { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen };
