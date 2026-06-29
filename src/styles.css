@@ -1061,6 +1061,24 @@ html, body {
   to   { transform: none; }
 }
 
+/* ─── Home — masthead + hearth glow ───────────────────
+   A single soft warm light behind the greeting, the constant light
+   made visible. Restraint is the point: a wash, never a blob. */
+.hh-home-masthead { position: relative; }
+.hh-home-glow {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 480px;
+  max-width: 130%;
+  height: 280px;
+  background: radial-gradient(ellipse at center, rgba(225, 190, 116, 0.20), rgba(225, 190, 116, 0) 72%);
+  pointer-events: none;
+  z-index: 0;
+}
+.hh-home-masthead > *:not(.hh-home-glow) { position: relative; z-index: 1; }
+
 /* ─── Home — the meaning of this moment ──────────────
    One full-width color block in today's avenue accent. Green ink on a
    light accent (the sanctioned color-block usage). The single daily

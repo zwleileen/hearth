@@ -134,6 +134,15 @@ function pickMeaningOfMoment(user) {
 // and accrues over time.
 function todayKey() { return new Date().toISOString().slice(0, 10); }
 
+// A soft arrival, the day and its part, no clock. "Tuesday morning."
+function softWhen() {
+  const now = new Date();
+  const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
+  const h = now.getHours();
+  const part = h < 5 ? 'night' : h < 12 ? 'morning' : h < 17 ? 'afternoon' : h < 21 ? 'evening' : 'night';
+  return `${weekday} ${part}`;
+}
+
 function HomeScreen({ go, user }) {
   const D = HEARTH_DATA;
   const part = timeOfDay(); // 'night' | 'morning' | 'afternoon' | 'evening'
@@ -178,36 +187,20 @@ function HomeScreen({ go, user }) {
 
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
-      {/* ── Greeting ─────────────────────────── */}
-      <section style={{ padding: '14px 22px 26px' }}>
-        <Kicker>{formatTodayKicker()}</Kicker>
+      {/* ── Masthead: a soft arrival, the greeting, the inscription ── */}
+      <section className="hh-home-masthead" style={{ padding: '22px 22px 32px' }}>
+        <div className="hh-home-glow" aria-hidden="true"/>
+        <Kicker>{softWhen()}</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
           {greet}
         </Headline>
+        <p className="serif" style={{
+          margin: '20px 0 0', fontSize: 18, lineHeight: 1.5, fontStyle: 'italic',
+          fontWeight: 380, color: 'var(--paper-2)', maxWidth: 470,
+        }}>
+          Give, receive, carry. There is always a door to meaning, even when one or two are closed.
+        </p>
       </section>
-
-      {/* ── A still moment: the daily quote, changes each day ── */}
-      {quote && (
-        <section style={{ padding: '4px 22px 8px' }}>
-          <Rule glyph="◆"/>
-          <div style={{ padding: '36px 0 32px', textAlign: 'center' }}>
-            <p className="serif" style={{
-              margin: '0 auto', maxWidth: 560,
-              fontSize: 25, lineHeight: 1.42, fontWeight: 360, fontStyle: 'italic',
-              color: 'var(--hh-green)', letterSpacing: '-0.008em',
-            }}>
-              &ldquo;{quote.text}&rdquo;
-            </p>
-            <p className="mono" style={{
-              fontSize: 9.5, letterSpacing: '0.22em', color: 'var(--paper-mute)',
-              marginTop: 24, textTransform: 'uppercase',
-            }}>
-              {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
-            </p>
-          </div>
-          <Rule glyph="◆"/>
-        </section>
-      )}
 
       {/* ── The meaning of this moment: prompt + answer, one block ── */}
       <section style={{ padding: '40px 22px 0' }}>
@@ -216,9 +209,9 @@ function HomeScreen({ go, user }) {
           <p className="hh-moment-prompt">{moment.prompt}</p>
 
           {keptToday ? (
-            <div style={{ marginBottom: 18 }}>
+            <div className="fade-in" style={{ marginBottom: 18 }}>
               <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', opacity: 0.65, marginBottom: 8 }}>
-                Today, you noticed
+                Kept. Today, you noticed
               </div>
               <p className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
                 {keptToday.text}
@@ -290,16 +283,27 @@ function HomeScreen({ go, user }) {
         </section>
       )}
 
-      {/* ── A quiet line: the philosophy, the avenues live in the nav ── */}
-      <section style={{ padding: '46px 22px 0' }}>
-        <Rule/>
-        <p className="serif" style={{
-          margin: '24px 0 0', fontSize: 17, lineHeight: 1.55, fontStyle: 'italic',
-          color: 'var(--paper-2)', maxWidth: 460,
-        }}>
-          There is always a way to meaning, even when one or two are closed. Give, receive, carry. Whatever the day asks, there is a door in it.
-        </p>
-      </section>
+      {/* ── A closing grace: the daily quote, changes each day ── */}
+      {quote && (
+        <section style={{ padding: '48px 22px 8px' }}>
+          <Rule glyph="◆"/>
+          <div style={{ padding: '32px 0 28px', textAlign: 'center' }}>
+            <p className="serif" style={{
+              margin: '0 auto', maxWidth: 540,
+              fontSize: 20, lineHeight: 1.45, fontWeight: 360, fontStyle: 'italic',
+              color: 'var(--paper-2)', letterSpacing: '-0.005em',
+            }}>
+              &ldquo;{quote.text}&rdquo;
+            </p>
+            <p className="mono" style={{
+              fontSize: 9, letterSpacing: '0.22em', color: 'var(--paper-mute)',
+              marginTop: 20, textTransform: 'uppercase',
+            }}>
+              {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
+            </p>
+          </div>
+        </section>
+      )}
 
     </div>
   );
