@@ -195,12 +195,6 @@ function HomeScreen({ go, user }) {
       .catch(() => { if (!cancelled) setNarr({ narrative: '', threads: [] }); });
     return () => { cancelled = true; };
   }, []);
-  function refreshNarr() {
-    setNarr(null);
-    api.narrative.get({ refresh: true })
-      .then((d) => setNarr(d || { narrative: '', threads: [] }))
-      .catch(() => setNarr({ narrative: '', threads: [] }));
-  }
 
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
@@ -219,40 +213,49 @@ function HomeScreen({ go, user }) {
         </p>
       </section>
 
-      {/* ── Your meaning, this season: the synthesis across everything ── */}
+      {/* ── Your meaning, this season: a compact glance, full on tap ── */}
       <section style={{ padding: '34px 22px 0' }}>
         <div className="hearth-dept-head">
           <span className="hearth-dept-head-title">Your meaning, this season</span>
           {narr && narr.narrative && (
-            <button onClick={refreshNarr} className="hearth-dept-head-meta"
+            <button onClick={() => go('meaning')} className="hearth-dept-head-meta"
               style={{ background: 'transparent', border: 0, cursor: 'pointer' }}>
-              Weave again
+              Read in full
             </button>
           )}
         </div>
         {narr === null ? (
-          <div style={{ marginTop: 16 }}>
-            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '92%' }}/>
-            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '78%' }}/>
-            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '58%' }}/>
+          <div style={{ marginTop: 14 }}>
+            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 12, width: '68%' }}/>
+            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 14, width: '54%' }}/>
+            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 14, width: '60%' }}/>
           </div>
         ) : narr.narrative ? (
-          <div className="fade-in">
-            <p className="serif" style={{ margin: '16px 0 0', fontSize: 20, lineHeight: 1.55, fontWeight: 380, color: 'var(--hh-green)', maxWidth: 580 }}>
-              {narr.narrative}
-            </p>
-            {Array.isArray(narr.threads) && narr.threads.length > 0 && (
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
-                {narr.threads.map((t, i) => (
-                  <span key={i} className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.18)', padding: '5px 11px' }}>
-                    {t}
+          (narr.give || narr.receive || narr.carry) ? (
+            <div className="fade-in" style={{ marginTop: 10 }}>
+              {[
+                { label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)' },
+                { label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)' },
+                { label: 'Carry', phrase: narr.carry, ink: 'var(--hh-dogwood-deep)' },
+              ].filter((r) => r.phrase).map((r) => (
+                <div key={r.label} style={{ display: 'flex', gap: 14, alignItems: 'baseline', padding: '12px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.08)' }}>
+                  <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase', color: r.ink, minWidth: 62, flexShrink: 0 }}>
+                    {r.label}
                   </span>
-                ))}
-              </div>
-            )}
-          </div>
+                  <span className="serif" style={{ fontSize: 16.5, lineHeight: 1.45, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+                    {r.phrase}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="serif" style={{ margin: '14px 0 0', fontSize: 17, lineHeight: 1.55, fontStyle: 'italic', color: 'var(--hh-green)', maxWidth: 560 }}>
+              {narr.narrative.split(/(?<=\.)\s/)[0]}{' '}
+              <button onClick={() => go('meaning')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--hh-green-3)', fontStyle: 'italic', textDecoration: 'underline' }}>read in full</button>
+            </p>
+          )
         ) : (
-          <p className="serif" style={{ margin: '16px 0 0', fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 460, lineHeight: 1.5 }}>
+          <p className="serif" style={{ margin: '14px 0 0', fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 460, lineHeight: 1.5 }}>
             As you notice, write, and keep what moves you, your sense of meaning will take shape here.
           </p>
         )}
@@ -878,6 +881,7 @@ function YoursScreen({ go }) {
 
       <section style={{ padding: '36px 22px 0' }}>
         <div className="hh-doors">
+          <DoorRow word="Your meaning" meaning="The shape of your meaning this season, woven from everything you keep." onClick={() => go('meaning')} />
           <DoorRow word="Journal" meaning="Your reflections. The page where you write yourself a little clearer." onClick={() => go('journal')} />
           <DoorRow word="The meaning log" meaning="Every line you've kept in answer to the meaning of the moment." onClick={() => go('meaning-log')} />
           <DoorRow word="Nook" meaning="Everything you have kept close. Your anthology of what matters." onClick={() => go('bookmarks')} />
@@ -893,6 +897,103 @@ function YoursScreen({ go }) {
           <DoorRow word="The weekly review" meaning="A quiet look across your week: what threaded through, what kept company with you." onClick={() => go('weekly-digest')} />
         </div>
       </section>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// YOUR MEANING — the full narrative synthesis behind the Home
+// glance: the three avenues in full, the prose, and the threads.
+// ─────────────────────────────────────────────────────────────
+function MeaningScreen({ go }) {
+  const [narr, setNarr] = useState1(null);
+  const [refreshing, setRefreshing] = useState1(false);
+  useEffect1(() => {
+    let cancelled = false;
+    api.narrative.get()
+      .then((d) => { if (!cancelled) setNarr(d || { narrative: '' }); })
+      .catch(() => { if (!cancelled) setNarr({ narrative: '' }); });
+    return () => { cancelled = true; };
+  }, []);
+  function weave() {
+    if (refreshing) return;
+    setRefreshing(true);
+    api.narrative.get({ refresh: true })
+      .then((d) => setNarr(d || { narrative: '' }))
+      .catch(() => {})
+      .finally(() => setRefreshing(false));
+  }
+  const rows = narr ? [
+    { label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)' },
+    { label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)' },
+    { label: 'Carry', phrase: narr.carry, ink: 'var(--hh-dogwood-deep)' },
+  ].filter((r) => r.phrase) : [];
+  return (
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      <section style={{ padding: '4px 22px 0' }}>
+        <button onClick={() => go('yours')} style={{
+          background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
+          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
+        }}>
+          {Icon.back(18, 'currentColor')}<span>Yours</span>
+        </button>
+      </section>
+      <section style={{ padding: '20px 22px 0' }}>
+        <Kicker>Your meaning</Kicker>
+        <Headline size="display" style={{ marginTop: 12 }}>This season.</Headline>
+      </section>
+
+      {narr === null ? (
+        <section style={{ padding: '32px 22px 0' }}>
+          <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '90%' }}/>
+          <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '78%' }}/>
+          <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.3, marginTop: 10, width: '64%' }}/>
+        </section>
+      ) : narr.narrative ? (
+        <>
+          {rows.length > 0 && (
+            <section style={{ padding: '32px 22px 0' }}>
+              {rows.map((r) => (
+                <div key={r.label} style={{ padding: '14px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.10)' }}>
+                  <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: r.ink, marginBottom: 6 }}>{r.label}</div>
+                  <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.4, fontStyle: 'italic', color: 'var(--hh-green)' }}>{r.phrase}</p>
+                </div>
+              ))}
+            </section>
+          )}
+          <section style={{ padding: '34px 22px 0' }}>
+            <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.65, fontWeight: 380, color: 'var(--hh-green)', maxWidth: 600 }}>
+              {narr.narrative}
+            </p>
+            {Array.isArray(narr.threads) && narr.threads.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 22 }}>
+                {narr.threads.map((t, i) => (
+                  <span key={i} className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.18)', padding: '5px 11px' }}>{t}</span>
+                ))}
+              </div>
+            )}
+          </section>
+          <section style={{ padding: '34px 22px 0' }}>
+            <button onClick={weave} disabled={refreshing} style={{
+              background: 'transparent', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.25)',
+              padding: '12px 20px', cursor: refreshing ? 'wait' : 'pointer',
+              fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
+            }}>
+              {refreshing ? 'Weaving…' : 'Weave again'}
+            </button>
+            <p className="body-sm" style={{ margin: '14px 0 0', color: 'var(--paper-mute)', maxWidth: 420 }}>
+              This grows as you notice, write, and keep what moves you.
+            </p>
+          </section>
+        </>
+      ) : (
+        <section style={{ padding: '32px 22px 0' }}>
+          <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', color: 'var(--paper-mute)', maxWidth: 440, lineHeight: 1.5 }}>
+            As you notice, write, and keep what moves you, your sense of meaning will take shape here.
+          </p>
+        </section>
+      )}
     </div>
   );
 }
@@ -1426,4 +1527,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-export { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen };
+export { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen };

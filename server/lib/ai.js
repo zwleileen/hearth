@@ -251,13 +251,25 @@ export const MEANING_NARRATIVE_SCHEMA = {
       type: 'string',
       description: 'Two to four sentences in Hearth\'s voice, mirroring how this person makes meaning, framed through how they give (what they offer), receive (what moves them), and carry (what they hold). Notice the balance among the three. Use their own register and, where it lands, their own words. A provisional reading of where they are now, never a verdict, never a personality type. No advice, no flattery, no em dashes. Empty string if too little to read honestly.',
     },
+    give: {
+      type: 'string',
+      description: 'A short phrase, three to ten words, lowercase, no full stop, distilling how this person gives or what they offer, in their own register. The glance version. Empty string if unclear.',
+    },
+    receive: {
+      type: 'string',
+      description: 'A short phrase, three to ten words, lowercase, no full stop, distilling what moves them or what they receive. Empty string if unclear.',
+    },
+    carry: {
+      type: 'string',
+      description: 'A short phrase, three to ten words, lowercase, no full stop, distilling what they carry or hold. Empty string if unclear.',
+    },
     threads: {
       type: 'array',
       description: 'Up to three short phrases (two to four words) naming the through-lines of their meaning, in their register (e.g. "repair", "the people you tend"). Empty array if too little.',
       items: { type: 'string' },
     },
   },
-  required: ['narrative', 'threads'],
+  required: ['narrative', 'give', 'receive', 'carry', 'threads'],
   additionalProperties: false,
 };
 

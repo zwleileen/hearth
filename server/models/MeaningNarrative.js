@@ -15,6 +15,9 @@ import mongoose from 'mongoose';
 const meaningNarrativeSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true, index: true },
   narrative: { type: String, default: '' },
+  give: { type: String, default: '' },
+  receive: { type: String, default: '' },
+  carry: { type: String, default: '' },
   threads: { type: [String], default: [] },
   sourceCount: { type: Number, default: 0 },
   generatedAt: { type: Date },

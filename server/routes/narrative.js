@@ -47,18 +47,24 @@ narrative.get('/', async (req, res) => {
   // weave), it has aged past a week, or a refresh was asked for.
   const cached = await MeaningNarrative.findOne({ userId });
   const ageOk = cached?.generatedAt && (Date.now() - new Date(cached.generatedAt).getTime()) < REGEN_DAYS * 86400000;
-  if (cached && !refresh && cached.sourceCount === total && ageOk) {
-    return res.json({ narrative: cached.narrative, threads: cached.threads || [], sourceCount: total, cached: true });
+  // A non-empty cache from before the give/receive/carry distillation
+  // lacks those fields; treat it as stale so it re-weaves once.
+  const hasShape = !cached?.narrative || cached?.give || cached?.receive || cached?.carry;
+  if (cached && !refresh && cached.sourceCount === total && ageOk && hasShape) {
+    return res.json({
+      narrative: cached.narrative, give: cached.give || '', receive: cached.receive || '', carry: cached.carry || '',
+      threads: cached.threads || [], sourceCount: total, cached: true,
+    });
   }
 
   // Cold start: too little to read honestly. Cache the empty result.
   if (total < MIN_SOURCES) {
     await MeaningNarrative.findOneAndUpdate(
       { userId },
-      { $set: { userId, narrative: '', threads: [], sourceCount: total, generatedAt: new Date() } },
+      { $set: { userId, narrative: '', give: '', receive: '', carry: '', threads: [], sourceCount: total, generatedAt: new Date() } },
       { upsert: true },
     );
-    return res.json({ narrative: '', threads: [], sourceCount: total, cached: false });
+    return res.json({ narrative: '', give: '', receive: '', carry: '', threads: [], sourceCount: total, cached: false });
   }
 
   const parts = [];
@@ -90,9 +96,11 @@ ${corpus}
 
 Write a "meaning narrative": two to four sentences in Hearth's voice that mirror how this person makes meaning, framed through how they GIVE (what they offer), RECEIVE (what moves them), and CARRY (what they hold). Notice the balance among the three, and the through-lines that repeat. Use their own register and, where it lands, their own words. This is a provisional reading of where they are now, not a verdict and never a personality type; write it as theirs to recognise or revise. No advice, no diagnosis, no flattery, no em dashes.
 
+Then distil three short phrases (three to ten words each, lowercase, no full stop) for the glance: how they GIVE, what they RECEIVE, what they CARRY. These are the short form a reader sees first; the narrative is the longer read behind it.
+
 Then name up to three threads: short phrases (two to four words) for the through-lines of their meaning, in their register.
 
-If there is genuinely too little to read honestly, return an empty narrative and empty threads rather than inventing.
+If there is genuinely too little to read honestly, return everything empty rather than inventing.
 
 Return JSON matching the schema.`;
 
@@ -117,13 +125,16 @@ Return JSON matching the schema.`;
     if (!text) return res.status(502).json({ error: 'Empty response from AI service' });
     const data = JSON.parse(text);
     const narrativeText = (data.narrative || '').trim();
+    const give = (data.give || '').trim();
+    const receive = (data.receive || '').trim();
+    const carry = (data.carry || '').trim();
     const threads = Array.isArray(data.threads) ? data.threads.filter(Boolean).slice(0, 3) : [];
     await MeaningNarrative.findOneAndUpdate(
       { userId },
-      { $set: { userId, narrative: narrativeText, threads, sourceCount: total, generatedAt: new Date() } },
+      { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt: new Date() } },
       { upsert: true },
     );
-    res.json({ narrative: narrativeText, threads, sourceCount: total, cached: false });
+    res.json({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, cached: false });
   } catch (err) {
     console.error('[narrative]', err);
     res.status(500).json({ error: 'Failed to weave your meaning', detail: err.message });
