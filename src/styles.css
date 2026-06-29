@@ -156,6 +156,10 @@ html, body {
   background: var(--hh-green);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+  /* Safety net against horizontal scroll. overflow-x: clip (not hidden)
+     prevents any element from spilling sideways without turning the body
+     into a scroll container, so sticky headers keep working. */
+  overflow-x: clip;
 }
 
 /* ─── Typography helpers ──────────────────────────── */
@@ -1064,7 +1068,9 @@ html, body {
 /* ─── Home — masthead + hearth glow ───────────────────
    A single soft warm light behind the greeting, the constant light
    made visible. Restraint is the point: a wash, never a blob. */
-.hh-home-masthead { position: relative; }
+/* overflow:hidden clips the soft glow to the masthead so it can never
+   spill past the screen edge and trigger horizontal scroll on mobile. */
+.hh-home-masthead { position: relative; overflow: hidden; }
 .hh-home-glow {
   position: absolute;
   top: -10px;
