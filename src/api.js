@@ -171,4 +171,14 @@ export const api = {
     },
     deleteEntry: (id) => request(`/kindle/log/${id}`, { method: 'DELETE' }),
   },
+
+  meaning: {
+    // The Meaning Log: lines kept in answer to "the meaning of this
+    // moment" on Home. Persisted to the account, so it follows the
+    // reader across devices.
+    list: ({ limit = 30 } = {}) => request(`/meaning?limit=${limit}`),
+    create: ({ text, prompt, avenue, date } = {}) =>
+      request('/meaning', { method: 'POST', body: { text, prompt, avenue, date } }),
+    remove: (id) => request(`/meaning/${id}`, { method: 'DELETE' }),
+  },
 };

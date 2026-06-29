@@ -129,21 +129,9 @@ function pickMeaningOfMoment(user) {
   return { avenue, prompt };
 }
 
-// ── The Meaning Log ───────────────────────────────────────────────
-// A line you keep in answer to the meaning of the moment. Stored on the
-// device (instant, private); the loop closes the day you arrive. Capped
-// so it never grows unbounded.
-const MEANING_LOG_KEY = 'hearth.meaningLog';
-function meaningLogGet() {
-  try { return JSON.parse(localStorage.getItem(MEANING_LOG_KEY) || '[]'); } catch { return []; }
-}
-function meaningLogAdd(entry) {
-  try {
-    const next = [entry, ...meaningLogGet()].slice(0, 60);
-    localStorage.setItem(MEANING_LOG_KEY, JSON.stringify(next));
-    return next;
-  } catch { return meaningLogGet(); }
-}
+// A line you keep in answer to the meaning of the moment. Persisted to
+// the account via /api/meaning, so the record follows you across devices
+// and accrues over time.
 function todayKey() { return new Date().toISOString().slice(0, 10); }
 
 function HomeScreen({ go, user }) {
@@ -162,13 +150,29 @@ function HomeScreen({ go, user }) {
 
   const [answer, setAnswer] = useState1('');
   const [log, setLog] = useState1([]);
-  useEffect1(() => { setLog(meaningLogGet()); }, []);
+  const [keeping, setKeeping] = useState1(false);
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { entries } = await api.meaning.list({ limit: 30 });
+        if (!cancelled) setLog(entries || []);
+      } catch { /* unauthed or transient: leave the log empty */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
   const keptToday = log.find((e) => e.date === todayKey());
-  function keepAnswer() {
+  async function keepAnswer() {
     const t = answer.trim();
-    if (t.length < 2) return;
-    setLog(meaningLogAdd({ date: todayKey(), prompt: moment.prompt, text: t, avenue: moment.avenue.key }));
-    setAnswer('');
+    if (t.length < 2 || keeping) return;
+    setKeeping(true);
+    try {
+      const { entry } = await api.meaning.create({
+        text: t, prompt: moment.prompt, avenue: moment.avenue.key, date: todayKey(),
+      });
+      if (entry) { setLog((prev) => [entry, ...prev]); setAnswer(''); }
+    } catch { /* keep the text in the box so the reader can try again */ }
+    finally { setKeeping(false); }
   }
   const past = log.filter((e) => e.date !== todayKey()).slice(0, 4);
 
@@ -243,16 +247,21 @@ function HomeScreen({ go, user }) {
               style={{ minHeight: 68, background: 'var(--hh-isabel)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}
             />
             <div style={{ marginTop: 14 }}>
-              <button onClick={keepAnswer} disabled={answer.trim().length < 2} style={{
-                background: answer.trim().length < 2 ? 'transparent' : 'var(--hh-green)',
-                color: answer.trim().length < 2 ? 'var(--paper-mute)' : 'var(--hh-lace)',
-                border: answer.trim().length < 2 ? '1px solid rgba(31, 64, 69, 0.18)' : 0,
-                padding: '12px 20px', cursor: answer.trim().length < 2 ? 'not-allowed' : 'pointer',
-                fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-                letterSpacing: '0.22em', textTransform: 'uppercase',
-              }}>
-                Keep it
-              </button>
+              {(() => {
+                const ready = answer.trim().length >= 2 && !keeping;
+                return (
+                  <button onClick={keepAnswer} disabled={!ready} style={{
+                    background: ready ? 'var(--hh-green)' : 'transparent',
+                    color: ready ? 'var(--hh-lace)' : 'var(--paper-mute)',
+                    border: ready ? 0 : '1px solid rgba(31, 64, 69, 0.18)',
+                    padding: '12px 20px', cursor: ready ? 'pointer' : (keeping ? 'wait' : 'not-allowed'),
+                    fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+                    letterSpacing: '0.22em', textTransform: 'uppercase',
+                  }}>
+                    {keeping ? 'Keeping…' : 'Keep it'}
+                  </button>
+                );
+              })()}
             </div>
           </div>
         )}

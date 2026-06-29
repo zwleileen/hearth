@@ -10,6 +10,7 @@ import { discover } from './routes/discover.js';
 import { attune } from './routes/attune.js';
 import { digest } from './routes/digest.js';
 import { kindle } from './routes/kindle.js';
+import { meaning } from './routes/meaning.js';
 
 const app = express();
 
@@ -53,6 +54,7 @@ app.use('/api/discover', discover);
 app.use('/api/attune', attune);
 app.use('/api/digest', digest);
 app.use('/api/kindle', kindle);
+app.use('/api/meaning', meaning);
 
 app.use((err, req, res, _next) => {
   console.error('[server error]', err);
