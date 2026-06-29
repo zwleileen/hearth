@@ -31,9 +31,9 @@ import { api, getToken, clearToken } from './api.js';
 // Yours is the inner record (Journal + Nook + Meaning Mirror).
 const TABS = [
   { key: 'today',   label: 'Today',   icon: (a) => <HearthMarkSmall size={18}/>,        route: 'home' },
-  { key: 'give',    label: 'Give',    icon: (a) => Icon.plus(18, 'currentColor'),       route: 'give' },
-  { key: 'receive', label: 'Receive', icon: (a) => Icon.ear(18, 'currentColor'),        route: 'receive' },
-  { key: 'carry',   label: 'Carry',   icon: (a) => Icon.dawn(18, 'currentColor'),       route: 'kindle' },
+  { key: 'give',    label: 'Give',    icon: (a) => Icon.giveHand(18, 'currentColor'),   route: 'give' },
+  { key: 'receive', label: 'Receive', icon: (a) => Icon.flower(18, 'currentColor'),     route: 'receive' },
+  { key: 'carry',   label: 'Carry',   icon: (a) => Icon.heart(18, 'currentColor'),      route: 'kindle' },
   { key: 'yours',   label: 'Yours',   icon: (a) => Icon.bookmark(18, 'currentColor'),   route: 'yours' },
 ];
 

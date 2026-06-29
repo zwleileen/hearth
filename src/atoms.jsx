@@ -37,6 +37,32 @@ const Icon = {
       <path d="M3 18h18"/><path d="M12 9v-5M5.5 11.5l-2-2M18.5 11.5l2-2"/><path d="M7 18a5 5 0 0 1 10 0"/>
     </svg>
   ),
+  // Give tab — an open hand offering a heart (giving).
+  giveHand: (s = 18, c = 'currentColor') => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <g transform="translate(7.4 1) scale(0.38)">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" strokeWidth="3.4"/>
+      </g>
+      <path d="M4 14.5c2.5 3 5 4.5 8 4.5s5.5-1.5 8-4.5"/>
+      <path d="M4 14.5v2.4M20 14.5v2.4"/>
+    </svg>
+  ),
+  // Receive tab — a flower (what you let in: beauty, the world reaching you).
+  flower: (s = 18, c = 'currentColor') => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 12c-1.6-1.2-1.6-5.5 0-8.5 1.6 3 1.6 7.3 0 8.5z"/>
+      <path d="M12 12c-1.6 1.2-1.6 5.5 0 8.5 1.6-3 1.6-7.3 0-8.5z"/>
+      <path d="M12 12c-1.2-1.6-5.5-1.6-8.5 0 3 1.6 7.3 1.6 8.5 0z"/>
+      <path d="M12 12c1.2-1.6 5.5-1.6 8.5 0-3 1.6-7.3 1.6-8.5 0z"/>
+      <circle cx="12" cy="12" r="2.1"/>
+    </svg>
+  ),
+  // Carry tab — a heart (how you hold what you cannot change).
+  heart: (s = 18, c = 'currentColor') => (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ),
   // Hearth tab — a single horizontal line over a square (a hearth/mantel)
   home: (s = 18, c = 'currentColor') => (
     <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
