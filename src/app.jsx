@@ -7,7 +7,7 @@ import {
   TweakToggle, TweakNumber, TweakButton,
 } from './tweaks-panel.jsx';
 import { HEARTH_DATA } from './data.js';
-import { HomeScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
+import { HomeScreen, ReadingRoomScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
 import {
   DiscoverScreen, AttuneScreen, RitualsScreen,
   RitualDetailScreen, RitualBuilderScreen,
@@ -31,7 +31,6 @@ const TABS = [
   { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, 'currentColor'),       route: 'journal' },
   { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, 'currentColor'),      route: 'attune' },
   { key: 'kindle',   label: 'Kindle',   icon: (a) => Icon.dawn(18, 'currentColor'),      route: 'kindle' },
-  { key: 'rituals',  label: 'Rituals',  icon: (a) => Icon.wave(18, 'currentColor'),      route: 'rituals' },
   { key: 'nook',     label: 'Nook',     icon: (a) => Icon.bookmark(18, 'currentColor'),  route: 'bookmarks' },
 ];
 
@@ -109,16 +108,16 @@ function App() {
     setTimeout(() => setToast(null), 2200);
   }
 
-  // tab inference (Discover removed — Home is the editorial spread)
-  const tab = ['home','journal','attune','kindle','rituals','settings'].includes(route)
+  // tab inference. Home is the meaning hub; the reading room (Receive)
+  // and Rituals (Give) are reached from Home's doors, so they highlight
+  // Home. Anything not an explicit tab falls back to Home.
+  const tab = ['home','journal','attune','kindle','settings'].includes(route)
     ? route
     : route === 'bookmarks' ? 'nook'
     : (route.startsWith('journal') || route === 'entry-detail' ? 'journal'
-      : route.startsWith('ritual') || route === 'weekly-digest' ? 'rituals'
-      : route === 'article' || route === 'discover' ? 'home'
       : route === 'attune-history' ? 'attune'
       : route === 'settings-notifications' || route === 'settings-profile' ? 'settings'
-      : 'home');
+      : 'home'); // reading, rituals, ritual-*, weekly-digest, article, discover → home
 
   const isFullBleed = FULLBLEED_ROUTES.has(route);
   const D = HEARTH_DATA;
@@ -133,6 +132,7 @@ function App() {
 
       {/* Main */}
       {route === 'home' && <HomeScreen go={go} user={user}/>}
+      {route === 'reading' && <ReadingRoomScreen go={go}/>}
       {route === 'journal' && <JournalScreen go={go} user={user}/>}
       {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
       {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}
@@ -264,6 +264,7 @@ function App() {
             {value:'onboarding',label:'Onboarding'},
             {value:'auth',label:'Sign in'},
             {value:'home',label:'Home'},
+            {value:'reading',label:'Reading room (Receive)'},
             {value:'journal',label:'Journal'},
             {value:'journal-archive',label:'Journal · Archive'},
             {value:'entry-detail',label:'Entry detail'},

@@ -91,8 +91,8 @@ const AVENUES = [
   },
   {
     key: 'receive', word: 'Receive', accent: 'var(--hh-blue)', ink: 'var(--hh-blue-deep)',
-    meaning: 'Meaning through what you let in. Beauty, awe, music, another person.',
-    route: 'attune', cta: 'Find what fits',
+    meaning: 'Meaning through what you let in. Beauty, awe, ideas worth stopping for.',
+    route: 'reading', cta: 'Open the reading room',
     prompts: [
       'What is one thing worth stopping for today?',
       'What beauty have you been walking past?',
@@ -141,72 +141,6 @@ function HomeScreen({ go, user }) {
     return `Welcome back${tail}.`; // night / late
   })();
   const quote = pickDailyQuote(D.dailyQuotes, user);
-
-  const [items, setItems] = useState1(null);
-  const [issueNote, setIssueNote] = useState1('');
-  const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
-  // Bookmarks are the source of truth for "Saved" buttons. Per-screen
-  // `saved` maps used to lose state on unmount, so users could save
-  // the same item multiple times by navigating away and back. The
-  // bookmarks list is fetched on mount and updated locally on save.
-  const [bookmarks, setBookmarks] = React.useState([]);
-
-  async function saveDiscoverItem(item) {
-    if (isItemBookmarked(bookmarks, item)) return;
-    try {
-      const kind = bookmarkKindFor(item);
-      const { bookmark } = await api.bookmarks.create({
-        kind,
-        title: item.title,
-        source: item.source || '',
-        url: item.url || '',
-        excerpt: item.dek || '',
-        meta: { savedFrom: 'home', readTime: item.readTime, image: item.image },
-      });
-      if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
-    } catch (err) {
-      // 409 on URL uniqueness collision. Refetch to sync the in-memory
-      // list with the server-side state so the button flips to Saved.
-      if (err.status === 409) {
-        try {
-          const { bookmarks: latest } = await api.bookmarks.list();
-          setBookmarks(latest || []);
-        } catch {}
-      }
-    }
-  }
-
-  useEffect1(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.discover.today();
-        if (cancelled) return;
-        const list = data.items || [];
-        setItems(list);
-        setIssueNote(data.issueNote || '');
-        setFeedState(list.length > 0 ? 'ready' : 'empty');
-      } catch (err) {
-        if (cancelled) return;
-        if (err.status === 401) setFeedState('unauthed');
-        else setFeedState('empty');
-      }
-    })();
-    (async () => {
-      try {
-        const { bookmarks: list } = await api.bookmarks.list();
-        if (!cancelled) setBookmarks(list || []);
-      } catch {
-        // Unauth or transient — render with empty bookmarks; saving
-        // will fail with 401 if user isn't signed in, which is fine.
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const hero = items?.[0];
-  const rest = items?.slice(1) || [];
-
   const moment = pickMeaningOfMoment(user);
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
@@ -274,12 +208,93 @@ function HomeScreen({ go, user }) {
         </div>
       </section>
 
-      {/* ── 3. Editorial spread, full reading room ── */}
-      <section style={{ padding: '48px 22px 0' }}>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// READING ROOM — the Receive surface (was the body of Home).
+// A small daily-curated room of things worth taking in: essays,
+// poems, slow news. Reached via the Receive door on Home.
+// ─────────────────────────────────────────────────────────────
+function ReadingRoomScreen({ go }) {
+  const [items, setItems] = useState1(null);
+  const [issueNote, setIssueNote] = useState1('');
+  const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
+  const [bookmarks, setBookmarks] = React.useState([]);
+
+  async function saveDiscoverItem(item) {
+    if (isItemBookmarked(bookmarks, item)) return;
+    try {
+      const kind = bookmarkKindFor(item);
+      const { bookmark } = await api.bookmarks.create({
+        kind, title: item.title, source: item.source || '', url: item.url || '',
+        excerpt: item.dek || '',
+        meta: { savedFrom: 'reading', readTime: item.readTime, image: item.image },
+      });
+      if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
+    } catch (err) {
+      if (err.status === 409) {
+        try { const { bookmarks: latest } = await api.bookmarks.list(); setBookmarks(latest || []); } catch {}
+      }
+    }
+  }
+
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.discover.today();
+        if (cancelled) return;
+        const list = data.items || [];
+        setItems(list);
+        setIssueNote(data.issueNote || '');
+        setFeedState(list.length > 0 ? 'ready' : 'empty');
+      } catch (err) {
+        if (cancelled) return;
+        setFeedState(err.status === 401 ? 'unauthed' : 'empty');
+      }
+    })();
+    (async () => {
+      try { const { bookmarks: list } = await api.bookmarks.list(); if (!cancelled) setBookmarks(list || []); } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const hero = items?.[0];
+  const rest = items?.slice(1) || [];
+
+  return (
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      {/* breadcrumb */}
+      <section style={{ padding: '4px 22px 0' }}>
+        <button onClick={() => go('home')} style={{
+          background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
+          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+          letterSpacing: '0.22em', textTransform: 'uppercase',
+        }}>
+          {Icon.back(18, 'currentColor')}<span>Home</span>
+        </button>
+      </section>
+
+      {/* header */}
+      <section style={{ padding: '20px 22px 0' }}>
+        <Kicker>Receive</Kicker>
+        <Headline size="display" style={{ marginTop: 12 }}>
+          The reading room.
+        </Headline>
+        <p className="body" style={{ margin: '14px 0 0', maxWidth: 460 }}>
+          A small room of things worth taking in. Essays, poems, slow news, gathered fresh for you each day. Meaning through what you let in.
+        </p>
+      </section>
+
+      {/* the spread */}
+      <section style={{ padding: '40px 22px 0' }}>
         <div className="hearth-dept-head">
-          <span className="hearth-dept-head-title">Receive · the reading room</span>
+          <span className="hearth-dept-head-title">Today's room</span>
           {feedState === 'ready' && (
-            <span className="hearth-dept-head-meta">Today · {items.length} {items.length === 1 ? 'piece' : 'pieces'}</span>
+            <span className="hearth-dept-head-meta">{items.length} {items.length === 1 ? 'piece' : 'pieces'}</span>
           )}
         </div>
         {issueNote && feedState === 'ready' && (
@@ -867,4 +882,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-export { HomeScreen, JournalScreen, JournalWriteScreen };
+export { HomeScreen, ReadingRoomScreen, JournalScreen, JournalWriteScreen };
