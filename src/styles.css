@@ -1079,6 +1079,19 @@ html, body {
 }
 .hh-home-masthead > *:not(.hh-home-glow) { position: relative; z-index: 1; }
 
+/* The daily quote as the home's key frame, wallpaper-worthy. Scales up
+   on wider screens so it reads as a poster, not a caption. */
+.hh-quote-hero {
+  font-size: 27px;
+  line-height: 1.4;
+  font-weight: 360;
+  font-style: italic;
+  letter-spacing: -0.01em;
+  color: var(--hh-green);
+}
+@media (min-width: 600px) { .hh-quote-hero { font-size: 33px; line-height: 1.38; } }
+@media (min-width: 1000px) { .hh-quote-hero { font-size: 38px; } }
+
 /* ─── Home — the meaning of this moment ──────────────
    One full-width color block in today's avenue accent. Green ink on a
    light accent (the sanctioned color-block usage). The single daily

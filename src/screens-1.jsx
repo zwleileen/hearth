@@ -170,7 +170,10 @@ function HomeScreen({ go, user }) {
     })();
     return () => { cancelled = true; };
   }, []);
-  const keptToday = log.find((e) => e.date === todayKey());
+  // Match the answer shown under the moment to TODAY'S actual question,
+  // not merely today's date. Otherwise a line kept for another prompt
+  // today (e.g. a Give answer) would show under the wrong question.
+  const keptToday = log.find((e) => e.date === todayKey() && e.prompt === moment.prompt);
   async function keepAnswer() {
     const t = answer.trim();
     if (t.length < 2 || keeping) return;
@@ -183,7 +186,10 @@ function HomeScreen({ go, user }) {
     } catch { /* keep the text in the box so the reader can try again */ }
     finally { setKeeping(false); }
   }
-  const past = log.filter((e) => e.date !== todayKey()).slice(0, 4);
+  // Recent lines for "what you've been noticing", everything except the
+  // one already shown as today's answer (which may include other lines
+  // kept today, e.g. a Give answer).
+  const past = log.filter((e) => e.id !== keptToday?.id).slice(0, 4);
 
   // Your meaning narrative — the synthesis across everything you keep.
   // null = loading; { narrative, threads } once loaded.
@@ -198,19 +204,27 @@ function HomeScreen({ go, user }) {
 
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
-      {/* ── Masthead: a soft arrival, the greeting, the inscription ── */}
-      <section className="hh-home-masthead" style={{ padding: '22px 22px 32px' }}>
+      {/* ── The daily quote as the key frame: a wallpaper-worthy hero ── */}
+      <section className="hh-home-masthead" style={{ padding: '34px 22px 44px', textAlign: 'center' }}>
         <div className="hh-home-glow" aria-hidden="true"/>
-        <Kicker>{softWhen()}</Kicker>
-        <Headline size="display" style={{ marginTop: 14 }}>
+        <p className="serif" style={{ margin: 0, fontSize: 15, lineHeight: 1.4, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)' }}>
           {greet}
-        </Headline>
-        <p className="serif" style={{
-          margin: '20px 0 0', fontSize: 18, lineHeight: 1.5, fontStyle: 'italic',
-          fontWeight: 380, color: 'var(--paper-2)', maxWidth: 470,
-        }}>
-          Give, receive, carry. There is always a door to meaning, even when one or two are closed.
         </p>
+        {quote ? (
+          <>
+            <p className="serif hh-quote-hero" style={{ margin: '30px auto 0', maxWidth: 600 }}>
+              &ldquo;{quote.text}&rdquo;
+            </p>
+            <p className="mono" style={{
+              margin: '28px 0 0', fontSize: 9.5, letterSpacing: '0.22em',
+              color: 'var(--paper-mute)', textTransform: 'uppercase',
+            }}>
+              {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
+            </p>
+          </>
+        ) : (
+          <Headline size="display" style={{ marginTop: 18 }}>Welcome back.</Headline>
+        )}
       </section>
 
       {/* ── Your meaning, this season: a compact glance, full on tap ── */}
@@ -342,27 +356,6 @@ function HomeScreen({ go, user }) {
         </section>
       )}
 
-      {/* ── A closing grace: the daily quote, changes each day ── */}
-      {quote && (
-        <section style={{ padding: '48px 22px 8px' }}>
-          <Rule glyph="◆"/>
-          <div style={{ padding: '32px 0 28px', textAlign: 'center' }}>
-            <p className="serif" style={{
-              margin: '0 auto', maxWidth: 540,
-              fontSize: 20, lineHeight: 1.45, fontWeight: 360, fontStyle: 'italic',
-              color: 'var(--paper-2)', letterSpacing: '-0.005em',
-            }}>
-              &ldquo;{quote.text}&rdquo;
-            </p>
-            <p className="mono" style={{
-              fontSize: 9, letterSpacing: '0.22em', color: 'var(--paper-mute)',
-              marginTop: 20, textTransform: 'uppercase',
-            }}>
-              {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
-            </p>
-          </div>
-        </section>
-      )}
 
     </div>
   );
