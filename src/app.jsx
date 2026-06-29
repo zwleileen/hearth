@@ -172,8 +172,8 @@ function App() {
         {!isFullBleed && (
           <aside className="hearth-sidebar">
             <div className="hearth-brand">
-              hearth
-              <small>Tend the fire</small>
+              <img src="/brand/lockup-h-paper.svg" alt="Hearth" style={{ display: 'block', height: 30, width: 'auto' }}/>
+              <small>Tend your why</small>
             </div>
             <nav className="hearth-sidebar-nav">
               {TABS.map(t => (
@@ -212,7 +212,7 @@ function App() {
               <button onClick={() => go('settings')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>
                 {Icon.more(20, 'var(--paper-2)')}
               </button>
-              <span className="hearth-mobile-topbar-title">Hearth</span>
+              <img src="/brand/wordmark-paper.svg" alt="Hearth" style={{ display: 'block', height: 19, width: 'auto' }}/>
               <button onClick={() => go('journal-archive')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-2)' }}>
                 {Icon.bookmark(18, 'var(--paper-2)')}
               </button>

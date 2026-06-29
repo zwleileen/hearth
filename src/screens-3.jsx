@@ -96,12 +96,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     return (
       <div className="fade-in" style={{ padding: '60px 28px 32px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '70vh', justifyContent: 'space-between' }}>
         <div>
-          <div className="flicker" style={{ width: 80, height: 80, borderRadius: '50%',
-            background: 'radial-gradient(circle at 35% 30%, #f3c98a, #d4a574 40%, #6e431f 90%)',
-            margin: '0 auto', boxShadow: '0 0 60px rgba(212,165,116,0.5)' }}/>
-          <h1 className="serif" style={{ margin: '32px 0 12px', fontSize: 42, fontWeight: 320, letterSpacing: '-0.01em' }}>
-            Hearth
-          </h1>
+          <img src="/brand/lockup-v-paper.svg" alt="Hearth" style={{ display: 'block', width: 150, height: 'auto', margin: '0 auto 30px' }}/>
           <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 350, color: 'var(--paper-2)', margin: '0 0 32px', lineHeight: 1.4, maxWidth: 320 }}>
             A quiet home for finding<br/>meaning in your days.
           </p>
@@ -488,7 +483,7 @@ function AuthScreen({ go, onAuthed }) {
         <span className="sans" style={{ fontSize: 13 }}>Back</span>
       </button>
       <div style={{ marginTop: 32, textAlign: 'center' }}>
-        <span className="hearth-mark" style={{ display: 'inline-block', width: 28, height: 28 }}/>
+        <img src="/brand/symbol-paper.svg" alt="Hearth" style={{ display: 'inline-block', width: 40, height: 40 }}/>
         <h1 className="h-display serif" style={{ margin: '20px 0 8px', fontWeight: 350 }}>
           Welcome back.
         </h1>
@@ -1092,7 +1087,7 @@ function LandingScreen({ go }) {
     <div className="hearth-landing fade-in">
       {/* Top bar: wordmark + sign-in shortcut */}
       <header className="hearth-landing-top">
-        <div className="hearth-landing-mark">hearth</div>
+        <img src="/brand/lockup-h-paper.svg" alt="Hearth" style={{ display: 'block', height: 28, width: 'auto' }}/>
         <button onClick={() => go('auth')} className="hearth-landing-link">Sign in</button>
       </header>
 
@@ -1229,6 +1224,7 @@ function LandingScreen({ go }) {
       {/* Final CTA — Midnight Green dark block */}
       <section className="hearth-landing-final">
         <div className="hearth-landing-feature-inner" style={{ textAlign: 'center' }}>
+          <img src="/brand/symbol-ink.svg" alt="" aria-hidden="true" style={{ display: 'block', width: 52, height: 52, margin: '0 auto 24px' }}/>
           <p className="mono" style={{ fontSize: 10.5, letterSpacing: '0.28em', color: 'rgba(249,244,230,0.6)', textTransform: 'uppercase', marginBottom: 18 }}>
             Tend your why
           </p>
@@ -1262,7 +1258,10 @@ function LandingScreen({ go }) {
       </section>
 
       <footer className="hearth-landing-footer">
-        <span className="mono">Hearth · Made slowly</span>
+        <span className="mono" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+          <img src="/brand/wordmark-paper.svg" alt="Hearth" style={{ height: 13, width: 'auto' }}/>
+          Made slowly
+        </span>
         <span className="mono">v0.1</span>
       </footer>
     </div>

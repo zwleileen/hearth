@@ -244,14 +244,17 @@ function ColorBlock({ accent = 'isabel', children, bleed = false, padded = true,
   );
 }
 
-// Hearth wordmark — set in Fraunces, no flame dot.
-// Used in topbar and onboarding.
-function HearthMarkSmall({ size = 14, color = 'var(--hh-green)' }) {
+// Hearth symbol — "The Threshold": an arched door on a baseline with the
+// ember (the constant light) glowing at the sill. The arch and floor take
+// currentColor so the mark themes with its context (e.g. the active tab);
+// the ember stays its sacred warm gold. Geometry from the brand kit.
+function HearthMarkSmall({ size = 18, color = 'currentColor' }) {
   return (
-    <span className="serif" style={{
-      fontSize: size, fontStyle: 'italic', fontWeight: 400, color,
-      letterSpacing: '-0.01em', display: 'inline-block', lineHeight: 1,
-    }}>h.</span>
+    <svg width={size} height={size} viewBox="0 0 240 240" fill="none" aria-hidden="true" style={{ display: 'block' }}>
+      <line x1="20" y1="196" x2="220" y2="196" stroke={color} strokeWidth="13" strokeLinecap="round"/>
+      <path d="M76 196 L76 132 A44 44 0 0 1 164 132 L164 196" stroke={color} strokeWidth="14" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+      <circle cx="120" cy="178" r="17" fill="#E1BE74"/>
+    </svg>
   );
 }
 
