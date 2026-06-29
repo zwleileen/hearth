@@ -125,6 +125,18 @@ export const HEARTH_DATA = {
       prompt: "Bring to mind one resentment you've been carrying. Without minimising the hurt, write what you are willing to release tonight, just for tonight. You can pick it back up tomorrow if you need to.",
       tags: ["rest", "grief", "heavy", "raw", "tender"]
     },
+    {
+      title: "What the anger guards",
+      lineage: "Affect labelling · Lieberman",
+      prompt: "Name what you're angry about, plainly, without softening it. Then look underneath: what did it cross, what do you care about that got hurt? Write toward the care under the heat.",
+      tags: ["heavy", "raw", "restless", "uncertain"]
+    },
+    {
+      title: "When the day feels flat",
+      lineage: "Frankl · meaning in the ordinary",
+      prompt: "If today felt empty or pointless, don't argue with the feeling. Find one small thing that still reached you, however ordinary, and write why it mattered, even a little.",
+      tags: ["heavy", "tired", "uncertain", "grief"]
+    },
   ],
 
   moodTags: ["tender", "tired", "alight", "restless", "grateful", "uncertain", "hopeful", "heavy", "open", "raw"],

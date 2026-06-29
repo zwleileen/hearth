@@ -605,11 +605,41 @@ function GiveScreen({ go, user }) {
   const off = user?.id ? hashStr(user.id) : 0;
   const deed = GIVE_DEEDS[(dayOfYearNum() + off) % GIVE_DEEDS.length];
   const ways = [
-    { word: 'An act of kindness', meaning: 'One small kindness, done on purpose. The lift it gives the giver is one of the most reliable findings in the field.' },
-    { word: 'A gratitude letter', meaning: 'Write to someone whose effect on you they may never have known. Deliver it if you can.' },
-    { word: 'Share what you know', meaning: 'Teach or pass on one thing only you can. Meaning grows by being given away.' },
-    { word: 'Give your attention', meaning: 'Be wholly present to one person today. Attention is the rarest thing we have to offer.' },
+    { word: 'An act of kindness', prompt: 'One kindness you could do today, and who it is for.', meaning: 'A small kindness, done on purpose. The lift it gives the giver is one of the most reliable findings in the field.' },
+    { word: 'A gratitude letter', prompt: 'Someone whose effect on you they may not know, and what you would tell them.', meaning: 'Name what they did and what it gave you. Deliver it if you can.' },
+    { word: 'Share what you know', prompt: 'One thing only you can pass on, and who needs it.', meaning: 'Teach or hand on something only you carry. Meaning grows by being given away.' },
+    { word: 'Give your attention', prompt: 'Who will have your whole, undivided attention today.', meaning: 'Be wholly present to one person. Attention is the rarest thing we have to offer.' },
   ];
+
+  const [chosen, setChosen] = useState1(null);
+  const activePrompt = chosen ? chosen.prompt : deed;
+  const activeLabel = chosen ? chosen.word : 'The deed of the day';
+  const [answer, setAnswer] = useState1('');
+  const [log, setLog] = useState1([]);
+  const [keeping, setKeeping] = useState1(false);
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { entries } = await api.meaning.list({ limit: 30 });
+        if (!cancelled) setLog((entries || []).filter((e) => e.avenue === 'give'));
+      } catch { /* unauthed or transient */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  async function keepGiving() {
+    const t = answer.trim();
+    if (t.length < 2 || keeping) return;
+    setKeeping(true);
+    try {
+      const { entry } = await api.meaning.create({ text: t, prompt: activePrompt, avenue: 'give', date: todayKey() });
+      if (entry) { setLog((prev) => [entry, ...prev]); setAnswer(''); }
+    } catch { /* keep the text so the reader can retry */ }
+    finally { setKeeping(false); }
+  }
+  const ready = answer.trim().length >= 2 && !keeping;
+  const recent = log.slice(0, 3);
+
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       <section style={{ padding: '14px 22px 0' }}>
@@ -622,28 +652,76 @@ function GiveScreen({ go, user }) {
         </p>
       </section>
 
-      {/* The deed of the day */}
+      {/* The deed, with an inline keep into the meaning log */}
       <section style={{ padding: '34px 22px 0' }}>
         <div className="hh-moment" style={{ background: 'var(--hh-ecru)' }}>
-          <span className="hh-moment-eyebrow">The deed of the day</span>
-          <p className="hh-moment-prompt">{deed}</p>
-          <button className="btn btn-warm" onClick={() => go('journal')}>
-            Note it in your journal {Icon.arrow(14, 'var(--hh-lace)')}
-          </button>
+          <span className="hh-moment-eyebrow">{activeLabel}</span>
+          <p className="hh-moment-prompt">{activePrompt}</p>
+          <textarea
+            className="hearth-input"
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            placeholder="Keep a line: what you'll give, or did…"
+            style={{ minHeight: 64, background: 'var(--hh-lace)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}
+          />
+          <div style={{ marginTop: 14 }}>
+            <button onClick={keepGiving} disabled={!ready} style={{
+              background: ready ? 'var(--hh-green)' : 'transparent',
+              color: ready ? 'var(--hh-lace)' : 'var(--paper-mute)',
+              border: ready ? 0 : '1px solid rgba(31, 64, 69, 0.25)',
+              padding: '12px 20px', cursor: ready ? 'pointer' : (keeping ? 'wait' : 'not-allowed'),
+              fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+              letterSpacing: '0.22em', textTransform: 'uppercase',
+            }}>
+              {keeping ? 'Keeping…' : 'Keep it'}
+            </button>
+          </div>
         </div>
       </section>
 
-      {/* Ways to give */}
+      {/* Ways to give — tap one to make it today's intention */}
       <section style={{ padding: '44px 22px 0' }}>
         <div className="hearth-dept-head">
           <span className="hearth-dept-head-title">Ways to give</span>
+          <span className="hearth-dept-head-meta">tap to choose</span>
         </div>
         <div className="hh-doors" style={{ marginTop: 6 }}>
-          {ways.map((w) => (
-            <DoorRow key={w.word} word={w.word} meaning={w.meaning} ink="var(--hh-ecru-deep)" onClick={() => go('journal')} />
-          ))}
+          {ways.map((w) => {
+            const on = chosen?.word === w.word;
+            return (
+              <button key={w.word} className="hh-door" onClick={() => { setChosen(on ? null : w); setAnswer(''); }}
+                style={on ? { background: 'rgba(225, 190, 116, 0.20)' } : undefined}>
+                <span className="hh-door-head">
+                  <span className="hh-door-word" style={{ color: 'var(--hh-ecru-deep)' }}>{w.word}</span>
+                  {on && <span className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>chosen</span>}
+                </span>
+                <span className="hh-door-meaning">{w.meaning}</span>
+              </button>
+            );
+          })}
         </div>
       </section>
+
+      {/* What you've given lately */}
+      {recent.length > 0 && (
+        <section style={{ padding: '40px 22px 0' }}>
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title">Lately, you gave</span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            {recent.map((e, i) => (
+              <div key={i} style={{ borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '16px 0' }}>
+                <div className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 6 }}>
+                  {new Date(e.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </div>
+                <p className="serif" style={{ margin: 0, fontSize: 16, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+                  {e.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
@@ -777,6 +855,15 @@ function scorePromptForUser(prompt, signalTags) {
   return score;
 }
 
+// A blank page — the free-write. Always available, for any mood that no
+// prompt quite holds. The most evidence-based mode of all (Pennebaker's
+// expressive writing is, at heart, a blank page).
+const BLANK_PAGE = {
+  title: 'A blank page',
+  lineage: 'Pennebaker, 1997',
+  prompt: 'No prompt, no shape. Write whatever is here, for as long as it wants to be written.',
+};
+
 function JournalScreen({ go, user }) {
   const D = HEARTH_DATA;
   const [tab, setTab] = useState1('evening');
@@ -836,8 +923,8 @@ function JournalScreen({ go, user }) {
         <Headline size="display" style={{ marginTop: 14 }}>
           Write yourself<br/>warm.
         </Headline>
-        <p className="body" style={{ margin: '14px 0 0', maxWidth: 340 }}>
-          Fifteen prompts, drawn from the most replicated work in positive and clinical psychology: Seligman, Pennebaker, Neff, King, Lyubomirsky, Gollwitzer, Oettingen, Borkovec. We surface the ones closest to where you are today.
+        <p className="body" style={{ margin: '14px 0 0', maxWidth: 360 }}>
+          Prompts drawn from the most replicated work in positive and clinical psychology: Seligman, Pennebaker, Neff, King, Lyubomirsky, Gollwitzer, Frankl. We surface the ones closest to where you are, and keep a blank page for the rest.
         </p>
       </section>
 
@@ -854,6 +941,26 @@ function JournalScreen({ go, user }) {
           </div>
         </section>
       )}
+
+      {/* A blank page — the free-write, always here, for any mood */}
+      <section style={{ padding: '0 22px 22px' }}>
+        <button onClick={() => go('journal-write', { prompt: BLANK_PAGE, mode: 'free' })} style={{
+          width: '100%', textAlign: 'left', cursor: 'pointer',
+          background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0,
+          padding: '20px 22px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16,
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-lace)', opacity: 0.7, marginBottom: 8 }}>
+              Begin anywhere
+            </div>
+            <Headline size="section" italic style={{ color: 'var(--hh-lace)', fontWeight: 380 }}>A blank page.</Headline>
+            <p style={{ margin: '8px 0 0', fontFamily: 'var(--sans)', fontSize: 13, lineHeight: 1.5, color: 'var(--hh-lace)', opacity: 0.85 }}>
+              No prompt, no shape. For whatever today is, or whatever a prompt does not quite hold.
+            </p>
+          </div>
+          {Icon.arrow(16, 'var(--hh-lace)')}
+        </button>
+      </section>
 
       {/* Segmented, flat, editorial, no pill */}
       <section style={{ padding: '0 22px' }}>
