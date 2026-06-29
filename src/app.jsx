@@ -7,7 +7,7 @@ import {
   TweakToggle, TweakNumber, TweakButton,
 } from './tweaks-panel.jsx';
 import { HEARTH_DATA } from './data.js';
-import { HomeScreen, ReadingRoomScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
+import { HomeScreen, ReadingRoomScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
 import {
   DiscoverScreen, AttuneScreen, RitualsScreen,
   RitualDetailScreen, RitualBuilderScreen,
@@ -26,12 +26,15 @@ import { api, getToken, clearToken } from './api.js';
 
 // Active tab uses ink (Midnight Green); inactive uses currentColor so the
 // CSS .hearth-tab.active rule still wins the color cascade.
+// The three avenues to meaning are the heart of the nav (docs/MEANING.md):
+// give outward, receive inward, carry steady. Today is the daily hub;
+// Yours is the inner record (Journal + Nook + Meaning Mirror).
 const TABS = [
-  { key: 'home',     label: 'Hearth',   icon: (a) => <HearthMarkSmall size={18}/>, route: 'home' },
-  { key: 'journal',  label: 'Journal',  icon: (a) => Icon.pen(18, 'currentColor'),       route: 'journal' },
-  { key: 'attune',   label: 'Attune',   icon: (a) => Icon.leaf(18, 'currentColor'),      route: 'attune' },
-  { key: 'kindle',   label: 'Kindle',   icon: (a) => Icon.dawn(18, 'currentColor'),      route: 'kindle' },
-  { key: 'nook',     label: 'Nook',     icon: (a) => Icon.bookmark(18, 'currentColor'),  route: 'bookmarks' },
+  { key: 'today',   label: 'Today',   icon: (a) => <HearthMarkSmall size={18}/>,        route: 'home' },
+  { key: 'give',    label: 'Give',    icon: (a) => Icon.plus(18, 'currentColor'),       route: 'rituals' },
+  { key: 'receive', label: 'Receive', icon: (a) => Icon.ear(18, 'currentColor'),        route: 'receive' },
+  { key: 'carry',   label: 'Carry',   icon: (a) => Icon.dawn(18, 'currentColor'),       route: 'kindle' },
+  { key: 'yours',   label: 'Yours',   icon: (a) => Icon.bookmark(18, 'currentColor'),   route: 'yours' },
 ];
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
@@ -108,16 +111,18 @@ function App() {
     setTimeout(() => setToast(null), 2200);
   }
 
-  // tab inference. Home is the meaning hub; the reading room (Receive)
-  // and Rituals (Give) are reached from Home's doors, so they highlight
-  // Home. Anything not an explicit tab falls back to Home.
-  const tab = ['home','journal','attune','kindle','settings'].includes(route)
-    ? route
-    : route === 'bookmarks' ? 'nook'
-    : (route.startsWith('journal') || route === 'entry-detail' ? 'journal'
-      : route === 'attune-history' ? 'attune'
-      : route === 'settings-notifications' || route === 'settings-profile' ? 'settings'
-      : 'home'); // reading, rituals, ritual-*, weekly-digest, article, discover → home
+  // tab inference, mapped to the avenue nav. Each surface highlights the
+  // avenue it lives under: Attune + reading room → Receive; Kindle →
+  // Carry; Rituals → Give; Journal + Nook + digest → Yours. Settings has
+  // no tab (reached via the menu), so it highlights nothing.
+  const tab =
+      route === 'home' ? 'today'
+    : route === 'kindle' ? 'carry'
+    : (route === 'rituals' || route.startsWith('ritual')) ? 'give'
+    : (route === 'receive' || route === 'attune' || route === 'attune-history' || route === 'reading' || route === 'article' || route === 'discover') ? 'receive'
+    : (route === 'yours' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks' || route === 'weekly-digest') ? 'yours'
+    : route.startsWith('settings') ? 'settings'
+    : 'today';
 
   const isFullBleed = FULLBLEED_ROUTES.has(route);
   const D = HEARTH_DATA;
@@ -133,6 +138,8 @@ function App() {
       {/* Main */}
       {route === 'home' && <HomeScreen go={go} user={user}/>}
       {route === 'reading' && <ReadingRoomScreen go={go}/>}
+      {route === 'receive' && <ReceiveScreen go={go}/>}
+      {route === 'yours' && <YoursScreen go={go}/>}
       {route === 'journal' && <JournalScreen go={go} user={user}/>}
       {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
       {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}
@@ -263,7 +270,9 @@ function App() {
           options={[
             {value:'onboarding',label:'Onboarding'},
             {value:'auth',label:'Sign in'},
-            {value:'home',label:'Home'},
+            {value:'home',label:'Today (home)'},
+            {value:'receive',label:'Receive (hub)'},
+            {value:'yours',label:'Yours (hub)'},
             {value:'reading',label:'Reading room (Receive)'},
             {value:'journal',label:'Journal'},
             {value:'journal-archive',label:'Journal · Archive'},

@@ -92,7 +92,7 @@ const AVENUES = [
   {
     key: 'receive', word: 'Receive', accent: 'var(--hh-blue)', ink: 'var(--hh-blue-deep)',
     meaning: 'Meaning through what you let in. Beauty, awe, ideas worth stopping for.',
-    route: 'reading', cta: 'Open the reading room',
+    route: 'receive', cta: 'Find what moves you',
     prompts: [
       'What is one thing worth stopping for today?',
       'What beauty have you been walking past?',
@@ -186,26 +186,15 @@ function HomeScreen({ go, user }) {
         </div>
       </section>
 
-      {/* ── Three doors to meaning: Give · Receive · Carry ── */}
-      <section style={{ padding: '52px 22px 0' }}>
-        <div className="hearth-dept-head">
-          <span className="hearth-dept-head-title">Three doors</span>
-          <span className="hearth-dept-head-meta">always open</span>
-        </div>
-        <p className="body" style={{ margin: '14px 0 20px', maxWidth: 480 }}>
-          There is always a way to meaning, even when one or two are closed. Choose where to turn today.
+      {/* ── A quiet line: the philosophy, the avenues live in the nav ── */}
+      <section style={{ padding: '46px 22px 0' }}>
+        <Rule/>
+        <p className="serif" style={{
+          margin: '24px 0 0', fontSize: 17, lineHeight: 1.55, fontStyle: 'italic',
+          color: 'var(--paper-2)', maxWidth: 460,
+        }}>
+          There is always a way to meaning, even when one or two are closed. Give, receive, carry. Whatever the day asks, there is a door in it.
         </p>
-        <div className="hh-doors">
-          {AVENUES.map((a) => (
-            <button key={a.key} className="hh-door" onClick={() => go(a.route)}>
-              <span className="hh-door-head">
-                <span className="hh-door-word" style={{ color: a.ink }}>{a.word}</span>
-                <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
-              </span>
-              <span className="hh-door-meaning">{a.meaning}</span>
-            </button>
-          ))}
-        </div>
       </section>
 
     </div>
@@ -474,6 +463,102 @@ function ReadingRoomScreen({ go }) {
   );
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// RECEIVE — avenue hub. Two ways to be moved: Attune (sound) and
+// the reading room (words). Meaning through what you let in.
+// ─────────────────────────────────────────────────────────────
+function ReceiveScreen({ go }) {
+  const entries = [
+    { word: 'Attune', meaning: 'Songs and poems shaped to how you feel right now. Met where you are, then moved with, gently.', route: 'attune' },
+    { word: 'The reading room', meaning: 'A small daily room of essays, poems, and slow news worth stopping for.', route: 'reading' },
+  ];
+  return (
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      <section style={{ padding: '14px 22px 0' }}>
+        <Kicker accent="blue">Receive</Kicker>
+        <Headline size="display" style={{ marginTop: 14 }}>
+          What moves you.
+        </Headline>
+        <p className="body" style={{ margin: '16px 0 0', maxWidth: 460 }}>
+          Meaning through what you let in: beauty, awe, ideas, another person. Two ways to be moved.
+        </p>
+      </section>
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hh-doors">
+          {entries.map((e) => (
+            <button key={e.route} className="hh-door" onClick={() => go(e.route)}>
+              <span className="hh-door-head">
+                <span className="hh-door-word" style={{ color: 'var(--hh-blue-deep)' }}>{e.word}</span>
+                <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
+              </span>
+              <span className="hh-door-meaning">{e.meaning}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// YOURS — your inner record. Journal (your reflections), Nook
+// (your anthology), and the weekly Meaning Mirror at the top.
+// ─────────────────────────────────────────────────────────────
+function YoursScreen({ go }) {
+  const [brief, setBrief] = useState1('');
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try { const { brief } = await api.digest.journalBrief(); if (!cancelled) setBrief(brief || ''); } catch { /* cold start / unauth */ }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const entries = [
+    { word: 'Journal', meaning: 'Your reflections. The page where you write yourself a little clearer.', route: 'journal' },
+    { word: 'Nook', meaning: 'Everything you have kept close. Your anthology of what matters.', route: 'bookmarks' },
+  ];
+  return (
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      <section style={{ padding: '14px 22px 0' }}>
+        <Kicker>Yours</Kicker>
+        <Headline size="display" style={{ marginTop: 14 }}>
+          Your inner record.
+        </Headline>
+        <p className="body" style={{ margin: '16px 0 0', maxWidth: 460 }}>
+          What you have written, kept, and noticed. Yours alone, here whenever you want it.
+        </p>
+      </section>
+
+      {brief && (
+        <section style={{ padding: '32px 22px 0' }}>
+          <div style={{ background: 'var(--hh-isabel)', padding: '22px 24px' }}>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
+              The meaning mirror · this week
+            </div>
+            <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.6, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+              {brief}
+            </p>
+          </div>
+        </section>
+      )}
+
+      <section style={{ padding: '36px 22px 0' }}>
+        <div className="hh-doors">
+          {entries.map((e) => (
+            <button key={e.route} className="hh-door" onClick={() => go(e.route)}>
+              <span className="hh-door-head">
+                <span className="hh-door-word">{e.word}</span>
+                <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
+              </span>
+              <span className="hh-door-meaning">{e.meaning}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────
 // JOURNAL — editorial
@@ -882,4 +967,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-export { HomeScreen, ReadingRoomScreen, JournalScreen, JournalWriteScreen };
+export { HomeScreen, ReadingRoomScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen };
