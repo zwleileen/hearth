@@ -239,6 +239,28 @@ export const WEEKLY_BRIEF_SCHEMA = {
   additionalProperties: false,
 };
 
+// The meaning narrative: a synthesis across everything a reader keeps
+// (meaning-log lines, journal, Nook saves, Kindle sessions) into a
+// provisional, evidence-grounded reflection of how THIS person makes
+// meaning, framed through give / receive / carry. Never a personality
+// type; theirs to recognise or revise. Empty when there is too little.
+export const MEANING_NARRATIVE_SCHEMA = {
+  type: 'object',
+  properties: {
+    narrative: {
+      type: 'string',
+      description: 'Two to four sentences in Hearth\'s voice, mirroring how this person makes meaning, framed through how they give (what they offer), receive (what moves them), and carry (what they hold). Notice the balance among the three. Use their own register and, where it lands, their own words. A provisional reading of where they are now, never a verdict, never a personality type. No advice, no flattery, no em dashes. Empty string if too little to read honestly.',
+    },
+    threads: {
+      type: 'array',
+      description: 'Up to three short phrases (two to four words) naming the through-lines of their meaning, in their register (e.g. "repair", "the people you tend"). Empty array if too little.',
+      items: { type: 'string' },
+    },
+  },
+  required: ['narrative', 'threads'],
+  additionalProperties: false,
+};
+
 export const ATTUNE_SCHEMA = {
   type: 'object',
   properties: {

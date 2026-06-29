@@ -181,4 +181,10 @@ export const api = {
       request('/meaning', { method: 'POST', body: { text, prompt, avenue, date } }),
     remove: (id) => request(`/meaning/${id}`, { method: 'DELETE' }),
   },
+
+  // Your Meaning Narrative: the synthesis across everything you keep.
+  // { narrative, threads, sourceCount }. Pass refresh to re-weave.
+  narrative: {
+    get: ({ refresh = false } = {}) => request(`/narrative${refresh ? '?refresh=1' : ''}`),
+  },
 };

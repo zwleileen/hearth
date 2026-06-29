@@ -185,6 +185,23 @@ function HomeScreen({ go, user }) {
   }
   const past = log.filter((e) => e.date !== todayKey()).slice(0, 4);
 
+  // Your meaning narrative — the synthesis across everything you keep.
+  // null = loading; { narrative, threads } once loaded.
+  const [narr, setNarr] = useState1(null);
+  useEffect1(() => {
+    let cancelled = false;
+    api.narrative.get()
+      .then((d) => { if (!cancelled) setNarr(d || { narrative: '', threads: [] }); })
+      .catch(() => { if (!cancelled) setNarr({ narrative: '', threads: [] }); });
+    return () => { cancelled = true; };
+  }, []);
+  function refreshNarr() {
+    setNarr(null);
+    api.narrative.get({ refresh: true })
+      .then((d) => setNarr(d || { narrative: '', threads: [] }))
+      .catch(() => setNarr({ narrative: '', threads: [] }));
+  }
+
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       {/* ── Masthead: a soft arrival, the greeting, the inscription ── */}
@@ -200,6 +217,45 @@ function HomeScreen({ go, user }) {
         }}>
           Give, receive, carry. There is always a door to meaning, even when one or two are closed.
         </p>
+      </section>
+
+      {/* ── Your meaning, this season: the synthesis across everything ── */}
+      <section style={{ padding: '34px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Your meaning, this season</span>
+          {narr && narr.narrative && (
+            <button onClick={refreshNarr} className="hearth-dept-head-meta"
+              style={{ background: 'transparent', border: 0, cursor: 'pointer' }}>
+              Weave again
+            </button>
+          )}
+        </div>
+        {narr === null ? (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '92%' }}/>
+            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '78%' }}/>
+            <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.3, marginTop: 8, width: '58%' }}/>
+          </div>
+        ) : narr.narrative ? (
+          <div className="fade-in">
+            <p className="serif" style={{ margin: '16px 0 0', fontSize: 20, lineHeight: 1.55, fontWeight: 380, color: 'var(--hh-green)', maxWidth: 580 }}>
+              {narr.narrative}
+            </p>
+            {Array.isArray(narr.threads) && narr.threads.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
+                {narr.threads.map((t, i) => (
+                  <span key={i} className="mono" style={{ fontSize: 9.5, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.18)', padding: '5px 11px' }}>
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="serif" style={{ margin: '16px 0 0', fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 460, lineHeight: 1.5 }}>
+            As you notice, write, and keep what moves you, your sense of meaning will take shape here.
+          </p>
+        )}
       </section>
 
       {/* ── The meaning of this moment: prompt + answer, one block ── */}
