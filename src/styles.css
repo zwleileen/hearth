@@ -1061,6 +1061,96 @@ html, body {
   to   { transform: none; }
 }
 
+/* ─── Home — the meaning of this moment ──────────────
+   One full-width color block in today's avenue accent. Green ink on a
+   light accent (the sanctioned color-block usage). The single daily
+   invitation, the home's hook. */
+.hh-moment {
+  padding: 38px 30px 40px;
+  color: var(--hh-green);
+}
+@media (min-width: 600px) { .hh-moment { padding: 44px 40px 46px; } }
+.hh-moment-eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--hh-green);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.hh-moment-eyebrow::before {
+  content: '';
+  width: 24px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.55;
+}
+.hh-moment-prompt {
+  font-family: var(--serif);
+  font-size: 27px;
+  line-height: 1.28;
+  font-weight: 360;
+  font-style: italic;
+  letter-spacing: -0.012em;
+  color: var(--hh-green);
+  margin: 20px 0 28px;
+  max-width: 16em;
+}
+@media (min-width: 600px) { .hh-moment-prompt { font-size: 32px; } }
+
+/* ─── Home — the three doors ──────────────────────────
+   Give · Receive · Carry. Editorial rows divided by hairlines, never
+   boxed cards. The avenue word carries its accent; a quiet arrow drifts
+   on hover (transform only, no layout animation). */
+.hh-doors { margin-top: 6px; }
+.hh-door {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--paper-line);
+  padding: 24px 2px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.hh-door:last-child { border-bottom: 1px solid var(--paper-line); }
+.hh-door:hover { background: rgba(31, 64, 69, 0.025); }
+.hh-door-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.hh-door-word {
+  font-family: var(--serif);
+  font-size: 29px;
+  font-weight: 360;
+  font-style: italic;
+  letter-spacing: -0.012em;
+  line-height: 1;
+}
+.hh-door-arrow {
+  color: var(--paper-mute);
+  display: inline-flex;
+  flex-shrink: 0;
+  transition: transform 0.45s cubic-bezier(.22, 1, .36, 1), color 0.3s ease;
+}
+.hh-door:hover .hh-door-arrow { transform: translateX(6px); color: var(--hh-green); }
+.hh-door-meaning {
+  font-family: var(--sans);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--paper-2);
+  font-weight: 380;
+  max-width: 34em;
+}
+
 /* placeholder used by Photo() */
 .ph {
   position: relative;

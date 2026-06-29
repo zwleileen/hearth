@@ -73,6 +73,62 @@ function pickDailyQuote(quotes, user) {
   return pool[(dayOfYear + userOffset) % pool.length];
 }
 
+// The three avenues to meaning (see docs/MEANING.md). Give outward,
+// receive inward, carry steady. The home surfaces one as today's
+// invitation and all three as standing doors. Each routes to the
+// feature that lives most truly under it.
+const AVENUES = [
+  {
+    key: 'give', word: 'Give', accent: 'var(--hh-ecru)', ink: 'var(--hh-ecru-deep)',
+    meaning: 'Meaning through what you offer. The deed, the work, the thing only you can do.',
+    route: 'rituals', cta: 'Begin a small act',
+    prompts: [
+      'Who could use something only you can give today?',
+      'What small thing are you uniquely placed to do for someone?',
+      'Where is your effort needed, not only wanted?',
+      'What would you make today if no one were watching?',
+    ],
+  },
+  {
+    key: 'receive', word: 'Receive', accent: 'var(--hh-blue)', ink: 'var(--hh-blue-deep)',
+    meaning: 'Meaning through what you let in. Beauty, awe, music, another person.',
+    route: 'attune', cta: 'Find what fits',
+    prompts: [
+      'What is one thing worth stopping for today?',
+      'What beauty have you been walking past?',
+      'Who, or what, could you let move you today?',
+      'If you slowed down once today, what would you notice?',
+    ],
+  },
+  {
+    key: 'carry', word: 'Carry', accent: 'var(--hh-dogwood)', ink: 'var(--hh-dogwood-deep)',
+    meaning: 'Meaning through how you hold what you cannot change. The one freedom never taken from you.',
+    route: 'kindle', cta: 'Sit with it',
+    prompts: [
+      'What are you holding that you could carry differently?',
+      'What cannot be changed today, and how will you meet it?',
+      'Where might there be meaning in something hard you carry?',
+      'What would it mean to be gentle with the weight you carry?',
+    ],
+  },
+];
+
+function dayOfYearNum(d = new Date()) {
+  const start = new Date(d.getFullYear(), 0, 0);
+  return Math.floor((d - start) / 86400000);
+}
+
+// Today's single invitation: an avenue chosen by the day, then a prompt
+// within it. Deterministic per day (stable across reloads), rotates
+// across days, and mixes in a per-user offset so two readers differ.
+function pickMeaningOfMoment(user) {
+  const doy = dayOfYearNum();
+  const off = user?.id ? hashStr(user.id) : 0;
+  const avenue = AVENUES[(doy + off) % AVENUES.length];
+  const prompt = avenue.prompts[(doy + off) % avenue.prompts.length];
+  return { avenue, prompt };
+}
+
 function HomeScreen({ go, user }) {
   const D = HEARTH_DATA;
   const part = timeOfDay(); // 'night' | 'morning' | 'afternoon' | 'evening'
@@ -151,31 +207,32 @@ function HomeScreen({ go, user }) {
   const hero = items?.[0];
   const rest = items?.slice(1) || [];
 
+  const moment = pickMeaningOfMoment(user);
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
-      {/* ── 1. Greeting ─────────────────────────── */}
-      <section style={{ padding: '14px 22px 32px' }}>
+      {/* ── Greeting ─────────────────────────── */}
+      <section style={{ padding: '14px 22px 26px' }}>
         <Kicker>{formatTodayKicker()}</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
           {greet}
         </Headline>
       </section>
 
-      {/* ── 2. Daily quote (replaces the prompt block) ── */}
+      {/* ── A still moment: the daily quote, changes each day ── */}
       {quote && (
-        <section style={{ padding: '24px 22px 8px' }}>
+        <section style={{ padding: '4px 22px 8px' }}>
           <Rule glyph="◆"/>
-          <div style={{ padding: '32px 0 28px', textAlign: 'center' }}>
+          <div style={{ padding: '36px 0 32px', textAlign: 'center' }}>
             <p className="serif" style={{
-              margin: '0 auto', maxWidth: 540,
-              fontSize: 24, lineHeight: 1.4, fontWeight: 360, fontStyle: 'italic',
-              color: 'var(--hh-green)', letterSpacing: '-0.005em',
+              margin: '0 auto', maxWidth: 560,
+              fontSize: 25, lineHeight: 1.42, fontWeight: 360, fontStyle: 'italic',
+              color: 'var(--hh-green)', letterSpacing: '-0.008em',
             }}>
               &ldquo;{quote.text}&rdquo;
             </p>
             <p className="mono" style={{
               fontSize: 9.5, letterSpacing: '0.22em', color: 'var(--paper-mute)',
-              marginTop: 22, textTransform: 'uppercase',
+              marginTop: 24, textTransform: 'uppercase',
             }}>
               {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
             </p>
@@ -184,10 +241,43 @@ function HomeScreen({ go, user }) {
         </section>
       )}
 
+      {/* ── The meaning of this moment: today's one invitation ── */}
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hh-moment" style={{ background: moment.avenue.accent }}>
+          <span className="hh-moment-eyebrow">The meaning of this moment</span>
+          <p className="hh-moment-prompt">{moment.prompt}</p>
+          <button className="btn btn-warm" onClick={() => go(moment.avenue.route)}>
+            {moment.avenue.cta} {Icon.arrow(14, 'var(--hh-lace)')}
+          </button>
+        </div>
+      </section>
+
+      {/* ── Three doors to meaning: Give · Receive · Carry ── */}
+      <section style={{ padding: '52px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Three doors</span>
+          <span className="hearth-dept-head-meta">always open</span>
+        </div>
+        <p className="body" style={{ margin: '14px 0 20px', maxWidth: 480 }}>
+          There is always a way to meaning, even when one or two are closed. Choose where to turn today.
+        </p>
+        <div className="hh-doors">
+          {AVENUES.map((a) => (
+            <button key={a.key} className="hh-door" onClick={() => go(a.route)}>
+              <span className="hh-door-head">
+                <span className="hh-door-word" style={{ color: a.ink }}>{a.word}</span>
+                <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
+              </span>
+              <span className="hh-door-meaning">{a.meaning}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {/* ── 3. Editorial spread, full reading room ── */}
       <section style={{ padding: '48px 22px 0' }}>
         <div className="hearth-dept-head">
-          <span className="hearth-dept-head-title">The reading room</span>
+          <span className="hearth-dept-head-title">Receive · the reading room</span>
           {feedState === 'ready' && (
             <span className="hearth-dept-head-meta">Today · {items.length} {items.length === 1 ? 'piece' : 'pieces'}</span>
           )}
