@@ -1099,15 +1099,15 @@ function LandingScreen({ go }) {
       {/* Hero — editorial, restrained */}
       <section className="hearth-landing-hero">
         <div className="hearth-landing-hero-inner">
-          <p className="mono hearth-landing-kicker">A personal app · Made slowly</p>
+          <p className="mono hearth-landing-kicker">A daily home for meaning</p>
           <h1 className="serif hearth-landing-h1">
-            A small, quiet place<br/>
-            <span style={{ fontStyle: 'italic' }}>to return to.</span>
+            Find the meaning<br/>
+            <span style={{ fontStyle: 'italic' }}>in your days.</span>
           </h1>
           <p className="serif hearth-landing-sub">
-            Hearth is a journal, a daily reading room, and a mood-aware companion
-            for what to read, what to listen to, and what to write. Built on
-            research. Tuned for you. Kept private.
+            Hearth helps you find meaning where it actually lives, in the moments of
+            giving, receiving, and carrying that fill a day. Kept gently, they gather
+            into a clear sense of what your life is about.
           </p>
           <div className="hearth-landing-cta-row">
             <button className="btn btn-ember" onClick={() => go('onboarding', { step: 0 })}>
@@ -1127,25 +1127,22 @@ function LandingScreen({ go }) {
       <section className="hearth-landing-feature" style={{ background: 'var(--hh-ecru)' }}>
         <div className="hearth-landing-feature-inner">
           <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
-            № 01 · The Journal
+            № 01 · Give
           </p>
           <h2 className="serif hearth-landing-feature-h">
-            Write yourself<br/><span style={{ fontStyle: 'italic' }}>warm.</span>
+            Through what<br/><span style={{ fontStyle: 'italic' }}>you offer.</span>
           </h2>
           <p className="serif hearth-landing-feature-body">
-            A curated bench of fifteen prompts, drawn from the most replicated work
-            in positive and clinical psychology: Seligman, Pennebaker, Neff, King,
-            Lyubomirsky, Gollwitzer. The ones closest to where you are today rise
-            to the top. After writing, name how the page sat with you. The arc of
-            the week shows up gently, on Sunday.
+            Meaning grows when we reach beyond ourselves. Each day Hearth offers one
+            small act of giving, the deed only you can do, the turn toward someone who
+            needs you, and keeps a quiet record of it.
           </p>
           <div className="hearth-landing-prompt-card">
             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>
-              Seligman, 2005
+              Frankl · the will to meaning
             </div>
             <p className="serif" style={{ margin: '8px 0 0', fontSize: 21, fontStyle: 'italic', fontWeight: 400, lineHeight: 1.3, color: 'var(--hh-green)' }}>
-              Three things that went well today, however small. For each, why did it
-              go well? What part did you play?
+              Who could use something only you can give today?
             </p>
           </div>
         </div>
@@ -1155,16 +1152,15 @@ function LandingScreen({ go }) {
       <section className="hearth-landing-feature" style={{ background: 'var(--hh-blue)' }}>
         <div className="hearth-landing-feature-inner">
           <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
-            № 02 · The Reading Room
+            № 02 · Receive
           </p>
           <h2 className="serif hearth-landing-feature-h">
-            A small daily issue,<br/><span style={{ fontStyle: 'italic' }}>gathered for you.</span>
+            Through what<br/><span style={{ fontStyle: 'italic' }}>moves you.</span>
           </h2>
           <p className="serif hearth-landing-feature-body">
-            Each morning, an editor curates a short table of long-form essays, books
-            worth knowing, poems worth keeping, and slow news. Tuned to the interests
-            you choose at the start. Never more than a handful a day. Save what you
-            love to the Nook, your private shelf.
+            Beauty, music, ideas, another person. Hearth gathers a small daily reading
+            room, and meets your mood with songs and poems chosen for its texture, so
+            the world can reach you. Keep what moves you on your own quiet shelf.
           </p>
         </div>
       </section>
@@ -1173,16 +1169,34 @@ function LandingScreen({ go }) {
       <section className="hearth-landing-feature" style={{ background: 'var(--hh-dogwood)' }}>
         <div className="hearth-landing-feature-inner">
           <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
-            № 03 · Attune
+            № 03 · Carry
           </p>
           <h2 className="serif hearth-landing-feature-h">
-            For the texture<br/><span style={{ fontStyle: 'italic' }}>of the mood.</span>
+            Through what<br/><span style={{ fontStyle: 'italic' }}>you hold.</span>
           </h2>
           <p className="serif hearth-landing-feature-body">
-            Tell Hearth how you're feeling, in your own words. It returns three songs
-            and three poems chosen for the texture of the mood, each with a short
-            reason grounded in research on music, reading, and emotion. Public-domain
-            poems open in place; the rest link to a reputable source. Save what fits.
+            Some things can only be carried. When a feeling is heavy, Hearth sits with
+            you in the method of Viktor Frankl's logotherapy. It finds someone, real or
+            from a story, who stood in the same dark and still carried light, and helps
+            you find your own way to bear it toward meaning.
+          </p>
+        </div>
+      </section>
+
+      {/* The narrative — deep green block, the payoff */}
+      <section className="hearth-landing-feature" style={{ background: 'var(--hh-green)' }}>
+        <div className="hearth-landing-feature-inner">
+          <p className="mono hearth-landing-feature-kicker" style={{ color: 'rgba(249, 244, 230, 0.6)' }}>
+            The whole of it
+          </p>
+          <h2 className="serif hearth-landing-feature-h" style={{ color: 'var(--hh-lace)' }}>
+            A sense of meaning,<br/><span style={{ fontStyle: 'italic' }}>uniquely yours.</span>
+          </h2>
+          <p className="serif hearth-landing-feature-body" style={{ color: 'rgba(249, 244, 230, 0.88)' }}>
+            Everything you notice, write, and keep gathers into one quiet reflection of
+            how you make meaning: the shape of your giving, receiving, and carrying,
+            this season of your life. It grows as you do, and stays yours to recognise
+            and revise, never a verdict.
           </p>
         </div>
       </section>
@@ -1190,21 +1204,23 @@ function LandingScreen({ go }) {
       {/* Research credibility — quiet cream */}
       <section className="hearth-landing-research">
         <div className="hearth-landing-feature-inner">
-          <p className="mono hearth-landing-feature-kicker">Why we make Hearth</p>
+          <p className="mono hearth-landing-feature-kicker">What it rests on</p>
           <h2 className="serif hearth-landing-feature-h" style={{ marginBottom: 20 }}>
-            Built on evidence,<br/><span style={{ fontStyle: 'italic' }}>not advice.</span>
+            The science<br/><span style={{ fontStyle: 'italic' }}>of meaning.</span>
           </h2>
           <p className="serif hearth-landing-feature-body" style={{ marginBottom: 26 }}>
-            Every prompt and every recommendation is drawn from the most replicated work
-            in positive psychology, expressive writing, and music and mood research. We
-            don't claim novelty. We curate replication.
+            Hearth is built on Viktor Frankl's logotherapy, the search for meaning as the
+            deepest human motive, and on the most replicated work in positive psychology,
+            expressive writing, and music and emotion. Every prompt and recommendation is
+            chosen for evidence, not novelty.
           </p>
           <ul className="hearth-landing-lineages">
+            <li><span className="mono">Meaning and logotherapy</span><span className="serif">Frankl · Wong · Steger</span></li>
             <li><span className="mono">Positive psychology</span><span className="serif">Seligman · King · Lyubomirsky · Emmons</span></li>
             <li><span className="mono">Expressive writing</span><span className="serif">Pennebaker · Kross</span></li>
             <li><span className="mono">Goal setting</span><span className="serif">Gollwitzer · Oettingen (WOOP)</span></li>
-            <li><span className="mono">Emotion regulation</span><span className="serif">Gross · Neff · Bryant &amp; Veroff</span></li>
-            <li><span className="mono">Music and mood</span><span className="serif">Saarikallio · Sachs · North &amp; Hargreaves</span></li>
+            <li><span className="mono">Emotion</span><span className="serif">Gross · Neff · Bryant &amp; Veroff</span></li>
+            <li><span className="mono">Music and mood</span><span className="serif">Saarikallio · North &amp; Hargreaves</span></li>
             <li><span className="mono">Reading and wellbeing</span><span className="serif">Mar · Billington · Croom</span></li>
           </ul>
         </div>
@@ -1214,23 +1230,24 @@ function LandingScreen({ go }) {
       <section className="hearth-landing-final">
         <div className="hearth-landing-feature-inner" style={{ textAlign: 'center' }}>
           <p className="mono" style={{ fontSize: 10.5, letterSpacing: '0.28em', color: 'rgba(249,244,230,0.6)', textTransform: 'uppercase', marginBottom: 18 }}>
-            When the day asks something of you
+            Tend your why
           </p>
           <h2 className="serif" style={{
             margin: '0 auto 24px', maxWidth: 580,
             fontSize: 38, lineHeight: 1.1, fontWeight: 340, letterSpacing: '-0.01em',
             color: 'var(--hh-lace)',
           }}>
-            The page is here<br/>
-            <span style={{ fontStyle: 'italic' }}>when you are.</span>
+            Begin where<br/>
+            <span style={{ fontStyle: 'italic' }}>you are.</span>
           </h2>
           <p className="serif" style={{
             margin: '0 auto 28px', maxWidth: 460,
             fontSize: 17, lineHeight: 1.55, fontWeight: 380,
             color: 'rgba(249,244,230,0.85)',
           }}>
-            Five minutes is enough. Begin a small daily practice. Hearth will keep
-            what you write and what you save, gently, for as long as you want it to.
+            A few minutes a day. Notice one moment of meaning, in giving, receiving, or
+            carrying, and let it gather into something clear. Hearth keeps what you write
+            and what you keep, gently, for as long as you want it to.
           </p>
           <button className="btn btn-ember" onClick={() => go('onboarding', { step: 0 })} style={{ marginBottom: 16 }}>
             Begin your hearth {Icon.arrow(14, 'var(--on-ember)')}
