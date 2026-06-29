@@ -482,7 +482,7 @@ function BookmarksScreen({ go }) {
 
       {/* Weekly reflection — what the shelf says about what matters now */}
       {brief && (
-        <div style={{ background: 'var(--hh-isabel)', padding: '18px 20px', borderLeft: '2px solid var(--hh-green)', margin: '0 0 22px' }}>
+        <div style={{ background: 'var(--hh-isabel)', padding: '22px 24px', margin: '0 0 22px' }}>
           <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
             What your shelf holds
           </div>

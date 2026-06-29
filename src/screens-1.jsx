@@ -129,6 +129,23 @@ function pickMeaningOfMoment(user) {
   return { avenue, prompt };
 }
 
+// ── The Meaning Log ───────────────────────────────────────────────
+// A line you keep in answer to the meaning of the moment. Stored on the
+// device (instant, private); the loop closes the day you arrive. Capped
+// so it never grows unbounded.
+const MEANING_LOG_KEY = 'hearth.meaningLog';
+function meaningLogGet() {
+  try { return JSON.parse(localStorage.getItem(MEANING_LOG_KEY) || '[]'); } catch { return []; }
+}
+function meaningLogAdd(entry) {
+  try {
+    const next = [entry, ...meaningLogGet()].slice(0, 60);
+    localStorage.setItem(MEANING_LOG_KEY, JSON.stringify(next));
+    return next;
+  } catch { return meaningLogGet(); }
+}
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+
 function HomeScreen({ go, user }) {
   const D = HEARTH_DATA;
   const part = timeOfDay(); // 'night' | 'morning' | 'afternoon' | 'evening'
@@ -142,6 +159,19 @@ function HomeScreen({ go, user }) {
   })();
   const quote = pickDailyQuote(D.dailyQuotes, user);
   const moment = pickMeaningOfMoment(user);
+
+  const [answer, setAnswer] = useState1('');
+  const [log, setLog] = useState1([]);
+  useEffect1(() => { setLog(meaningLogGet()); }, []);
+  const keptToday = log.find((e) => e.date === todayKey());
+  function keepAnswer() {
+    const t = answer.trim();
+    if (t.length < 2) return;
+    setLog(meaningLogAdd({ date: todayKey(), prompt: moment.prompt, text: t, avenue: moment.avenue.key }));
+    setAnswer('');
+  }
+  const past = log.filter((e) => e.date !== todayKey()).slice(0, 4);
+
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       {/* ── Greeting ─────────────────────────── */}
@@ -180,11 +210,74 @@ function HomeScreen({ go, user }) {
         <div className="hh-moment" style={{ background: moment.avenue.accent }}>
           <span className="hh-moment-eyebrow">The meaning of this moment</span>
           <p className="hh-moment-prompt">{moment.prompt}</p>
-          <button className="btn btn-warm" onClick={() => go(moment.avenue.route)}>
-            {moment.avenue.cta} {Icon.arrow(14, 'var(--hh-lace)')}
+          <button onClick={() => go(moment.avenue.route)} style={{
+            background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+            color: 'var(--hh-green)', fontFamily: 'var(--mono)', fontSize: 10,
+            letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 500,
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+          }}>
+            <span>Step into {moment.avenue.word}</span>
+            {Icon.arrow(14, 'currentColor')}
           </button>
         </div>
       </section>
+
+      {/* ── Answer in a line: the daily loop, kept on this device ── */}
+      <section style={{ padding: '20px 22px 0' }}>
+        {keptToday ? (
+          <div style={{ padding: '4px 2px' }}>
+            <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 8 }}>
+              Today, you noticed
+            </div>
+            <p className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+              {keptToday.text}
+            </p>
+          </div>
+        ) : (
+          <div>
+            <textarea
+              className="hearth-input"
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              placeholder="Answer in a line, if it comes to you…"
+              style={{ minHeight: 68, background: 'var(--hh-isabel)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}
+            />
+            <div style={{ marginTop: 14 }}>
+              <button onClick={keepAnswer} disabled={answer.trim().length < 2} style={{
+                background: answer.trim().length < 2 ? 'transparent' : 'var(--hh-green)',
+                color: answer.trim().length < 2 ? 'var(--paper-mute)' : 'var(--hh-lace)',
+                border: answer.trim().length < 2 ? '1px solid rgba(31, 64, 69, 0.18)' : 0,
+                padding: '12px 20px', cursor: answer.trim().length < 2 ? 'not-allowed' : 'pointer',
+                fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+                letterSpacing: '0.22em', textTransform: 'uppercase',
+              }}>
+                Keep it
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* ── What you've been noticing: the meaning log ── */}
+      {past.length > 0 && (
+        <section style={{ padding: '34px 22px 0' }}>
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title">What you've been noticing</span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            {past.map((e, i) => (
+              <div key={i} style={{ borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '16px 0' }}>
+                <div className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 6 }}>
+                  {new Date(e.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                </div>
+                <p className="serif" style={{ margin: 0, fontSize: 16, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+                  {e.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── A quiet line: the philosophy, the avenues live in the nav ── */}
       <section style={{ padding: '46px 22px 0' }}>
@@ -742,7 +835,7 @@ function JournalScreen({ go, user }) {
       {/* Weekly reflection — what's been on your mind, across the journal */}
       {brief && (
         <section style={{ padding: '0 22px 20px' }}>
-          <div style={{ background: 'var(--hh-isabel)', padding: '20px 22px', borderLeft: '2px solid var(--hh-green)' }}>
+          <div style={{ background: 'var(--hh-isabel)', padding: '22px 24px' }}>
             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--hh-green)', marginBottom: 10 }}>
               This season in your journal
             </div>

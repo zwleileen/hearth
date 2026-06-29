@@ -102,11 +102,11 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           <h1 className="serif" style={{ margin: '32px 0 12px', fontSize: 42, fontWeight: 320, letterSpacing: '-0.01em' }}>
             Hearth
           </h1>
-          <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 350, color: 'var(--paper-2)', margin: '0 0 32px', lineHeight: 1.4, maxWidth: 300 }}>
-            A small fire to come home to,<br/>at the start and end of each day.
+          <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 350, color: 'var(--paper-2)', margin: '0 0 32px', lineHeight: 1.4, maxWidth: 320 }}>
+            A quiet home for finding<br/>meaning in your days.
           </p>
-          <p className="body-sm" style={{ maxWidth: 280, margin: '0 auto' }}>
-            Five minutes. Pen-and-paper feel. Built on the most replicated work in positive and clinical psychology.
+          <p className="body-sm" style={{ maxWidth: 300, margin: '0 auto' }}>
+            A few minutes each day to give, to receive, and to carry what is yours to carry. Grounded in the science of how people find meaning.
           </p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 280 }}>
