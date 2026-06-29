@@ -464,36 +464,81 @@ function ReadingRoomScreen({ go }) {
 }
 
 
+// A door row, the shared building block of every avenue hub. onClick is
+// a thunk so a row can open a screen or a specific practice.
+function DoorRow({ word, meaning, ink, onClick }) {
+  return (
+    <button className="hh-door" onClick={onClick}>
+      <span className="hh-door-head">
+        <span className="hh-door-word" style={ink ? { color: ink } : undefined}>{word}</span>
+        <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
+      </span>
+      <span className="hh-door-meaning">{meaning}</span>
+    </button>
+  );
+}
+
+// Open a practice (ritual) by key, via the shared ritual-detail screen.
+function openRitual(go, key) {
+  const r = (HEARTH_DATA.rituals || []).find((x) => x.key === key);
+  if (r) go('ritual-detail', { ritual: r });
+}
+
 // ─────────────────────────────────────────────────────────────
-// RECEIVE — avenue hub. Two ways to be moved: Attune (sound) and
-// the reading room (words). Meaning through what you let in.
+// GIVE — avenue hub. Meaning through what you offer: the deed only
+// you can do, the turn toward someone who needs you. Frankl's
+// creative values, and the engine of self-transcendence.
 // ─────────────────────────────────────────────────────────────
-function ReceiveScreen({ go }) {
-  const entries = [
-    { word: 'Attune', meaning: 'Songs and poems shaped to how you feel right now. Met where you are, then moved with, gently.', route: 'attune' },
-    { word: 'The reading room', meaning: 'A small daily room of essays, poems, and slow news worth stopping for.', route: 'reading' },
+const GIVE_DEEDS = [
+  'Who could use something only you can give today?',
+  'Send the message you have been meaning to send.',
+  'Offer help to one person before they have to ask.',
+  'Tell someone exactly what they did that mattered.',
+  'Make something small, and give it away.',
+  'Give one person your whole attention today.',
+  'Do the quiet, unglamorous thing that helps everyone.',
+];
+
+function GiveScreen({ go, user }) {
+  const off = user?.id ? hashStr(user.id) : 0;
+  const deed = GIVE_DEEDS[(dayOfYearNum() + off) % GIVE_DEEDS.length];
+  const ways = [
+    { word: 'An act of kindness', meaning: 'One small kindness, done on purpose. The lift it gives the giver is one of the most reliable findings in the field.' },
+    { word: 'A gratitude letter', meaning: 'Write to someone whose effect on you they may never have known. Deliver it if you can.' },
+    { word: 'Share what you know', meaning: 'Teach or pass on one thing only you can. Meaning grows by being given away.' },
+    { word: 'Give your attention', meaning: 'Be wholly present to one person today. Attention is the rarest thing we have to offer.' },
   ];
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       <section style={{ padding: '14px 22px 0' }}>
-        <Kicker accent="blue">Receive</Kicker>
+        <Kicker accent="ecru">Give</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
-          What moves you.
+          What you offer.
         </Headline>
         <p className="body" style={{ margin: '16px 0 0', maxWidth: 460 }}>
-          Meaning through what you let in: beauty, awe, ideas, another person. Two ways to be moved.
+          Meaning through what you give, make, and do. The deed only you can do, the turn toward someone who needs you. We are most ourselves when we reach beyond ourselves.
         </p>
       </section>
-      <section style={{ padding: '40px 22px 0' }}>
-        <div className="hh-doors">
-          {entries.map((e) => (
-            <button key={e.route} className="hh-door" onClick={() => go(e.route)}>
-              <span className="hh-door-head">
-                <span className="hh-door-word" style={{ color: 'var(--hh-blue-deep)' }}>{e.word}</span>
-                <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
-              </span>
-              <span className="hh-door-meaning">{e.meaning}</span>
-            </button>
+
+      {/* The deed of the day */}
+      <section style={{ padding: '34px 22px 0' }}>
+        <div className="hh-moment" style={{ background: 'var(--hh-ecru)' }}>
+          <span className="hh-moment-eyebrow">The deed of the day</span>
+          <p className="hh-moment-prompt">{deed}</p>
+          <button className="btn btn-warm" onClick={() => go('journal')}>
+            Note it in your journal {Icon.arrow(14, 'var(--hh-lace)')}
+          </button>
+        </div>
+      </section>
+
+      {/* Ways to give */}
+      <section style={{ padding: '44px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Ways to give</span>
+        </div>
+        <div className="hh-doors" style={{ marginTop: 6 }}>
+          {ways.map((w) => (
+            <DoorRow key={w.word} word={w.word} meaning={w.meaning} ink="var(--hh-ecru-deep)" onClick={() => go('journal')} />
           ))}
         </div>
       </section>
@@ -502,8 +547,46 @@ function ReceiveScreen({ go }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// YOURS — your inner record. Journal (your reflections), Nook
-// (your anthology), and the weekly Meaning Mirror at the top.
+// RECEIVE — avenue hub. Ways to be moved: Attune (sound), the
+// reading room (words), and savoring (awe, noticing the good).
+// Meaning through what you let in.
+// ─────────────────────────────────────────────────────────────
+function ReceiveScreen({ go }) {
+  const ink = 'var(--hh-blue-deep)';
+  return (
+    <div className="fade-in" style={{ paddingBottom: 48 }}>
+      <section style={{ padding: '14px 22px 0' }}>
+        <Kicker accent="blue">Receive</Kicker>
+        <Headline size="display" style={{ marginTop: 14 }}>
+          What moves you.
+        </Headline>
+        <p className="body" style={{ margin: '16px 0 0', maxWidth: 460 }}>
+          Meaning through what you let in: beauty, awe, ideas, another person. Let the world reach you.
+        </p>
+      </section>
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hh-doors">
+          <DoorRow word="Attune" ink={ink} meaning="Songs and poems shaped to how you feel right now. Met where you are, then moved with, gently." onClick={() => go('attune')} />
+          <DoorRow word="The reading room" ink={ink} meaning="A small daily room of essays, poems, and slow news worth stopping for." onClick={() => go('reading')} />
+        </div>
+      </section>
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Savor</span>
+          <span className="hearth-dept-head-meta">a few minutes</span>
+        </div>
+        <div className="hh-doors" style={{ marginTop: 6 }}>
+          <DoorRow word="An awe walk" ink={ink} meaning="A walk with attention turned outward, toward the vast or the beautiful. It widens the day." onClick={() => openRitual(go, 'awe')} />
+          <DoorRow word="Three good things" ink={ink} meaning="Notice three that went right, and your part in them. Small, and steadying over time." onClick={() => openRitual(go, 'gratitude')} />
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// YOURS — your inner record. Journal, Nook, the weekly Meaning
+// Mirror, and the reflective practices (values, the weekly review).
 // ─────────────────────────────────────────────────────────────
 function YoursScreen({ go }) {
   const [brief, setBrief] = useState1('');
@@ -514,10 +597,6 @@ function YoursScreen({ go }) {
     })();
     return () => { cancelled = true; };
   }, []);
-  const entries = [
-    { word: 'Journal', meaning: 'Your reflections. The page where you write yourself a little clearer.', route: 'journal' },
-    { word: 'Nook', meaning: 'Everything you have kept close. Your anthology of what matters.', route: 'bookmarks' },
-  ];
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       <section style={{ padding: '14px 22px 0' }}>
@@ -545,15 +624,18 @@ function YoursScreen({ go }) {
 
       <section style={{ padding: '36px 22px 0' }}>
         <div className="hh-doors">
-          {entries.map((e) => (
-            <button key={e.route} className="hh-door" onClick={() => go(e.route)}>
-              <span className="hh-door-head">
-                <span className="hh-door-word">{e.word}</span>
-                <span className="hh-door-arrow">{Icon.arrow(18, 'currentColor')}</span>
-              </span>
-              <span className="hh-door-meaning">{e.meaning}</span>
-            </button>
-          ))}
+          <DoorRow word="Journal" meaning="Your reflections. The page where you write yourself a little clearer." onClick={() => go('journal')} />
+          <DoorRow word="Nook" meaning="Everything you have kept close. Your anthology of what matters." onClick={() => go('bookmarks')} />
+        </div>
+      </section>
+
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Look back</span>
+        </div>
+        <div className="hh-doors" style={{ marginTop: 6 }}>
+          <DoorRow word="Values check-in" meaning="Name the values most alive this week, and one small move toward them." onClick={() => openRitual(go, 'values')} />
+          <DoorRow word="The weekly review" meaning="A quiet look across your week: what threaded through, what kept company with you." onClick={() => go('weekly-digest')} />
         </div>
       </section>
     </div>
@@ -967,4 +1049,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-export { HomeScreen, ReadingRoomScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen };
+export { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen };

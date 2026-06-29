@@ -7,7 +7,7 @@ import {
   TweakToggle, TweakNumber, TweakButton,
 } from './tweaks-panel.jsx';
 import { HEARTH_DATA } from './data.js';
-import { HomeScreen, ReadingRoomScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
+import { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
 import {
   DiscoverScreen, AttuneScreen, RitualsScreen,
   RitualDetailScreen, RitualBuilderScreen,
@@ -31,7 +31,7 @@ import { api, getToken, clearToken } from './api.js';
 // Yours is the inner record (Journal + Nook + Meaning Mirror).
 const TABS = [
   { key: 'today',   label: 'Today',   icon: (a) => <HearthMarkSmall size={18}/>,        route: 'home' },
-  { key: 'give',    label: 'Give',    icon: (a) => Icon.plus(18, 'currentColor'),       route: 'rituals' },
+  { key: 'give',    label: 'Give',    icon: (a) => Icon.plus(18, 'currentColor'),       route: 'give' },
   { key: 'receive', label: 'Receive', icon: (a) => Icon.ear(18, 'currentColor'),        route: 'receive' },
   { key: 'carry',   label: 'Carry',   icon: (a) => Icon.dawn(18, 'currentColor'),       route: 'kindle' },
   { key: 'yours',   label: 'Yours',   icon: (a) => Icon.bookmark(18, 'currentColor'),   route: 'yours' },
@@ -118,7 +118,7 @@ function App() {
   const tab =
       route === 'home' ? 'today'
     : route === 'kindle' ? 'carry'
-    : (route === 'rituals' || route.startsWith('ritual')) ? 'give'
+    : (route === 'give' || route === 'rituals' || route.startsWith('ritual')) ? 'give'
     : (route === 'receive' || route === 'attune' || route === 'attune-history' || route === 'reading' || route === 'article' || route === 'discover') ? 'receive'
     : (route === 'yours' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks' || route === 'weekly-digest') ? 'yours'
     : route.startsWith('settings') ? 'settings'
@@ -138,6 +138,7 @@ function App() {
       {/* Main */}
       {route === 'home' && <HomeScreen go={go} user={user}/>}
       {route === 'reading' && <ReadingRoomScreen go={go}/>}
+      {route === 'give' && <GiveScreen go={go} user={user}/>}
       {route === 'receive' && <ReceiveScreen go={go}/>}
       {route === 'yours' && <YoursScreen go={go}/>}
       {route === 'journal' && <JournalScreen go={go} user={user}/>}

@@ -211,7 +211,7 @@ function KindleScreen({ go }) {
     return (
       <div className="fade-in" style={{ paddingBottom: 32 }}>
         <section style={{ padding: '14px 22px 0' }}>
-          <Kicker>Kindle</Kicker>
+          <Kicker>Carry</Kicker>
           <Headline size="display" italic style={{ marginTop: 14 }}>
             Sitting with<br/>you, a moment.
           </Headline>
@@ -544,7 +544,7 @@ function KindleScreen({ go }) {
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       <section style={{ padding: '14px 22px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <Kicker>Kindle</Kicker>
+          <Kicker>Carry</Kicker>
           <button onClick={openLogbook} style={{
             background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--hh-green)',
             fontFamily: 'var(--mono)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.18em',
@@ -616,6 +616,31 @@ function KindleScreen({ go }) {
         <p className="body" style={{ margin: '28px 0 0', fontSize: 12.5, color: 'var(--paper-mute)', maxWidth: 460, lineHeight: 1.6 }}>
           Kindle is built on logotherapy, Viktor Frankl's work on finding meaning in the hardest places. It is a companion, not a clinician. If you are in danger, please reach a real person now.
         </p>
+      </section>
+
+      {/* To steady yourself first — the steadying practices live here in Carry */}
+      <section style={{ padding: '40px 22px 0' }}>
+        <Rule/>
+        <Kicker style={{ marginTop: 22 }}>To steady yourself first</Kicker>
+        <p className="body" style={{ margin: '12px 0 14px', maxWidth: 440 }}>
+          If the feeling is too loud to think, you can begin here. A minute is enough.
+        </p>
+        <div>
+          {['breath', 'shutdown'].map((k) => {
+            const r = (D.rituals || []).find((x) => x.key === k);
+            if (!r) return null;
+            return (
+              <button key={k} onClick={() => go('ritual-detail', { ritual: r })} style={{
+                display: 'flex', width: '100%', textAlign: 'left', alignItems: 'baseline',
+                justifyContent: 'space-between', gap: 14, background: 'transparent', border: 0,
+                borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '16px 0', cursor: 'pointer',
+              }}>
+                <span className="serif" style={{ fontSize: 17, fontStyle: 'italic', color: 'var(--hh-green)' }}>{r.name}</span>
+                <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--paper-mute)', whiteSpace: 'nowrap' }}>{r.duration}</span>
+              </button>
+            );
+          })}
+        </div>
       </section>
     </div>
   );
