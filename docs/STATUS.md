@@ -1,9 +1,12 @@
 # Hearth — Project Status & Handoff
 
 > A living record of where Hearth is, so work can continue across
-> sessions. Last updated 2026-06-30 (last commit before this doc: `e6e3f15`).
+> sessions. Last updated 2026-07-01 (HEAD: `f0fe34a`).
 > Companion docs: `docs/MEANING.md` (design north star),
 > `docs/HEARTH_BRAND_BRIEF.md` (logotherapy + brand + design system, cited).
+
+> **Most recent work:** see [Session log — 2026-07-01](#session-log--2026-07-01)
+> at the bottom for what changed this session and where we left off.
 
 ---
 
@@ -41,8 +44,10 @@ personal space). Tab icons: the Threshold symbol (Today), an open hand
   lines).
 - **Give:** a "deed of the day" plus ways to give; answers are kept to the
   Meaning Log. (Creative values / self-transcendence.)
-- **Receive:** Attune (describe a mood, get songs + poems by its texture)
-  and the Reading Room (a small daily curated set). (Experiential values.)
+- **Receive:** Attune (describe a mood, get **3 songs + 1 book excerpt +
+  1 poem** matched to its texture via the iso-principle; the excerpt is
+  affective bibliotherapy) and the Reading Room (a small daily curated
+  set). (Experiential values.)
 - **Carry:** Kindle, a guided logotherapy session (seeing → widening →
   companion → turning → step) plus steadying practices. (Attitudinal
   values.)
@@ -56,13 +61,22 @@ personal space). Tab icons: the Threshold symbol (Today), an open hand
   **MeaningNarrative**.
 - **Endpoints (added/changed in this arc):**
   - `/api/meaning` — Meaning Log (POST keep, GET recent, DELETE).
-  - `/api/narrative` — the Meaning Narrative synthesis. Reads across
-    MeaningLog + Journal + Bookmark + Kindle; returns short
-    give/receive/carry lines + full prose + threads + `generatedAt`.
-    Cached per user; re-weaves when inputs grow **or** every 7 days, or on
-    `?refresh=1`. Cold start (< 3 sources) returns empty.
-  - `/api/digest/journal-brief` and `/nook-brief` — weekly reflections
-    (cached per ISO week).
+  - `/api/narrative` — the Meaning Narrative synthesis. **Now reads only
+    the two robust signals: MeaningLog + Kindle (Carry) sessions**, each
+    bounded to a recent window (40 logs / 8 sessions) so the prompt stays
+    flat as history grows. (Journal + Bookmarks were dropped, 2026-07-01.)
+    Returns short give/receive/carry lines + full prose + threads +
+    `generatedAt`. Cached per user; re-weaves when inputs grow, every 7
+    days, when `promptVersion` bumps, or on `?refresh=1`. Cold (< 3) empty.
+  - `/api/digest/journal-brief` and `/nook-brief` — reflections at the top
+    of the Journal and Nook. **Rolling 7-day regeneration** (one living
+    row per user+kind via `generatedAt`/`promptVersion`, no longer per ISO
+    week); also re-weaves when new material is added or on `?refresh=1`.
+  - `/api/digest/bibliotherapy` + `WeeklyBibliotherapy` + the
+    `WeeklyDigestScreen` exist but are **orphaned** (the screen is exported
+    yet never routed in `app.jsx`; left from a retired weekly-review page).
+    We chose to put bibliotherapy in Attune as excerpts instead of
+    reviving this. Safe to delete if we want the cleanup.
   - `/api/discover/today` — the reading room (rotates interests; cache
     invalidated by a profile change to interests/dailyTime).
 
@@ -104,3 +118,59 @@ personal space). Tab icons: the Threshold symbol (Today), an open hand
 - **No em dashes** in any user-facing copy.
 - Quiet, literary, warm (Aesop / Frama register). No therapy-speak, no
   hype, no gamification, no emoji in product copy.
+- **Reflections** (Meaning Narrative + Journal/Nook briefs) use a separate
+  shared voice, `REFLECTION_VOICE` in `server/lib/ai.js`: a world-class
+  therapist who knows you, plain and warm, with an explicit ban on
+  AI-language and therapy clichés. Bump each surface's `promptVersion` when
+  the voice/prompt changes so cached copies re-weave once.
+
+---
+
+## Session log — 2026-07-01
+
+Where we left off. Four shipped commits this session (HEAD `f0fe34a`),
+all on `main`; Vercel + Render auto-deploy from `main`.
+
+1. **Auth: stay signed in across cold launches** (`85d4196`).
+   `src/app.jsx` `refreshUser` was clearing the token on *any* failed
+   `/auth/me`, so a sleeping Render backend logged people out (worst from
+   the home-screen PWA). Now it clears only on a real **401**; transient
+   failures keep the token and mark the session `unverified`, and a quiet
+   retry (backoff + on `online`/focus) recovers it. Boot no longer bounces
+   unverified users to the landing page.
+
+2. **Reflections: sources, cadence, voice** (`0f14911`).
+   - Meaning Narrative reads only MeaningLog + Carry sessions, bounded
+     (see endpoints above). `MeaningNarrative` gained `promptVersion`.
+   - Journal + Nook briefs → rolling 7-day regen. `WeeklyBrief` gained
+     `generatedAt` + `promptVersion`; kept its legacy index by updating one
+     row in place (no migration). Old per-week rows are harmless orphans.
+   - Shared `REFLECTION_VOICE` applied to all three; versions bumped.
+
+3. **Bibliotherapy → Attune as excerpts** (`0f14911`).
+   Attune now returns **3 songs + 1 book excerpt + 1 poem** (poems 3→1).
+   Decision rationale: affective bibliotherapy works by *resonance with
+   current feeling* (excerpt) → belongs in Attune's iso-principle flow;
+   whole-book recs are thematic/longitudinal, not mood-gated. Excerpt has
+   the same copyright discipline as poems (brief quote / public-domain full
+   text / url fallback, never fabricated). Touched: `ATTUNE_SCHEMA`,
+   `attunePrompt.js` (+ excerpt-author diversity), `attuneRunner.js`
+   (count + `excerptMissing` retry), `AttuneEntry` (`excerpt` subdoc),
+   `attune.js`, and the Attune reading view in `src/screens-2.jsx`.
+   **Saving:** an excerpt saves to the Nook as a `book` bookmark and keeps
+   the **passage itself** (the "why" goes to `meta.note`); poems save as
+   `poem`. `Bookmark.kind` already allows `book`/`poem`.
+
+4. **Attune copy** (`f0fe34a`). Updated the input line, the Receive door,
+   and the about copy from "three songs and three poems" to "songs, a book
+   passage, and a poem."
+
+**Open / next:**
+- **Eyeball real excerpts:** run Attune against the live OpenAI API once to
+  check quote accuracy/quality before relying on it (hallucination risk on
+  prose quotes is the main watch-item; guardrails mirror poems).
+- **Keep Render warm:** the auth fix tolerates cold starts, but a cron ping
+  to `/api/health` (or a paid always-on plan) removes the ~30-60s wake.
+- Optional cleanup: delete the orphaned bibliotherapy weekly-digest stack
+  (`WeeklyDigestScreen`, `/api/digest/bibliotherapy`, `WeeklyBibliotherapy`,
+  `BIBLIOTHERAPY_SCHEMA`) now that excerpts live in Attune.

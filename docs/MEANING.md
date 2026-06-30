@@ -64,8 +64,9 @@ Nothing already built is wasted; each surface is re-pointed.
 - **Kindle → the flagship "Carry."** Already pure logotherapy: Socratic
   dialogue + the companion (a real or literary figure who carried light
   through the same dark) + the turning. The heart of the app. Keep it.
-- **Attune → "Receive, through sound."** Mood → songs/poems is already
-  experiential-values meaning via the iso-principle. Add one move: after
+- **Attune → "Receive, through sound."** Mood → songs / a book passage /
+  a poem (affective bibliotherapy via the iso-principle) is already
+  experiential-values meaning. Add one move: after
   listening, a one-tap *"what did this reach in you?"* — turning passive
   consumption into **savoring** (Bryant), how experiential meaning
   consolidates.
