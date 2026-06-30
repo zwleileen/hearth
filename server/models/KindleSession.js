@@ -29,6 +29,7 @@ const sessionSchema = new mongoose.Schema(
     companion: {
       type: new mongoose.Schema(
         {
+          kind: { type: String, default: '' },
           name: { type: String, default: '' },
           source: { type: String, default: '' },
           predicament: { type: String, default: '' },

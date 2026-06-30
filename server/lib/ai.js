@@ -373,27 +373,32 @@ export const KINDLE_SESSION_SCHEMA = {
     },
     companion: {
       type: 'object',
-      description: 'A named figure, real or from a named literary work, who faced the same predicament or heavier and still found a way to carry meaning. Chosen for the FORM of their turning, never to rank or minimise the reader\'s suffering.',
+      description: 'The mirror that meets the reader: a real person, a figure from a named story, OR a metaphor (an image from nature or life, or a small parable, e.g. "the tree that grew around the wound") that faced or holds the same shape of difficulty and still carries light. Chosen for the FORM of the turning, never to rank or minimise the reader\'s suffering.',
       properties: {
-        name: { type: 'string', description: 'The figure\'s name.' },
+        kind: {
+          type: 'string',
+          enum: ['person', 'story', 'nature', 'parable', 'image'],
+          description: 'The form of the mirror: a real person, a character from a story, an image from nature, a parable, or another image.',
+        },
+        name: { type: 'string', description: 'Its name or short title: a person\'s name, a character, or a name for the metaphor (e.g. "the tree that grew around the wound").' },
         source: {
           type: 'string',
-          description: 'Where they are from: "real life" with a brief identifier (e.g. "Viktor Frankl, psychiatrist and camp survivor"), or a named work (e.g. "from Marilynne Robinson\'s Gilead").',
+          description: 'Where it is from: "real life" with a brief identifier (e.g. "Viktor Frankl, psychiatrist and camp survivor"), a named work (e.g. "from Marilynne Robinson\'s Gilead"), "from nature", or "a parable".',
         },
         predicament: {
           type: 'string',
-          description: 'Two or three sentences, honest and unflinching, on what they faced. The same shape as the reader\'s, or heavier. Never frame as a comparison that diminishes the reader.',
+          description: 'Two or three sentences on what it faced or holds, the same shape as the reader\'s, or heavier. For a person or story, honest and unflinching; for a metaphor, make the image precise and earned. Never a comparison that diminishes the reader.',
         },
         turning: {
           type: 'string',
-          description: 'Three or four sentences on how they found or held meaning inside it. Specific and grounded in what they actually did or chose. No platitude, no "and everything was fine".',
+          description: 'Three or four sentences on how it found, held, or transformed meaning inside that. Specific and grounded. No platitude, no "and everything was fine".',
         },
         line: {
           type: 'string',
-          description: 'Optional. A short line genuinely attributable to them, quoted exactly, OR a clearly-marked paraphrase. NEVER fabricate a quote. Empty string if you are not certain of the wording.',
+          description: 'Optional. A short line genuinely attributable to a person, quoted exactly, OR a clearly-marked paraphrase. NEVER fabricate. Empty string for metaphors or when unsure of the wording.',
         },
       },
-      required: ['name', 'source', 'predicament', 'turning', 'line'],
+      required: ['kind', 'name', 'source', 'predicament', 'turning', 'line'],
       additionalProperties: false,
     },
     turning: {

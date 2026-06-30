@@ -232,6 +232,8 @@ function KindleScreen({ go }) {
     const fromLog = current.fromLogbook;
     const rt = current.replyTurning;
     const avenue = AVENUE_LABEL[s.turning?.avenue] || "What's being asked";
+    const MIRROR_LABEL = { person: 'Someone who stood here', story: 'Someone who stood here', nature: 'An image that meets you', parable: 'A small parable', image: 'An image that meets you' };
+    const mirrorLabel = MIRROR_LABEL[s.companion?.kind] || 'Someone who stood here';
 
     return (
       <div className="fade-in" style={{ paddingBottom: 56 }}>
@@ -296,7 +298,7 @@ function KindleScreen({ go }) {
         <section style={{ padding: '44px 22px 0' }}>
           <Rule glyph="◆"/>
         </section>
-        <Movement label="Someone who stood here" accent="ecru" style={{ paddingTop: 28 }}>
+        <Movement label={mirrorLabel} accent="ecru" style={{ paddingTop: 28 }}>
           <Headline size="title" italic style={{ marginBottom: 6 }}>
             {s.companion?.name}
           </Headline>
