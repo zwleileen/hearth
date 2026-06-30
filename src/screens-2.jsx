@@ -1435,13 +1435,120 @@ function GratitudeRitual({ go, back }) {
   );
 }
 
+// The awe walk as a ritual of crossing a threshold (Sturm & Keltner,
+// 2020): an invitation, a send-off that turns attention outward and lets
+// the app recede, and a return that savours one thing noticed and keeps
+// it to the meaning log (avenue: receive), feeding the narrative.
+const AWE_NOTICES = ['One thing larger than you', 'One thing smaller than your hand', 'One thing you would not have seen yesterday'];
+
+function AweNotices({ pad = 18 }) {
+  return (
+    <div style={{ marginTop: 14 }}>
+      {AWE_NOTICES.map((s, i) => (
+        <div key={i} style={{ display: 'flex', gap: 14, padding: `${pad}px 0`, alignItems: 'baseline', borderBottom: i === 2 ? 0 : '1px solid rgba(31, 64, 69, 0.10)' }}>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--hh-green)', letterSpacing: '0.06em', minWidth: 28, fontWeight: 500 }}>{String(i + 1).padStart(2, '0')}</span>
+          <span className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 400, color: 'var(--hh-green)' }}>{s}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function AweRitual({ go, back }) {
+  const [phase, setPhase] = useState2('intro'); // intro | out | done
+  const [noticed, setNoticed] = useState2('');
+  const [kept, setKept] = useState2(false);
+  const [keeping, setKeeping] = useState2(false);
+
+  async function keepNotice() {
+    const t = noticed.trim();
+    if (t.length < 2 || keeping) return;
+    setKeeping(true);
+    try {
+      await api.meaning.create({ text: t, prompt: 'What I noticed on an awe walk', avenue: 'receive', date: new Date().toISOString().slice(0, 10) });
+    } catch { /* unauthed or transient; still let them finish */ }
+    setKept(true);
+    setKeeping(false);
+  }
+
+  const solid = {
+    background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0, padding: '14px 22px', cursor: 'pointer',
+    fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
+    display: 'inline-flex', alignItems: 'center', gap: 14,
+  };
+
+  // ── Step across: the send-off ──
+  if (phase === 'out') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 40 }}>
+        <RitualHeader go={go} back={back} kicker="Awe walk · Out in the world" title={<>Step out,<br/>look up.</>}/>
+        <section style={{ padding: '34px 22px 0', textAlign: 'center' }}>
+          <img src="/brand/symbol-paper.svg" alt="" aria-hidden="true" style={{ display: 'block', width: 86, height: 86, margin: '0 auto' }}/>
+          <p className="serif" style={{ margin: '28px auto 0', maxWidth: 360, fontSize: 19, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+            Put the phone in your pocket. Turn your attention outward, toward the vast, the small, the surprising. Let yourself feel small, in the good way.
+          </p>
+        </section>
+        <section style={{ padding: '36px 22px 0' }}>
+          <Rule/>
+          <Kicker style={{ marginTop: 22 }}>Carry these</Kicker>
+          <AweNotices pad={14}/>
+          <p className="body-sm" style={{ margin: '24px 0 0', color: 'var(--paper-mute)', maxWidth: 380 }}>
+            Take about fifteen minutes. Hearth will be here when you return.
+          </p>
+          <button onClick={() => setPhase('done')} style={{ ...solid, marginTop: 24 }}>
+            <span>I'm back</span>
+            <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
+          </button>
+        </section>
+      </div>
+    );
+  }
+
+  // ── Back: savour one thing, keep it to the meaning log ──
+  if (phase === 'done') {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 40 }}>
+        <RitualHeader go={go} back={back} kicker="Awe walk · Back" title={<>What met<br/>your eyes?</>}/>
+        <section style={{ padding: '34px 22px 0' }}>
+          {kept ? (
+            <div className="fade-in">
+              <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 10 }}>Kept</div>
+              <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.55, fontStyle: 'italic', color: 'var(--hh-green)', maxWidth: 520 }}>
+                The small things you stop to notice are where meaning often hides. They gather, over time, into your sense of what matters.
+              </p>
+              <button onClick={() => go(back || 'home')} style={{ marginTop: 28, background: 'transparent', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.25)', padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase' }}>Done</button>
+            </div>
+          ) : (
+            <>
+              <p className="body" style={{ margin: 0, maxWidth: 380 }}>
+                Name one thing you noticed that you would not have seen yesterday.
+              </p>
+              <textarea className="hearth-input" value={noticed} onChange={(e) => setNoticed(e.target.value)} placeholder="The thing I saw…"
+                style={{ minHeight: 90, marginTop: 18, background: 'var(--hh-isabel)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}/>
+              <div style={{ marginTop: 16, display: 'flex', gap: 16, alignItems: 'center' }}>
+                {(() => {
+                  const ready = noticed.trim().length >= 2 && !keeping;
+                  return (
+                    <button onClick={keepNotice} disabled={!ready} style={{
+                      background: ready ? 'var(--hh-green)' : 'transparent', color: ready ? 'var(--hh-lace)' : 'var(--paper-mute)',
+                      border: ready ? 0 : '1px solid rgba(31, 64, 69, 0.25)', padding: '12px 20px', cursor: ready ? 'pointer' : 'default',
+                      fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
+                    }}>{keeping ? 'Keeping…' : 'Keep it'}</button>
+                  );
+                })()}
+                <button onClick={() => go(back || 'home')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Just close</button>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+    );
+  }
+
+  // ── Intro: the invitation ──
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      <RitualHeader go={go} back={back}
-        kicker="03 · Awe walk · Sturm & Keltner, 2020"
-        title={<>Fifteen minutes,<br/>looking outward.</>}
-      />
+      <RitualHeader go={go} back={back} kicker="03 · Awe walk · Sturm & Keltner, 2020" title={<>Fifteen minutes,<br/>looking outward.</>}/>
       <section style={{ padding: '32px 22px 0' }}>
         <p className="body" style={{ margin: 0 }}>
           Walk somewhere familiar. Turn your attention away from yourself and toward the vast, the small, the unexpected. A peeling bark, a long sky, a stranger's kindness.
@@ -1450,30 +1557,8 @@ function AweRitual({ go, back }) {
       <section style={{ padding: '36px 22px 0' }}>
         <Rule/>
         <Kicker style={{ marginTop: 22 }}>Three notices</Kicker>
-        <div style={{ marginTop: 14 }}>
-          {['One thing larger than you', 'One thing smaller than your hand', 'One thing you would not have seen yesterday'].map((s, i) => (
-            <div key={i} style={{
-              display: 'flex', gap: 14, padding: '18px 0', alignItems: 'baseline',
-              borderBottom: i === 2 ? 0 : '1px solid rgba(31, 64, 69, 0.10)',
-            }}>
-              <span className="mono" style={{
-                fontSize: 11, color: 'var(--hh-green)', letterSpacing: '0.06em',
-                minWidth: 28, fontWeight: 500,
-              }}>{String(i + 1).padStart(2, '0')}</span>
-              <span className="serif" style={{
-                fontSize: 17, fontStyle: 'italic', fontWeight: 400, color: 'var(--hh-green)',
-              }}>{s}</span>
-            </div>
-          ))}
-        </div>
-        <button onClick={() => go(back || 'home')} style={{
-          marginTop: 28,
-          background: 'var(--hh-green)', color: 'var(--hh-lace)',
-          border: 0, padding: '14px 22px', cursor: 'pointer',
-          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-          letterSpacing: '0.22em', textTransform: 'uppercase',
-          display: 'inline-flex', alignItems: 'center', gap: 14,
-        }}>
+        <AweNotices/>
+        <button onClick={() => setPhase('out')} style={{ ...solid, marginTop: 28 }}>
           <span>Begin walk</span>
           <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
         </button>
