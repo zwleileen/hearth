@@ -1443,8 +1443,7 @@ function AweRitual({ go, back }) {
         title={<>Fifteen minutes,<br/>looking outward.</>}
       />
       <section style={{ padding: '32px 22px 0' }}>
-        <Photo accent="ecru" h={220} caption="ph · winter park, low light through trees"/>
-        <p className="body" style={{ margin: '22px 0 0' }}>
+        <p className="body" style={{ margin: 0 }}>
           Walk somewhere familiar. Turn your attention away from yourself and toward the vast, the small, the unexpected. A peeling bark, a long sky, a stranger's kindness.
         </p>
       </section>
@@ -1467,7 +1466,7 @@ function AweRitual({ go, back }) {
             </div>
           ))}
         </div>
-        <button style={{
+        <button onClick={() => go(back || 'home')} style={{
           marginTop: 28,
           background: 'var(--hh-green)', color: 'var(--hh-lace)',
           border: 0, padding: '14px 22px', cursor: 'pointer',
