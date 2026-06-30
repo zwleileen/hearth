@@ -143,6 +143,23 @@ function softWhen() {
   return `${weekday} ${part}`;
 }
 
+// A fitting journal prompt for today: a gentle daily invitation to write
+// (never a streak; logotherapy's dereflection cautions against forced
+// introspection). Morning vs evening by the hour, filtered to the
+// reader's reasons where possible, stable per day.
+function pickJournalInvite(user, part) {
+  const pool = (part === 'morning') ? (HEARTH_DATA.morningPrompts || []) : (HEARTH_DATA.eveningPrompts || []);
+  if (!pool.length) return null;
+  const reasons = user?.onboarding?.reasons || [];
+  let list = pool;
+  if (reasons.length) {
+    const filtered = pool.filter((p) => (p.tags || []).some((t) => reasons.includes(t)));
+    if (filtered.length) list = filtered;
+  }
+  const off = user?.id ? hashStr(user.id) : 0;
+  return list[(dayOfYearNum() + off) % list.length];
+}
+
 function HomeScreen({ go, user }) {
   const D = HEARTH_DATA;
   const part = timeOfDay(); // 'night' | 'morning' | 'afternoon' | 'evening'
@@ -156,6 +173,7 @@ function HomeScreen({ go, user }) {
   })();
   const quote = pickDailyQuote(D.dailyQuotes, user);
   const moment = pickMeaningOfMoment(user);
+  const journalInvite = pickJournalInvite(user, part);
 
   const [answer, setAnswer] = useState1('');
   const [log, setLog] = useState1([]);
@@ -356,6 +374,19 @@ function HomeScreen({ go, user }) {
         </section>
       )}
 
+      {/* ── Go further: the reading room, and today's page ── */}
+      <section style={{ padding: '44px 22px 0' }}>
+        <div className="hh-doors">
+          <DoorRow word="The reading room" ink="var(--hh-blue-deep)"
+            meaning="Find inspiration today, essays, poems, and slow news worth stopping for."
+            onClick={() => go('reading')} />
+          {journalInvite && (
+            <DoorRow word="Today's page"
+              meaning={`${journalInvite.title}. A few minutes of writing, for when a line is not enough.`}
+              onClick={() => go('journal-write', { prompt: journalInvite, mode: part })} />
+          )}
+        </div>
+      </section>
 
     </div>
   );
