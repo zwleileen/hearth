@@ -223,9 +223,9 @@ function OnboardingScreen({ go, payload, onAuthed }) {
         {/* tiny preview of what they'll get */}
         {interests.length >= 2 && (
           <div className="card-rose fade-in" style={{ marginTop: 18, padding: 14 }}>
-            <Eyebrow tone="rose">Your morning post</Eyebrow>
+            <Eyebrow tone="rose">What you'll receive</Eyebrow>
             <p className="serif" style={{ margin: '8px 0 0', fontSize: 15, fontStyle: 'italic', fontWeight: 380, lineHeight: 1.4 }}>
-              Three letters a day, hand-picked from {interests.length} of your interests. Friday brings a longer essay; Sundays, a shelf of books.
+              A small reading room each day, drawn from these. Essays, poems, and slow news worth stopping for, never more than a handful.
             </p>
           </div>
         )}

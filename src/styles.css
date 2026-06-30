@@ -148,6 +148,13 @@
 
 * { box-sizing: border-box; }
 
+/* Buttons inherit the ink colour by default. Without this, iOS Safari
+   falls back to the system blue for any <button> that does not set its
+   own colour (e.g. the unselected onboarding cards, the Yours door rows),
+   which read blue instead of Midnight Green. Explicitly-coloured buttons
+   (.btn, tabs, accent words) still override this. */
+button { color: inherit; }
+
 html, body {
   margin: 0;
   padding: 0;
