@@ -1020,7 +1020,7 @@ function MeaningLogScreen({ go }) {
         <Kicker>The meaning log</Kicker>
         <Headline size="display" style={{ marginTop: 12 }}>What you've noticed.</Headline>
         <p className="body" style={{ margin: '14px 0 0', maxWidth: 460 }}>
-          Every line you have kept, in answer to the meaning of the moment. Yours to return to.
+          Every line you've kept, across the moments, walks, and check-ins you've marked. Yours to return to.
         </p>
       </section>
       <section style={{ padding: '32px 22px 0' }}>
@@ -1037,7 +1037,7 @@ function MeaningLogScreen({ go }) {
         )}
         {!error && Array.isArray(entries) && entries.length === 0 && (
           <p className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 380 }}>
-            Nothing kept yet. Answer the meaning of the moment on the home page, and your lines will gather here.
+            Nothing kept yet. Mark the meaning of a moment, keep three good things, or finish an awe walk, and your lines will gather here.
           </p>
         )}
         {Array.isArray(entries) && entries.length > 0 && entries.map((e) => (
@@ -1052,7 +1052,7 @@ function MeaningLogScreen({ go }) {
                 </span>
               )}
             </div>
-            <p className="serif" style={{ margin: '12px 0 0', fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+            <p className="serif" style={{ margin: '12px 0 0', fontSize: 18, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)', whiteSpace: 'pre-line' }}>
               {e.text}
             </p>
             {e.prompt && (

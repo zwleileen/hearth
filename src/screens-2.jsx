@@ -1337,6 +1337,25 @@ function RitualHeader({ go, back, kicker, title, body }) {
   );
 }
 
+// Shared confirmation after a practice keeps something. Names exactly
+// where it now lives and offers a direct way there, so every input is
+// both stored and easy to find again.
+function RitualKept({ go, back, kicker, line, where = 'meaning log', viewRoute = 'meaning-log' }) {
+  return (
+    <div className="fade-in" style={{ paddingBottom: 40 }}>
+      <RitualHeader go={go} back={back} kicker={kicker} title={<>Kept.</>}/>
+      <section style={{ padding: '34px 22px 0' }}>
+        <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.55, fontStyle: 'italic', color: 'var(--hh-green)', maxWidth: 520 }}>{line}</p>
+        <p className="body-sm" style={{ margin: '18px 0 0', color: 'var(--paper-mute)' }}>You'll find this in your {where}, on the Yours page.</p>
+        <div style={{ marginTop: 26, display: 'flex', gap: 18, alignItems: 'center' }}>
+          <button onClick={() => go(viewRoute)} style={{ background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0, padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase' }}>View {where}</button>
+          <button onClick={() => go(back || 'home')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Done</button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function BreathRitual({ go, back }) {
   const [phase, setPhase] = useState2('in');
   React.useEffect(() => {
@@ -1389,6 +1408,22 @@ function BreathRitual({ go, back }) {
 
 function GratitudeRitual({ go, back }) {
   const [items, setItems] = useState2(['', '', '']);
+  const [kept, setKept] = useState2(false);
+  const [keeping, setKeeping] = useState2(false);
+  const filled = items.map(s => s.trim()).filter(Boolean);
+
+  async function keep() {
+    if (!filled.length || keeping) return;
+    setKeeping(true);
+    try {
+      await api.meaning.create({ text: filled.map((s, i) => `${i + 1}. ${s}`).join('\n'), prompt: 'Three good things', avenue: 'receive', date: new Date().toISOString().slice(0, 10) });
+    } catch { /* unauthed or transient; still let them finish */ }
+    setKept(true); setKeeping(false);
+  }
+
+  if (kept) return <RitualKept go={go} back={back} kicker="Three good things · Kept"
+    line="Noticing what went well, and the part you played in it, is among the most reliably steadying practices there is. These gather into your sense of what matters."/>;
+
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       <RitualHeader go={go} back={back}
@@ -1419,15 +1454,16 @@ function GratitudeRitual({ go, back }) {
             </div>
           </div>
         ))}
-        <button onClick={() => go(back || 'home')} style={{
+        <button onClick={keep} disabled={!filled.length || keeping} style={{
           marginTop: 28,
-          background: 'var(--hh-green)', color: 'var(--hh-lace)',
-          border: 0, padding: '14px 22px', cursor: 'pointer',
+          background: filled.length ? 'var(--hh-green)' : 'transparent', color: filled.length ? 'var(--hh-lace)' : 'var(--paper-mute)',
+          border: filled.length ? 0 : '1px solid rgba(31, 64, 69, 0.25)', padding: '14px 22px',
+          cursor: (filled.length && !keeping) ? 'pointer' : 'default',
           fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
           letterSpacing: '0.22em', textTransform: 'uppercase',
           display: 'inline-flex', alignItems: 'center', gap: 14,
         }}>
-          <span>Keep these</span>
+          <span>{keeping ? 'Keeping…' : 'Keep these'}</span>
           <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
         </button>
       </section>
@@ -1516,7 +1552,11 @@ function AweRitual({ go, back }) {
               <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.55, fontStyle: 'italic', color: 'var(--hh-green)', maxWidth: 520 }}>
                 The small things you stop to notice are where meaning often hides. They gather, over time, into your sense of what matters.
               </p>
-              <button onClick={() => go(back || 'home')} style={{ marginTop: 28, background: 'transparent', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.25)', padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase' }}>Done</button>
+              <p className="body-sm" style={{ margin: '18px 0 0', color: 'var(--paper-mute)' }}>You'll find this in your meaning log, on the Yours page.</p>
+              <div style={{ marginTop: 26, display: 'flex', gap: 18, alignItems: 'center' }}>
+                <button onClick={() => go('meaning-log')} style={{ background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0, padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase' }}>View meaning log</button>
+                <button onClick={() => go(back || 'home')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Done</button>
+              </div>
             </div>
           ) : (
             <>
@@ -1570,9 +1610,29 @@ function AweRitual({ go, back }) {
 function ValuesRitual({ go, back }) {
   const D = HEARTH_DATA;
   const [picked, setPicked] = useState2(['Care', 'Craft', 'Wonder']);
+  const [move, setMove] = useState2('');
+  const [kept, setKept] = useState2(false);
+  const [keeping, setKeeping] = useState2(false);
   function toggle(v) {
     setPicked(p => p.includes(v) ? p.filter(x => x !== v) : (p.length < 5 ? [...p, v] : p));
   }
+  const ready = picked.length || move.trim();
+
+  async function keep() {
+    if (!ready || keeping) return;
+    setKeeping(true);
+    const vals = picked.join(', ');
+    const m = move.trim();
+    const text = vals && m ? `Most alive: ${vals}.\nOne move: ${m}` : (m ? `One move: ${m}` : `Most alive: ${vals}.`);
+    try {
+      await api.meaning.create({ text, prompt: 'Values check-in', avenue: 'carry', date: new Date().toISOString().slice(0, 10) });
+    } catch { /* unauthed or transient; still let them finish */ }
+    setKept(true); setKeeping(false);
+  }
+
+  if (kept) return <RitualKept go={go} back={back} kicker="Values check-in · Kept"
+    line="Naming what you actually live by, and one small move toward it, is how values turn from words into a week. This is now part of your record."/>;
+
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
       <RitualHeader go={go} back={back}
@@ -1599,7 +1659,7 @@ function ValuesRitual({ go, back }) {
         <Headline size="title" italic style={{ marginTop: 14 }}>
           This week I will do one thing in service of <span style={{ fontStyle: 'normal', textDecoration: 'underline', textUnderlineOffset: 4 }}>{picked[0] || ', '}</span>.
         </Headline>
-        <textarea placeholder="It will be small. It will be specific. It will be soon."
+        <textarea value={move} onChange={e => setMove(e.target.value)} placeholder="It will be small. It will be specific. It will be soon."
           style={{
             marginTop: 22, width: '100%',
             background: 'transparent', border: 0,
@@ -1610,6 +1670,19 @@ function ValuesRitual({ go, back }) {
             minHeight: 70, padding: '10px 0', lineHeight: 1.5,
           }}/>
       </ColorBlock>
+      <section style={{ padding: '26px 22px 0' }}>
+        <button onClick={keep} disabled={!ready || keeping} style={{
+          background: ready ? 'var(--hh-green)' : 'transparent', color: ready ? 'var(--hh-lace)' : 'var(--paper-mute)',
+          border: ready ? 0 : '1px solid rgba(31, 64, 69, 0.25)', padding: '14px 22px',
+          cursor: (ready && !keeping) ? 'pointer' : 'default',
+          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+          letterSpacing: '0.22em', textTransform: 'uppercase',
+          display: 'inline-flex', alignItems: 'center', gap: 14,
+        }}>
+          <span>{keeping ? 'Keeping…' : 'Keep this'}</span>
+          <span style={{ width: 28, height: 1, background: 'currentColor' }}/>
+        </button>
+      </section>
     </div>
   );
 }
