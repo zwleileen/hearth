@@ -1304,25 +1304,26 @@ function RitualBuilderScreen({ go }) {
 
 function RitualDetailScreen({ go, payload }) {
   const r = payload?.ritual || HEARTH_DATA.rituals[0];
-  if (r.key === 'breath')    return <BreathRitual go={go}/>;
-  if (r.key === 'gratitude') return <GratitudeRitual go={go}/>;
-  if (r.key === 'awe')       return <AweRitual go={go}/>;
-  if (r.key === 'values')    return <ValuesRitual go={go}/>;
-  if (r.key === 'shutdown')  return <ShutdownRitual go={go}/>;
+  const back = payload?.back || 'home';
+  if (r.key === 'breath')    return <BreathRitual go={go} back={back}/>;
+  if (r.key === 'gratitude') return <GratitudeRitual go={go} back={back}/>;
+  if (r.key === 'awe')       return <AweRitual go={go} back={back}/>;
+  if (r.key === 'values')    return <ValuesRitual go={go} back={back}/>;
+  if (r.key === 'shutdown')  return <ShutdownRitual go={go} back={back}/>;
   return null;
 }
 
-function RitualHeader({ go, kicker, title, body }) {
+function RitualHeader({ go, back, kicker, title, body }) {
   return (
     <>
       <section style={{ padding: '4px 22px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <button onClick={() => go('rituals')} style={{
+        <button onClick={() => go(back || 'home')} style={{
           background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
           fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
           letterSpacing: '0.22em', textTransform: 'uppercase',
         }}>
-          {Icon.back(18, 'currentColor')}<span>Rituals</span>
+          {Icon.back(18, 'currentColor')}<span>Back</span>
         </button>
       </section>
       <section style={{ padding: '28px 22px 0' }}>
@@ -1336,7 +1337,7 @@ function RitualHeader({ go, kicker, title, body }) {
   );
 }
 
-function BreathRitual({ go }) {
+function BreathRitual({ go, back }) {
   const [phase, setPhase] = useState2('in');
   React.useEffect(() => {
     const seq = ['in', 'hold1', 'out', 'hold2'];
@@ -1349,7 +1350,7 @@ function BreathRitual({ go }) {
 
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      <RitualHeader go={go}
+      <RitualHeader go={go} back={back}
         kicker="01 · Box breathing · 4·4·4·4"
         title={<>Match the orb.<br/>It holds the count.</>}
       />
@@ -1374,7 +1375,7 @@ function BreathRitual({ go }) {
         <p className="body" style={{ margin: 0, maxWidth: 320 }}>
           Equal-ratio breathing increases heart-rate variability and dampens the stress response within four minutes.
         </p>
-        <button onClick={() => go('rituals')} style={{
+        <button onClick={() => go(back || 'home')} style={{
           marginTop: 30,
           background: 'transparent', border: '1px solid var(--hh-green)',
           color: 'var(--hh-green)', padding: '13px 22px', cursor: 'pointer',
@@ -1386,11 +1387,11 @@ function BreathRitual({ go }) {
   );
 }
 
-function GratitudeRitual({ go }) {
+function GratitudeRitual({ go, back }) {
   const [items, setItems] = useState2(['', '', '']);
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      <RitualHeader go={go}
+      <RitualHeader go={go} back={back}
         kicker="02 · Three good things · Seligman, 2005"
         title={<>Three small goods<br/>from today.</>}
         body="Name three. For each, why did it go well? What part did you play?"
@@ -1418,7 +1419,7 @@ function GratitudeRitual({ go }) {
             </div>
           </div>
         ))}
-        <button onClick={() => go('rituals')} style={{
+        <button onClick={() => go(back || 'home')} style={{
           marginTop: 28,
           background: 'var(--hh-green)', color: 'var(--hh-lace)',
           border: 0, padding: '14px 22px', cursor: 'pointer',
@@ -1434,10 +1435,10 @@ function GratitudeRitual({ go }) {
   );
 }
 
-function AweRitual({ go }) {
+function AweRitual({ go, back }) {
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      <RitualHeader go={go}
+      <RitualHeader go={go} back={back}
         kicker="03 · Awe walk · Sturm & Keltner, 2020"
         title={<>Fifteen minutes,<br/>looking outward.</>}
       />
@@ -1482,7 +1483,7 @@ function AweRitual({ go }) {
   );
 }
 
-function ValuesRitual({ go }) {
+function ValuesRitual({ go, back }) {
   const D = HEARTH_DATA;
   const [picked, setPicked] = useState2(['Care', 'Craft', 'Wonder']);
   function toggle(v) {
@@ -1490,7 +1491,7 @@ function ValuesRitual({ go }) {
   }
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      <RitualHeader go={go}
+      <RitualHeader go={go} back={back}
         kicker="04 · Values check-in · ACT · weekly"
         title={<>What's most alive<br/>this week?</>}
         body="Choose up to five. Not what you should care about, what you actually do."
@@ -1529,13 +1530,13 @@ function ValuesRitual({ go }) {
   );
 }
 
-function ShutdownRitual({ go }) {
+function ShutdownRitual({ go, back }) {
   const D = HEARTH_DATA;
   const [done, setDone] = useState2([false, false, false, false, false]);
   const all = done.every(Boolean);
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
-      <RitualHeader go={go}
+      <RitualHeader go={go} back={back}
         kicker="05 · Shutdown · Newport · Deep Work"
         title={<>Close the day.<br/>Let it be closed.</>}
         body="A consistent end-of-day routine reduces work-rumination and improves sleep onset. Five small acts."

@@ -737,8 +737,6 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
           <span className="hearth-dept-head-meta"></span>
         </div>
         <div style={{ marginTop: 4 }}>
-          <SettingsLink onClick={() => go('weekly-digest')} icon={Icon.wave(16, 'var(--hh-green)')}
-            label="Weekly review" right="A look back"/>
           <SettingsLink onClick={() => go('bookmarks')} icon={Icon.bookmark(16, 'var(--hh-green)')}
             label="The Nook" right={counts.bookmarks !== null ? `${counts.bookmarks} ${counts.bookmarks === 1 ? 'kept' : 'kept'}` : ''}/>
           <SettingsLink onClick={() => go('journal-archive')} icon={Icon.pen(16, 'var(--hh-green)')}

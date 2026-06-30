@@ -9,8 +9,7 @@ import {
 import { HEARTH_DATA } from './data.js';
 import { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
 import {
-  DiscoverScreen, AttuneScreen, RitualsScreen,
-  RitualDetailScreen, RitualBuilderScreen,
+  DiscoverScreen, AttuneScreen, RitualDetailScreen,
 } from './screens-2.jsx';
 import {
   OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen,
@@ -19,7 +18,7 @@ import {
 import { KindleScreen } from './screens-5.jsx';
 import {
   JournalArchiveScreen, EntryDetailScreen, ArticleScreen,
-  BookmarksScreen, WeeklyDigestScreen, StreakBrokenScreen,
+  BookmarksScreen, StreakBrokenScreen,
   AttuneHistoryScreen, MiniPlayer, OfflineBanner, Toast,
 } from './screens-4.jsx';
 import { api, getToken, clearToken } from './api.js';
@@ -113,14 +112,14 @@ function App() {
 
   // tab inference, mapped to the avenue nav. Each surface highlights the
   // avenue it lives under: Attune + reading room → Receive; Kindle →
-  // Carry; Rituals → Give; Journal + Nook + digest → Yours. Settings has
-  // no tab (reached via the menu), so it highlights nothing.
+  // Carry; the deed → Give; Journal + Nook + meaning → Yours. Settings and
+  // transient detail screens (e.g. ritual-detail) highlight nothing.
   const tab =
       route === 'home' ? 'today'
     : route === 'kindle' ? 'carry'
-    : (route === 'give' || route === 'rituals' || route.startsWith('ritual')) ? 'give'
+    : route === 'give' ? 'give'
     : (route === 'receive' || route === 'attune' || route === 'attune-history' || route === 'reading' || route === 'article' || route === 'discover') ? 'receive'
-    : (route === 'yours' || route === 'meaning' || route === 'meaning-log' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks' || route === 'weekly-digest') ? 'yours'
+    : (route === 'yours' || route === 'meaning' || route === 'meaning-log' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks') ? 'yours'
     : route.startsWith('settings') ? 'settings'
     : 'today';
 
@@ -153,10 +152,7 @@ function App() {
       {route === 'attune' && <AttuneScreen go={go}/>}
       {route === 'attune-history' && <AttuneHistoryScreen go={go}/>}
       {route === 'kindle' && <KindleScreen go={go}/>}
-      {route === 'rituals' && <RitualsScreen go={go}/>}
       {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}
-      {route === 'ritual-builder' && <RitualBuilderScreen go={go}/>}
-      {route === 'weekly-digest' && <WeeklyDigestScreen go={go}/>}
       {route === 'streak-broken' && <StreakBrokenScreen go={go}/>}
 
       {/* Settings */}
@@ -286,9 +282,6 @@ function App() {
             {value:'attune',label:'Attune'},
             {value:'attune-history',label:'Attune · history'},
             {value:'kindle',label:'Carry'},
-            {value:'rituals',label:'Rituals'},
-            {value:'ritual-builder',label:'Rituals · Build'},
-            {value:'weekly-digest',label:'Weekly digest'},
             {value:'streak-broken',label:'Streak broken'},
             {value:'settings',label:'Settings'},
             {value:'settings-notifications',label:'Notifications'},

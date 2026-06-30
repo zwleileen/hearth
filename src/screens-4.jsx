@@ -1094,8 +1094,8 @@ function WeeklyDigestScreen({ go }) {
           <button className="btn btn-ember" onClick={() => go('journal')}>
             Open journal
           </button>
-          <button className="btn btn-ghost" onClick={() => go('rituals')}>
-            Open rituals
+          <button className="btn btn-ghost" onClick={() => go('home')}>
+            Back to today
           </button>
         </div>
       </section>

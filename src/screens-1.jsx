@@ -670,9 +670,10 @@ function DoorRow({ word, meaning, ink, onClick }) {
 }
 
 // Open a practice (ritual) by key, via the shared ritual-detail screen.
-function openRitual(go, key) {
+// `back` is the route to return to (the avenue the reader came from).
+function openRitual(go, key, back) {
   const r = (HEARTH_DATA.rituals || []).find((x) => x.key === key);
-  if (r) go('ritual-detail', { ritual: r });
+  if (r) go('ritual-detail', { ritual: r, back });
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -857,8 +858,8 @@ function ReceiveScreen({ go }) {
           <span className="hearth-dept-head-meta">a few minutes</span>
         </div>
         <div className="hh-doors" style={{ marginTop: 6 }}>
-          <DoorRow word="An awe walk" ink={ink} meaning="A walk with attention turned outward, toward the vast or the beautiful. It widens the day." onClick={() => openRitual(go, 'awe')} />
-          <DoorRow word="Three good things" ink={ink} meaning="Notice three that went right, and your part in them. Small, and steadying over time." onClick={() => openRitual(go, 'gratitude')} />
+          <DoorRow word="An awe walk" ink={ink} meaning="A walk with attention turned outward, toward the vast or the beautiful. It widens the day." onClick={() => openRitual(go, 'awe', 'receive')} />
+          <DoorRow word="Three good things" ink={ink} meaning="Notice three that went right, and your part in them. Small, and steadying over time." onClick={() => openRitual(go, 'gratitude', 'receive')} />
         </div>
       </section>
     </div>
@@ -896,8 +897,7 @@ function YoursScreen({ go }) {
           <span className="hearth-dept-head-title">Look back</span>
         </div>
         <div className="hh-doors" style={{ marginTop: 6 }}>
-          <DoorRow word="Values check-in" meaning="Name the values most alive this week, and one small move toward them." onClick={() => openRitual(go, 'values')} />
-          <DoorRow word="The weekly review" meaning="A quiet look across your week: what threaded through, what kept company with you." onClick={() => go('weekly-digest')} />
+          <DoorRow word="Values check-in" meaning="Name the values most alive this week, and one small move toward them." onClick={() => openRitual(go, 'values', 'yours')} />
         </div>
       </section>
     </div>

@@ -632,7 +632,7 @@ function KindleScreen({ go }) {
             const r = (D.rituals || []).find((x) => x.key === k);
             if (!r) return null;
             return (
-              <button key={k} onClick={() => go('ritual-detail', { ritual: r })} style={{
+              <button key={k} onClick={() => go('ritual-detail', { ritual: r, back: 'kindle' })} style={{
                 display: 'flex', width: '100%', textAlign: 'left', alignItems: 'baseline',
                 justifyContent: 'space-between', gap: 14, background: 'transparent', border: 0,
                 borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '16px 0', cursor: 'pointer',
