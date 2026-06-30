@@ -848,7 +848,7 @@ function ReceiveScreen({ go }) {
       </section>
       <section style={{ padding: '40px 22px 0' }}>
         <div className="hh-doors">
-          <DoorRow word="Attune" ink={ink} meaning="Songs and poems shaped to how you feel right now. Met where you are, then moved with, gently." onClick={() => go('attune')} />
+          <DoorRow word="Attune" ink={ink} meaning="Songs, a book passage, and a poem shaped to how you feel right now. Met where you are, then moved with, gently." onClick={() => go('attune')} />
           <DoorRow word="The reading room" ink={ink} meaning="A small daily room of essays, poems, and slow news worth stopping for." onClick={() => go('reading')} />
         </div>
       </section>

@@ -1152,8 +1152,8 @@ function LandingScreen({ go }) {
           </h2>
           <p className="serif hearth-landing-feature-body">
             Beauty, music, ideas, another person. Hearth gathers a small daily reading
-            room, and meets your mood with songs and poems chosen for its texture, so
-            the world can reach you. Keep what moves you on your own quiet shelf.
+            room, and meets your mood with songs, a passage from a book, and a poem chosen
+            for its texture, so the world can reach you. Keep what moves you on your own quiet shelf.
           </p>
         </div>
       </section>

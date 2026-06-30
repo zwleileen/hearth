@@ -901,7 +901,7 @@ function AttuneScreen({ go }) {
           How are you,<br/><span style={{ fontStyle: 'italic' }}>really?</span>
         </Headline>
         <p className="body" style={{ margin: '18px 0 28px', maxWidth: 380 }}>
-          Tell me in a sentence. I'll find three songs and three poems shaped to where you are. Chosen on what the research says actually helps.
+          Tell me in a sentence. I'll find three songs, a passage from a book, and a poem shaped to where you are. Chosen on what the research says actually helps.
         </p>
 
         <textarea
