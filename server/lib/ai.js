@@ -129,6 +129,21 @@ Each item should feel like something a thoughtful curator chose, not what an alg
 
 You are helping someone find solace in the world today. They came to Hearth because life is asking something of them. Meet them with care, specificity, and respect for their intelligence.`;
 
+// Shared voice for the three reflective summaries shown back to a reader:
+// the Meaning Narrative, the Journal brief, and the Nook brief. These are
+// the moments Hearth speaks directly to a person about their own life, so
+// the register leans warmer and plainer than the editorial curation voice:
+// a world-class therapist who knows them, not a magazine. Append this to
+// the prompt for any reader-facing reflection.
+export const REFLECTION_VOICE = `Write this the way a world-class therapist would speak to someone they know well and care about. Clear, simple, human, warm, kind.
+
+- Plain, everyday words. Short sentences. Nothing literary for its own sake. A tired person reading on their phone should take in every word the first time, and feel quietly understood.
+- Warm and kind the way a good therapist is warm: present, unhurried, on their side, steady. Never clinical, never cool, never performing cleverness or insight.
+- Speak to them as "you". Borrow their own words where you can. Sound like a real person who was paying close attention, never like a system describing a user.
+- Zero AI language. Never sound generated. Do not use: "it's clear that", "it seems", "based on", "overall", "a sense of", "delve", "tapestry", "journey", "navigate", "resonate", "holds space", "a testament to", "speaks to", "weave", or any phrase a chatbot reaches for.
+- No therapy clichés either: not "I hear you", "you've got this", "sit with it", "lean into", "show up for yourself". No labels, no diagnoses, no advice, no "you should", no praise, no flattery. Not a summary, not a list.
+- A true, gentle mirror that makes them feel known. No em dashes.`;
+
 export const DISCOVER_SCHEMA = {
   type: 'object',
   properties: {
@@ -282,7 +297,7 @@ export const ATTUNE_SCHEMA = {
     },
     register: {
       type: 'string',
-      description: 'A short phrase (3 to 6 words, lowercase) naming the register this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". The songs and poems must match this register, not default to introspective. Two materially different moods must produce materially different registers.',
+      description: 'A short phrase (3 to 6 words, lowercase) naming the register this mood asks for. Examples: "holding silence", "kinetic celebration", "tender and warm", "restless and alive", "sitting with weight", "awake and walking out the door". The songs, the excerpt, and the poem must all match this register, not default to introspective. Two materially different moods must produce materially different registers.',
     },
     songs: {
       type: 'array',
@@ -298,9 +313,31 @@ export const ATTUNE_SCHEMA = {
         additionalProperties: false,
       },
     },
+    excerpt: {
+      type: 'object',
+      description: 'Exactly one short book excerpt for the mood: a passage from real literature, memoir, or essay (never self-help, never a how-to) that meets the reader where they are, in the affective-bibliotherapy sense. The reader should be able to recognise their own feeling in it. Match the register, not the surface topic.',
+      properties: {
+        title: { type: 'string', description: 'The book the passage is from.' },
+        author: { type: 'string' },
+        text: {
+          type: 'string',
+          description: 'The passage itself, line breaks as \\n. Keep it short: one to four sentences. Quote it EXACTLY as written; never paraphrase, summarise, or reconstruct from memory. For in-copyright works keep to a brief quotation (a sentence or two). Reproduce a fuller passage only for works unambiguously in the public domain (typically pre-1929 in the US) that you know verbatim. If you cannot quote a real passage accurately, leave this an empty string and give a url instead. A misquoted passage is worse than none.',
+        },
+        why: {
+          type: 'string',
+          description: 'One or two sentences on how the passage meets this feeling, grounded in what it actually says. The bibliotherapy "why": the reader meets themselves in it. No advice, no fixing.',
+        },
+        url: {
+          type: 'string',
+          description: 'A link where the reader can find the book or read more (publisher page, a reputable bookseller, or the full public-domain text). Empty string if you provided an accurate public-domain passage in text. At least one of text or url MUST be non-empty.',
+        },
+      },
+      required: ['title', 'author', 'text', 'why', 'url'],
+      additionalProperties: false,
+    },
     poems: {
       type: 'array',
-      description: 'Exactly three poem recommendations, the three best fits for the mood. Three different poets; no poet appears twice. The array must contain exactly three items. Each must include either text (for unambiguously public-domain poems you know verbatim) or url (a reputable source where the reader can read it). Empty string for the field you are not providing.',
+      description: 'Exactly one poem, the single best fit for the mood. The array must contain exactly one item. It must include either text (for an unambiguously public-domain poem you know verbatim) or url (a reputable source where the reader can read it). Empty string for the field you are not providing.',
       items: {
         type: 'object',
         properties: {
@@ -321,7 +358,7 @@ export const ATTUNE_SCHEMA = {
       },
     },
   },
-  required: ['moodSummary', 'register', 'songs', 'poems'],
+  required: ['moodSummary', 'register', 'songs', 'excerpt', 'poems'],
   additionalProperties: false,
 };
 

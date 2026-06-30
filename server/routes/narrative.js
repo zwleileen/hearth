@@ -1,19 +1,25 @@
 // server/routes/narrative.js
 //
-// Your Meaning Narrative: the capstone synthesis. Reads across everything
-// the reader keeps (meaning-log lines, journal, Nook saves, Kindle
-// sessions) and reflects back, in voice, the shape of their unique sense
-// of meaning, framed through give / receive / carry.
+// Your Meaning Narrative: the capstone synthesis. Reads only the two
+// signals that robustly shape a person's sense of meaning — the lines
+// they keep in answer to the meaning of the moment (meaning logs) and
+// the heavier feelings they bring to a Carry session (Kindle) — and
+// reflects back, in voice, the shape of their meaning, framed through
+// give / receive / carry.
+//
+// Deliberately NOT everything they keep: journal entries and Nook saves
+// are noisier proxies and grow without bound, which would let the prompt
+// (and cost, and drift) balloon over time. We read a recent window of
+// the two high-signal sources instead, so the input stays flat as a
+// reader's history grows.
 //
 //   GET /api/narrative        cached; regenerated when inputs grow, when
 //                             it ages past a week, or on ?refresh=1.
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
-import { getOpenAI, MODEL, HEARTH_VOICE, MEANING_NARRATIVE_SCHEMA } from '../lib/ai.js';
+import { getOpenAI, MODEL, HEARTH_VOICE, REFLECTION_VOICE, MEANING_NARRATIVE_SCHEMA } from '../lib/ai.js';
 import { MeaningLog } from '../models/MeaningLog.js';
-import { JournalEntry } from '../models/JournalEntry.js';
-import { Bookmark } from '../models/Bookmark.js';
 import { KindleSession } from '../models/KindleSession.js';
 import { MeaningNarrative } from '../models/MeaningNarrative.js';
 
@@ -22,35 +28,42 @@ narrative.use(requireAuth);
 
 const MIN_SOURCES = 3;
 const REGEN_DAYS = 7;
+// Bump when the prompt or voice changes so every reader re-weaves once
+// into the new voice rather than waiting out their cache.
+const PROMPT_VERSION = 1;
+// Recent-window caps. Bound the corpus so the prompt stays a constant
+// size no matter how long someone has used Hearth — recency over volume.
+const RECENT_LOGS = 40;
+const RECENT_SESSIONS = 8;
 const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
 
 narrative.get('/', async (req, res) => {
   const userId = req.userId;
   const refresh = !!req.query.refresh;
 
-  let logs = [], entries = [], saves = [], sessions = [];
+  let logs = [], sessions = [];
   try {
-    [logs, entries, saves, sessions] = await Promise.all([
-      MeaningLog.find({ userId }).sort({ createdAt: -1 }).limit(80).lean(),
-      JournalEntry.find({ userId }).sort({ createdAt: -1 }).limit(30).lean(),
-      Bookmark.find({ userId }).sort({ createdAt: -1 }).limit(50).lean(),
-      KindleSession.find({ userId }).sort({ createdAt: -1 }).limit(10).lean(),
+    [logs, sessions] = await Promise.all([
+      MeaningLog.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_LOGS).lean(),
+      KindleSession.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_SESSIONS).lean(),
     ]);
   } catch (err) {
     console.error('[narrative] load failed:', err);
     return res.status(500).json({ error: 'Failed to read your records' });
   }
 
-  const total = logs.length + entries.length + saves.length + sessions.length;
+  const total = logs.length + sessions.length;
 
   // Cache: return as-is unless the inputs have grown (something new to
-  // weave), it has aged past a week, or a refresh was asked for.
+  // weave), it has aged past a week, the voice changed, or a refresh was
+  // asked for.
   const cached = await MeaningNarrative.findOne({ userId });
   const ageOk = cached?.generatedAt && (Date.now() - new Date(cached.generatedAt).getTime()) < REGEN_DAYS * 86400000;
   // A non-empty cache from before the give/receive/carry distillation
   // lacks those fields; treat it as stale so it re-weaves once.
   const hasShape = !cached?.narrative || cached?.give || cached?.receive || cached?.carry;
-  if (cached && !refresh && cached.sourceCount === total && ageOk && hasShape) {
+  const voiceOk = cached?.promptVersion === PROMPT_VERSION;
+  if (cached && !refresh && cached.sourceCount === total && ageOk && hasShape && voiceOk) {
     return res.json({
       narrative: cached.narrative, give: cached.give || '', receive: cached.receive || '', carry: cached.carry || '',
       threads: cached.threads || [], sourceCount: total, generatedAt: cached.generatedAt, cached: true,
@@ -72,14 +85,6 @@ narrative.get('/', async (req, res) => {
     parts.push('Lines they have kept in answer to the meaning of the moment (newest first):\n' +
       logs.map((l) => `  - [${AVENUE_WORD[l.avenue] || 'note'}] ${l.text}`).join('\n'));
   }
-  if (entries.length) {
-    parts.push('Journal entries (most recent, trimmed):\n' +
-      entries.slice(0, 12).map((e) => `  - ${e.mood ? '(' + e.mood + ') ' : ''}${(e.body || '').trim().replace(/\s+/g, ' ').slice(0, 220)}`).join('\n'));
-  }
-  if (saves.length) {
-    parts.push('Saved to their Nook, what moves them:\n' +
-      saves.slice(0, 24).map((b) => `  - ${b.kind}: "${b.title}"${b.source ? ' — ' + b.source : ''}`).join('\n'));
-  }
   if (sessions.length) {
     const lines = sessions
       .map((s) => `${s.session?.feelingName || ''}${s.session?.companion?.name ? ' (met by ' + s.session.companion.name + ')' : ''}`.trim())
@@ -94,7 +99,9 @@ narrative.get('/', async (req, res) => {
 ${corpus}
 """
 
-Write a "meaning narrative": two to four sentences in Hearth's voice that mirror how this person makes meaning, framed through how they GIVE (what they offer), RECEIVE (what moves them), and CARRY (what they hold). Notice the balance among the three, and the through-lines that repeat. Use their own register and, where it lands, their own words. This is a provisional reading of where they are now, not a verdict and never a personality type; write it as theirs to recognise or revise. No advice, no diagnosis, no flattery, no em dashes.
+Write a "meaning narrative": two to four sentences that mirror how this person makes meaning, framed through how they GIVE (what they offer), RECEIVE (what moves them), and CARRY (what they hold). Notice the balance among the three, and the through-lines that repeat. Use their own words where you can. This is a provisional reading of where they are now, not a verdict and never a personality type; write it as theirs to recognise or revise.
+
+${REFLECTION_VOICE}
 
 Then distil three short phrases (three to ten words each, lowercase, no full stop) for the glance: how they GIVE, what they RECEIVE, what they CARRY. These are the short form a reader sees first; the narrative is the longer read behind it.
 
@@ -132,7 +139,7 @@ Return JSON matching the schema.`;
     const generatedAt = new Date();
     await MeaningNarrative.findOneAndUpdate(
       { userId },
-      { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt } },
+      { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, promptVersion: PROMPT_VERSION } },
       { upsert: true },
     );
     res.json({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, cached: false });

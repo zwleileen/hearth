@@ -362,6 +362,7 @@ function AttuneScreen({ go }) {
       moodSummary: entry.moodSummary,
       register: entry.register,
       songs: entry.songs,
+      excerpt: entry.excerpt,
       poems: entry.poems,
       _fromLogbook: true,
       _logbookMood: entry.mood,
@@ -411,13 +412,17 @@ function AttuneScreen({ go }) {
     const probe = { kind, title: item.title, source: author, url: item.url || '' };
     if (isItemBookmarked(bookmarks, probe)) return;
     try {
+      // For a book excerpt, keep the passage itself as the Nook excerpt
+      // (the words are the point), and tuck the "why" into meta. Songs
+      // and poems keep their short "why" as before.
+      const isBookExcerpt = kind === 'book' && typeof item.text === 'string' && item.text.trim();
       const { bookmark } = await api.bookmarks.create({
         kind,
         title: item.title,
         source: author,
         url: item.url || '',
-        excerpt: item.why || '',
-        meta: { savedFrom: 'attune' },
+        excerpt: isBookExcerpt ? item.text.trim() : (item.why || ''),
+        meta: { savedFrom: 'attune', ...(isBookExcerpt && item.why ? { note: item.why } : {}) },
       });
       if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
     } catch (err) {
@@ -549,11 +554,67 @@ function AttuneScreen({ go }) {
           </div>
         </ColorBlock>
 
-        {/* Poems · text inline when public-domain & known verbatim,
-            otherwise a "Read at <source>" link out. The expand state
-            is per-card so multiple poems can be open simultaneously. */}
+        {/* Book excerpt · affective bibliotherapy. A short passage that
+            meets the reader where this mood is, shown inline (it's brief),
+            with a save to the Nook and a way to find the book. Hidden if
+            the model returned nothing usable. */}
+        {reading.excerpt && reading.excerpt.title && (() => {
+          const ex = reading.excerpt;
+          const isSaved = isItemBookmarked(bookmarks, { kind: 'book', title: ex.title, source: ex.author, url: ex.url });
+          const hasText = typeof ex.text === 'string' && ex.text.trim().length > 0;
+          const hasUrl = typeof ex.url === 'string' && ex.url.trim().length > 0;
+          let sourceLabel = '';
+          if (hasUrl) {
+            try { sourceLabel = new URL(ex.url).hostname.replace(/^www\./, ''); }
+            catch { sourceLabel = 'the book'; }
+          }
+          return (
+            <section style={{ padding: '40px 22px 0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <Kicker>A passage · to sit with</Kicker>
+                <button onClick={() => saveItem('book', ex)} disabled={isSaved}
+                  className="hearth-save-btn" data-saved={isSaved}>
+                  {Icon.bookmark(12, 'currentColor')}
+                  <span>{isSaved ? 'Saved to Nook' : 'Save'}</span>
+                </button>
+              </div>
+              {hasText && (
+                <pre className="serif" style={{
+                  margin: '18px 0 0', fontSize: 18, lineHeight: 1.6, fontStyle: 'italic',
+                  fontWeight: 380, color: 'var(--hh-green)',
+                  whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+                  fontFamily: 'inherit', maxWidth: 560,
+                  paddingLeft: 16, borderLeft: '2px solid rgba(31, 64, 69, 0.25)',
+                }}>{ex.text}</pre>
+              )}
+              <Headline size="section" italic style={{ marginTop: 14, fontWeight: 380 }}>
+                {ex.title}
+              </Headline>
+              <p className="serif" style={{
+                margin: '4px 0 10px', fontSize: 14, fontStyle: 'italic',
+                color: 'var(--hh-green-3)', fontWeight: 380,
+              }}>{ex.author}</p>
+              {ex.why && <p className="body" style={{ margin: 0, maxWidth: 540 }}>{ex.why}</p>}
+              {hasUrl && (
+                <a href={ex.url} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-block', marginTop: 12, color: 'var(--ember)',
+                    fontFamily: 'var(--sans)', fontSize: 11,
+                    fontWeight: 500, letterSpacing: '0.18em', textTransform: 'uppercase',
+                    textDecoration: 'none', borderBottom: '1px solid currentColor',
+                    paddingBottom: 2,
+                  }}>
+                  {hasText ? `Find the book` : `Read at ${sourceLabel}`} →
+                </a>
+              )}
+            </section>
+          );
+        })()}
+
+        {/* Poem · text inline when public-domain & known verbatim,
+            otherwise a "Read at <source>" link out. */}
         <section style={{ padding: '40px 22px 0' }}>
-          <Kicker>Poems · for the page</Kicker>
+          <Kicker>A poem · for the page</Kicker>
           <div style={{ marginTop: 18 }}>
             {(reading.poems || []).map((p, i) => {
               const key = `poem-${i}-${p.title}`;

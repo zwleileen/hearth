@@ -38,11 +38,18 @@ export function findDuplicates(data) {
   for (const [k, n] of seenP) if (n > 1) dupPoets.push(k);
   const songCount = Array.isArray(data?.songs) ? data.songs.length : 0;
   const poemCount = Array.isArray(data?.poems) ? data.poems.length : 0;
+  // The excerpt is a single object. Treat it as missing if absent,
+  // untitled, or carrying neither a passage nor a link to find the book.
+  const ex = data?.excerpt;
+  const excerptMissing = !ex
+    || !(ex.title || '').trim()
+    || !((ex.text || '').trim() || (ex.url || '').trim());
   return {
     dupArtists,
     dupPoets,
     songCountOff: songCount !== 3 ? songCount : null,
-    poemCountOff: poemCount !== 3 ? poemCount : null,
+    poemCountOff: poemCount !== 1 ? poemCount : null,
+    excerptMissing,
   };
 }
 
@@ -85,16 +92,18 @@ export async function generateAttuneReading(client, { mood, preferences, diversi
   const needsRetry = issues.dupArtists.length > 0
     || issues.dupPoets.length > 0
     || issues.songCountOff != null
-    || issues.poemCountOff != null;
+    || issues.poemCountOff != null
+    || issues.excerptMissing;
 
   if (needsRetry) {
     retried = true;
     const parts = [];
     if (issues.songCountOff != null) parts.push(`You returned ${issues.songCountOff} songs; you must return exactly three.`);
-    if (issues.poemCountOff != null) parts.push(`You returned ${issues.poemCountOff} poems; you must return exactly three.`);
+    if (issues.poemCountOff != null) parts.push(`You returned ${issues.poemCountOff} poems; you must return exactly one.`);
     if (issues.dupArtists.length > 0) parts.push(`You returned the same artist twice in songs: ${issues.dupArtists.join(', ')}. Replace duplicates so all three songs are by three different artists.`);
-    if (issues.dupPoets.length > 0) parts.push(`You returned the same poet twice in poems: ${issues.dupPoets.join(', ')}. Replace duplicates so all three poems are by three different poets.`);
-    const correction = parts.join(' ') + ' Keep the register and the moodSummary as they are; only swap the items needed to satisfy the rules above. The result must have exactly three songs by three different artists and exactly three poems by three different poets.';
+    if (issues.dupPoets.length > 0) parts.push(`You returned the same poet twice in poems: ${issues.dupPoets.join(', ')}.`);
+    if (issues.excerptMissing) parts.push('The book excerpt is missing or unusable. Provide one short passage from real literature, memoir, or essay that meets the register, quoted exactly, with a title and author, and either accurate text or a url to find the book.');
+    const correction = parts.join(' ') + ' Keep the register and the moodSummary as they are; only swap the items needed to satisfy the rules above. The result must have exactly three songs by three different artists, exactly one book excerpt, and exactly one poem.';
     data = await callModel(client, [
       ...baseMessages,
       { role: 'assistant', content: JSON.stringify(data) },
@@ -102,13 +111,12 @@ export async function generateAttuneReading(client, { mood, preferences, diversi
     ]);
   }
 
-  // Hard guarantee on the way out: even if the retry still returned
-  // a wrong count (rare), truncate to three so the client never sees
-  // a malformed reading. We don't pad upward; if the model returned
-  // fewer than three after retry, the client gets fewer (better than
-  // making up entries).
+  // Hard guarantee on the way out: even if the retry still returned a
+  // wrong count (rare), truncate so the client never sees a malformed
+  // reading. We don't pad upward; if the model returned fewer than asked
+  // after retry, the client gets fewer (better than making up entries).
   if (Array.isArray(data?.songs) && data.songs.length > 3) data.songs = data.songs.slice(0, 3);
-  if (Array.isArray(data?.poems) && data.poems.length > 3) data.poems = data.poems.slice(0, 3);
+  if (Array.isArray(data?.poems) && data.poems.length > 1) data.poems = data.poems.slice(0, 1);
 
   return { data, retried, preferencesUsed: prefs };
 }

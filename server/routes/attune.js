@@ -47,23 +47,27 @@ attune.post('/', async (req, res) => {
   // for the convergence-on-the-same-artists problem.
   let recentArtists = [];
   let recentPoets = [];
+  let recentAuthors = [];
   let recentRegisters = [];
   try {
     const recent = await AttuneEntry.find({ userId })
       .sort({ createdAt: -1 })
       .limit(DIVERSITY_WINDOW)
-      .select('register songs poems')
+      .select('register songs poems excerpt')
       .lean();
     const artistSet = new Set();
     const poetSet = new Set();
+    const authorSet = new Set();
     const registerSet = new Set();
     for (const r of recent) {
       for (const s of r.songs || []) if (s.artist) artistSet.add(s.artist.trim());
       for (const p of r.poems || []) if (p.poet) poetSet.add(p.poet.trim());
+      if (r.excerpt?.author) authorSet.add(r.excerpt.author.trim());
       if (r.register) registerSet.add(r.register.trim());
     }
     recentArtists = [...artistSet].slice(0, 12);
     recentPoets = [...poetSet].slice(0, 12);
+    recentAuthors = [...authorSet].slice(0, 12);
     recentRegisters = [...registerSet];
   } catch (err) {
     console.warn('[attune] failed to load diversity context:', err.message);
@@ -81,7 +85,7 @@ attune.post('/', async (req, res) => {
     const result = await generateAttuneReading(client, {
       mood,
       preferences: prefs,
-      diversity: { recentArtists, recentPoets, recentRegisters },
+      diversity: { recentArtists, recentPoets, recentAuthors, recentRegisters },
     });
     data = result.data;
   } catch (err) {
@@ -100,6 +104,7 @@ attune.post('/', async (req, res) => {
       register: data.register || '',
       songs: Array.isArray(data.songs) ? data.songs : [],
       poems: Array.isArray(data.poems) ? data.poems : [],
+      excerpt: data.excerpt && typeof data.excerpt === 'object' ? data.excerpt : {},
       preferences: prefs,
     });
   } catch (err) {
@@ -139,6 +144,9 @@ attune.get('/log', async (req, res) => {
       register: e.register || '',
       songs: e.songs || [],
       poems: e.poems || [],
+      excerpt: e.excerpt && e.excerpt.title
+        ? { title: e.excerpt.title || '', author: e.excerpt.author || '', text: e.excerpt.text || '', why: e.excerpt.why || '', url: e.excerpt.url || '' }
+        : null,
       preferences: {
         genre: e.preferences?.genre || 'any',
         vocals: e.preferences?.vocals || 'either',

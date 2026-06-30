@@ -16,7 +16,7 @@ import { Bookmark } from '../models/Bookmark.js';
 import { WeeklyBibliotherapy } from '../models/WeeklyBibliotherapy.js';
 import { WeeklyBrief } from '../models/WeeklyBrief.js';
 import { requireAuth } from '../middleware/auth.js';
-import { getOpenAI, MODEL, HEARTH_VOICE, BIBLIOTHERAPY_SCHEMA, WEEKLY_BRIEF_SCHEMA } from '../lib/ai.js';
+import { getOpenAI, MODEL, HEARTH_VOICE, REFLECTION_VOICE, BIBLIOTHERAPY_SCHEMA, WEEKLY_BRIEF_SCHEMA } from '../lib/ai.js';
 
 export const digest = Router();
 digest.use(requireAuth);
@@ -166,13 +166,14 @@ Return JSON matching the schema.`;
   }
 });
 
-// ─── Weekly reflection briefs (Journal + Nook) ───────────────────────────
+// ─── Reflection briefs (Journal + Nook) ──────────────────────────────────
 //
 // A concise paragraph at the top of the Journal and Nook pages, mirroring
-// back what the body of writing / saving says about the reader. Cached per
-// (user, week, kind) like bibliotherapy, regenerated when the week rolls
-// over or on ?refresh=1. Empty brief on cold start; the frontend hides the
-// section.
+// back what the body of writing / saving says about the reader. Cached and
+// regenerated on a ROLLING seven-day cadence: re-woven once the brief ages
+// past a week, the moment the reader adds new material (itemCount changes),
+// when the voice/prompt version is bumped, or on ?refresh=1. Empty brief on
+// cold start; the frontend hides the section.
 
 // How much to feed the model. Generous enough to capture the body of work,
 // capped so the prompt stays bounded.
@@ -181,39 +182,70 @@ const BRIEF_NOOK_LIMIT = 60;
 const BRIEF_MIN_JOURNAL_ENTRIES = 3;
 const BRIEF_MIN_JOURNAL_WORDS = 150;
 const BRIEF_MIN_NOOK_ITEMS = 3;
+// Rolling regeneration cadence and voice version. Bump BRIEF_PROMPT_VERSION
+// whenever the prompt or voice changes so every reader re-weaves once.
+const BRIEF_REGEN_DAYS = 7;
+const BRIEF_PROMPT_VERSION = 1;
 
 // Shared cache + generation flow. loader() returns { count, corpus } where
 // corpus is the text handed to the model and count drives cold-start; it
 // returns null to signal cold start. buildPrompt(corpus) returns the user
 // prompt string.
 async function serveWeeklyBrief({ req, res, kind, loader, buildPrompt }) {
-  const ws = weekStartISO();
+  const userId = req.userId;
   const refresh = !!req.query.refresh;
 
-  if (!refresh) {
-    const cached = await WeeklyBrief.findOne({ userId: req.userId, weekStart: ws, kind });
-    if (cached) {
-      return res.json({ weekStart: ws, brief: cached.brief, itemCount: cached.itemCount, cached: true });
-    }
-  }
+  // One living row per (user, kind). Older calendar-week rows from the
+  // previous caching scheme may exist; take the most recent and keep
+  // updating it in place so we never accumulate new rows.
+  const existing = await WeeklyBrief.findOne({ userId, kind }).sort({ updatedAt: -1 });
 
   let loaded;
   try {
-    loaded = await loader(req.userId);
+    loaded = await loader(userId);
   } catch (err) {
     console.error(`[digest/${kind}-brief] load failed:`, err);
     return res.status(500).json({ error: 'Failed to read your records' });
   }
+  const itemCount = loaded ? loaded.count : 0;
 
-  // Cold start: cache an empty brief so the frontend stops asking until
-  // the week rolls over or more is written/saved.
+  // Serve the cached brief unless it has aged past a week, the reader has
+  // added material since, the voice changed, or a refresh was asked for.
+  const stamp = existing && (existing.generatedAt || existing.updatedAt);
+  const ageMs = stamp ? Date.now() - new Date(stamp).getTime() : Infinity;
+  const fresh = existing
+    && !refresh
+    && existing.promptVersion === BRIEF_PROMPT_VERSION
+    && ageMs < BRIEF_REGEN_DAYS * 86400000
+    && existing.itemCount === itemCount;
+  if (fresh) {
+    return res.json({ brief: existing.brief, itemCount: existing.itemCount, generatedAt: stamp, cached: true });
+  }
+
+  // Persist a result onto the living row (reusing its weekStart anchor) or
+  // create the first row for this reader.
+  const save = async (brief) => {
+    const now = new Date();
+    if (existing) {
+      await WeeklyBrief.updateOne(
+        { _id: existing._id },
+        { $set: { brief, itemCount, generatedAt: now, promptVersion: BRIEF_PROMPT_VERSION } },
+      );
+    } else {
+      await WeeklyBrief.create({
+        userId, kind, weekStart: weekStartISO(), brief, itemCount,
+        generatedAt: now, promptVersion: BRIEF_PROMPT_VERSION,
+      });
+    }
+    return now;
+  };
+
+  // Cold start: too little written/saved to read honestly. Cache an empty
+  // brief (with the current count) so it re-weaves the moment they cross
+  // the threshold, and the frontend stops asking meanwhile.
   if (!loaded) {
-    await WeeklyBrief.findOneAndUpdate(
-      { userId: req.userId, weekStart: ws, kind },
-      { $set: { userId: req.userId, weekStart: ws, kind, brief: '', itemCount: 0 } },
-      { upsert: true, new: true },
-    );
-    return res.json({ weekStart: ws, brief: '', itemCount: 0, cached: false });
+    const generatedAt = await save('');
+    return res.json({ brief: '', itemCount, generatedAt, cached: false });
   }
 
   let client;
@@ -241,12 +273,8 @@ async function serveWeeklyBrief({ req, res, kind, loader, buildPrompt }) {
     const data = JSON.parse(text);
     const brief = (data.brief || '').trim();
 
-    await WeeklyBrief.findOneAndUpdate(
-      { userId: req.userId, weekStart: ws, kind },
-      { $set: { userId: req.userId, weekStart: ws, kind, brief, itemCount: loaded.count } },
-      { upsert: true, new: true },
-    );
-    res.json({ weekStart: ws, brief, itemCount: loaded.count, cached: false });
+    const generatedAt = await save(brief);
+    res.json({ brief, itemCount, generatedAt, cached: false });
   } catch (err) {
     console.error(`[digest/${kind}-brief]`, err);
     res.status(500).json({ error: 'Failed to compute brief', detail: err.message });
@@ -280,7 +308,9 @@ digest.get('/journal-brief', async (req, res) => {
 ${corpus}
 """
 
-Read across all of them and write ONE short paragraph, two or three sentences, that mirrors back what has been on their mind. It will be read on a phone, so keep it brief and easy to take in at a glance: choose the one or two truest threads rather than naming everything. Touch what soothes them, or what they return to with gratitude, or the weather of their moods, whichever is most alive in the writing. Make it specific to what they actually wrote, in their own register, so they would read it and feel known. A reflection, not a summary and not a list. Warm, kind, gentle. No advice, no diagnosis, no praise, no "you should". Hearth's voice, no em dashes.
+Read across all of them and write ONE short paragraph, two or three sentences, that mirrors back what has been on their mind. It will be read on a phone, so keep it brief and easy to take in at a glance: choose the one or two truest threads rather than naming everything. Touch what soothes them, or what they return to with gratitude, or the weather of their moods, whichever is most alive in the writing. Make it specific to what they actually wrote, so they would read it and feel known.
+
+${REFLECTION_VOICE}
 
 If the entries are too few or too scattered to say anything true, return an empty string rather than inventing a thread.
 
@@ -311,7 +341,9 @@ digest.get('/nook-brief', async (req, res) => {
 ${corpus}
 """
 
-Write ONE short paragraph, two or three sentences, that reflects what this collection says about what matters to them right now. It will be read on a phone, so keep it brief and easy to take in at a glance: name the one clearest thread, the texture they keep reaching for, rather than cataloguing the shelf. Make it specific and true, something they would recognise. A reflection, not an inventory. Warm, kind, gentle. No advice, no praise. Hearth's voice, no em dashes.
+Write ONE short paragraph, two or three sentences, that reflects what this collection says about what matters to them right now. It will be read on a phone, so keep it brief and easy to take in at a glance: name the one clearest thread, the texture they keep reaching for, rather than cataloguing the shelf. Make it specific and true, something they would recognise.
+
+${REFLECTION_VOICE}
 
 If there is too little here to read honestly, return an empty string.
 

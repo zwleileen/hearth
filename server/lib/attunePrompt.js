@@ -51,13 +51,14 @@ export function buildPreferenceBlock(prefs) {
   return lines.join('\n');
 }
 
-export function buildDiversityBlock({ recentArtists = [], recentPoets = [], recentRegisters = [] } = {}) {
-  if (recentArtists.length === 0 && recentPoets.length === 0) return '';
+export function buildDiversityBlock({ recentArtists = [], recentPoets = [], recentAuthors = [], recentRegisters = [] } = {}) {
+  if (recentArtists.length === 0 && recentPoets.length === 0 && recentAuthors.length === 0) return '';
   const lines = [];
   lines.push('');
   lines.push('Recently recommended to this reader (across their last few readings):');
   if (recentArtists.length > 0) lines.push(`  Artists: ${recentArtists.join(', ')}`);
   if (recentPoets.length > 0) lines.push(`  Poets: ${recentPoets.join(', ')}`);
+  if (recentAuthors.length > 0) lines.push(`  Excerpt authors: ${recentAuthors.join(', ')}`);
   if (recentRegisters.length > 0) lines.push(`  Registers used: ${recentRegisters.join(', ')}`);
   lines.push('');
   lines.push('Treat this list as a strong signal to look elsewhere unless the current mood specifically calls for one of these. The reader is not well-served by hearing the same names every time. Go to a different corner of the canon when the texture allows.');
@@ -86,11 +87,11 @@ Then state the register: 3 to 6 lowercase words naming the texture this mood ask
 
 The register choice is the most important choice in this reading. If the mood is celebratory or kinetic, the songs must be celebratory or kinetic, not introspective folk under any banner. If the mood is restless, the songs must ride that edge, not pull toward stillness. If the mood is tender or warm, draw from soul, jazz, classic R&B; do not default to melancholic indie folk because it is familiar. Match the register honestly.${preferenceBlock}${diversityBlock}
 
-Recommend exactly three songs and three poems that meet this register specifically. Pieces with genuine craft and depth that match the texture, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
+Recommend exactly three songs, one book excerpt, and one poem that meet this register specifically. Pieces with genuine craft and depth that match the texture, not just the surface topic. Each "why" should be brief, specific, and grounded, citing relevant research on music or reading and mood when credible (without inventing studies).
 
-For each poem, prefer to include the full text inline ONLY when the poem is unambiguously in the public domain (typically pre-1929 in the US; classical translations; Whitman, Dickinson, early Frost, Hopkins, Tennyson, Donne, Yeats early work, etc.) AND you know it verbatim. Reproduce line breaks accurately using \\n. NEVER paraphrase or reconstruct a poem from memory; misquoting a poem is worse than linking out to it. When in doubt, leave the text field as an empty string and provide a url to a reputable source instead (poetryfoundation.org, poets.org, the poet's own page, the publisher). At least one of the two fields (text or url) must be non-empty for every poem.
+The book excerpt is bibliotherapy in the affective sense: a short passage from real literature, memoir, or essay (never self-help, never a how-to) that meets the reader exactly where this mood is, so they recognise their own feeling in someone else's words. Match the register, not the surface topic; a grieving reader meets a passage that holds the silence, not one that explains grief. Keep it short, one to four sentences. Quote it EXACTLY as written, never paraphrased or reconstructed; for in-copyright books keep to a brief quotation (a sentence or two), and reproduce a fuller passage only for works unambiguously in the public domain that you know verbatim. If you cannot quote a real passage accurately, leave the excerpt text empty and give a url where the reader can find the book. A misquoted passage is worse than none. The "why" names how the passage meets the feeling, no advice, no fixing.
 
-Books are no longer part of this reading. Don't include them.
+For the poem, prefer to include the full text inline ONLY when the poem is unambiguously in the public domain (typically pre-1929 in the US; classical translations; Whitman, Dickinson, early Frost, Hopkins, Tennyson, Donne, Yeats early work, etc.) AND you know it verbatim. Reproduce line breaks accurately using \\n. NEVER paraphrase or reconstruct a poem from memory; misquoting a poem is worse than linking out to it. When in doubt, leave the text field as an empty string and provide a url to a reputable source instead (poetryfoundation.org, poets.org, the poet's own page, the publisher). At least one of the two fields (text or url) must be non-empty.
 
 Return the result as JSON matching the schema.`;
 }

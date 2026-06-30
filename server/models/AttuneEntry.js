@@ -34,6 +34,19 @@ const poemSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// One book excerpt per reading: a mood-matched passage (affective
+// bibliotherapy) the reader can sit with or save to their Nook.
+const excerptSchema = new mongoose.Schema(
+  {
+    title: { type: String, default: '' },
+    author: { type: String, default: '' },
+    text: { type: String, default: '' },
+    why: { type: String, default: '' },
+    url: { type: String, default: '' },
+  },
+  { _id: false }
+);
+
 const attuneEntrySchema = new mongoose.Schema(
   {
     userId: {
@@ -62,6 +75,11 @@ const attuneEntrySchema = new mongoose.Schema(
     // a re-roll.
     songs: { type: [songSchema], default: [] },
     poems: { type: [poemSchema], default: [] },
+
+    // The mood-matched book excerpt for this reading. Defaults to an
+    // empty object so entries that pre-date the excerpt feature read
+    // back cleanly without a migration.
+    excerpt: { type: excerptSchema, default: () => ({}) },
 
     // Optional preferences the reader set for this reading. Both
     // default to the "no constraint" value when omitted, so older
@@ -100,7 +118,7 @@ const attuneEntrySchema = new mongoose.Schema(
 attuneEntrySchema.index({ userId: 1, createdAt: -1 });
 
 attuneEntrySchema.method('toClient', function () {
-  const { _id, userId, mood, moodSummary, register, songs, poems, preferences, createdAt } = this;
+  const { _id, userId, mood, moodSummary, register, songs, poems, excerpt, preferences, createdAt } = this;
   return {
     id: _id.toString(),
     userId: userId.toString(),
@@ -109,6 +127,9 @@ attuneEntrySchema.method('toClient', function () {
     register,
     songs: (songs || []).map((s) => ({ title: s.title, artist: s.artist, why: s.why })),
     poems: (poems || []).map((p) => ({ title: p.title, poet: p.poet, why: p.why, text: p.text, url: p.url })),
+    excerpt: excerpt
+      ? { title: excerpt.title || '', author: excerpt.author || '', text: excerpt.text || '', why: excerpt.why || '', url: excerpt.url || '' }
+      : null,
     preferences: {
       genre: preferences?.genre || 'any',
       vocals: preferences?.vocals || 'either',
