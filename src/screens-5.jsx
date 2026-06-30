@@ -557,10 +557,10 @@ function KindleScreen({ go }) {
           </button>
         </div>
         <Headline size="display" style={{ marginTop: 14 }}>
-          What's weighing<br/>on you, <span style={{ fontStyle: 'italic' }}>really?</span>
+          How are you,<br/><span style={{ fontStyle: 'italic' }}>really?</span>
         </Headline>
         <p className="body" style={{ margin: '18px 0 28px', maxWidth: 400 }}>
-          Tell me where you are. I'll sit with it, find someone who stood in the same dark and carried light, and we'll look for the small way through. Not around the feeling. Through it.
+          Tell me where you are, heavy or light. I'll sit with it, find a mirror that meets it, and we'll look for the meaning in it, to carry, or to savour.
         </p>
 
         <textarea
@@ -586,11 +586,11 @@ function KindleScreen({ go }) {
           <div style={{ marginTop: 22, padding: 16, background: 'var(--hh-isabel)', borderLeft: '2px solid var(--ember)' }}>
             {error.kind === 'unauthed' && (
               <p className="body" style={{ margin: 0 }}>
-                <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--ember)' }}>Sign in</span> to use Kindle.
+                <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--ember)' }}>Sign in</span> to use Carry.
               </p>
             )}
             {error.kind === 'unconfigured' && (
-              <p className="body" style={{ margin: 0 }}>Kindle needs an OpenAI key configured on the server.</p>
+              <p className="body" style={{ margin: 0 }}>Carry needs an OpenAI key configured on the server.</p>
             )}
             {error.kind === 'other' && (
               <p className="body" style={{ margin: 0 }}>{error.detail || 'Something went wrong. Try again.'}</p>
@@ -615,8 +615,8 @@ function KindleScreen({ go }) {
             </button>
           ))}
         </div>
-        <p className="body" style={{ margin: '28px 0 0', fontSize: 12.5, color: 'var(--paper-mute)', maxWidth: 460, lineHeight: 1.6 }}>
-          Kindle is built on logotherapy, Viktor Frankl's work on finding meaning in the hardest places. It is a companion, not a clinician. If you are in danger, please reach a real person now.
+        <p className="body" style={{ margin: '28px 0 0', fontSize: 12.5, color: 'var(--paper-mute)', maxWidth: 470, lineHeight: 1.6 }}>
+          This space is inspired by logotherapy, Viktor Frankl's work on finding meaning, and the most replicated work in psychology. Hearth applies it to support you, not to treat you. We are not clinicians and cannot promise results, and Hearth is not a substitute for professional care. If a feeling runs deep or will not lift, or if Hearth does not leave you lighter, please reach someone trained to help. If you are ever in danger, contact a crisis line now.
         </p>
       </section>
 

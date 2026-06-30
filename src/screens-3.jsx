@@ -1218,6 +1218,9 @@ function LandingScreen({ go }) {
             <li><span className="mono">Music and mood</span><span className="serif">Saarikallio · North &amp; Hargreaves</span></li>
             <li><span className="mono">Reading and wellbeing</span><span className="serif">Mar · Billington · Croom</span></li>
           </ul>
+          <p className="serif hearth-landing-feature-body" style={{ marginTop: 28, fontSize: 16, color: 'var(--paper-2)' }}>
+            Hearth applies this work to support you, not to treat you. We are not clinicians and cannot promise results, and Hearth is not a substitute for professional care. For anything deep or lasting, please reach someone trained to help.
+          </p>
         </div>
       </section>
 

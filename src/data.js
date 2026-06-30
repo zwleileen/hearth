@@ -316,6 +316,8 @@ export const HEARTH_DATA = {
     "I'm exhausted from carrying everyone, and no one is carrying me.",
     "Someone I love is gone and I don't know how to live in the space they left.",
     "I'm stuck. The life I imagined isn't happening and I don't know who I am without it.",
+    "I feel quietly content today, and I'd like it to count for something.",
+    "Something small went right, and I don't want to let it slip past.",
   ],
 
   // ─────────────────────────────────────────────────────────────

@@ -285,7 +285,7 @@ function App() {
             {value:'bookmarks',label:'Bookmarks'},
             {value:'attune',label:'Attune'},
             {value:'attune-history',label:'Attune · history'},
-            {value:'kindle',label:'Kindle'},
+            {value:'kindle',label:'Carry'},
             {value:'rituals',label:'Rituals'},
             {value:'ritual-builder',label:'Rituals · Build'},
             {value:'weekly-digest',label:'Weekly digest'},
