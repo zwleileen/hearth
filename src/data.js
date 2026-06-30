@@ -325,7 +325,7 @@ export const HEARTH_DATA = {
     {
       key: "breath",
       name: "Box breathing",
-      lineage: "Vagal tone · Navy SEAL & clinical use",
+      lineage: "Slow breathing · Zaccaro et al., 2018",
       duration: "4 minutes",
       pattern: "4 · 4 · 4 · 4",
       blurb: "Inhale 4, hold 4, exhale 4, hold 4. Equal-ratio breathing increases heart-rate variability and dampens the stress response within minutes."
@@ -357,7 +357,7 @@ export const HEARTH_DATA = {
     {
       key: "shutdown",
       name: "Shutdown ritual",
-      lineage: "Newport · Deep Work",
+      lineage: "Psychological detachment · Sonnentag & Fritz",
       duration: "6 minutes",
       pattern: "review · capture · close",
       blurb: "A consistent close-of-day routine reduces work-rumination, improves sleep onset, and protects the boundary between effort and rest."
