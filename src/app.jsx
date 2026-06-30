@@ -56,19 +56,43 @@ function App() {
   const [toast, setToast] = useState(null);
   const [user, setUser] = useState(null);
   const [authChecked, setAuthChecked] = useState(false);
+  // 'guest'      — no token, or the server actively rejected it (401).
+  // 'authed'     — token verified against the server this session.
+  // 'unverified' — we hold a token but couldn't reach the server to
+  //                confirm it (offline, timeout, 5xx, cold start). The
+  //                reader stays signed in; we retry quietly.
+  const [authStatus, setAuthStatus] = useState('guest');
 
+  // Verify the stored token against the server.
+  //
+  // The cardinal rule: a transient failure must NEVER delete the token
+  // or sign the reader out. Only a genuine 401 — the token is actually
+  // invalid or expired — clears the session. Everything else (offline,
+  // request timeout, 5xx, the backend cold-starting after idle) leaves
+  // the token in place and marks the session 'unverified' so the quiet
+  // retry below can recover it. This is what keeps people signed in
+  // across cold launches of the home-screen PWA: tapping the icon wakes
+  // a sleeping backend, the first /auth/me may fail, and we must not
+  // treat that as a logout.
   async function refreshUser() {
     if (!getToken()) {
       setUser(null);
+      setAuthStatus('guest');
       return null;
     }
     try {
       const { user } = await api.auth.me();
       setUser(user);
+      setAuthStatus('authed');
       return user;
-    } catch {
-      clearToken();
-      setUser(null);
+    } catch (err) {
+      if (err.status === 401) {
+        clearToken();
+        setUser(null);
+        setAuthStatus('guest');
+      } else {
+        setAuthStatus('unverified');
+      }
       return null;
     }
   }
@@ -76,18 +100,21 @@ function App() {
   function signOut() {
     clearToken();
     setUser(null);
+    setAuthStatus('guest');
     go('landing');
   }
 
-  // Restore session on mount. If no token, send the visitor to the
-  // landing page rather than dumping them on the (empty) home feed.
+  // Restore session on mount. Redirect to the landing page ONLY for a
+  // genuine guest — no token, or a token the server actively rejected.
+  // A token we simply couldn't verify yet keeps the reader on their app:
+  // never bounce a signed-in person to the marketing page because the
+  // backend was briefly unreachable.
   useEffect(() => {
     (async () => {
-      const token = getToken();
-      const restored = await refreshUser();
-      if (!token || !restored) {
-        // Only redirect to landing if the route looks like a default
-        // home destination. Respect direct nav to onboarding/auth.
+      await refreshUser();
+      if (!getToken()) {
+        // Only redirect if the route looks like a default home
+        // destination. Respect direct nav to onboarding/auth.
         if (route === 'home' || route === values.startingScreen) {
           setRoute('landing');
         }
@@ -96,6 +123,39 @@ function App() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Quietly recover an 'unverified' session. The classic case is the
+  // home-screen PWA opened after the backend has idled to sleep: the
+  // launch /auth/me fails, but the request itself wakes the server, so a
+  // retry seconds later succeeds. Re-verify on an escalating backoff
+  // (covering a slow cold start), and immediately whenever the network
+  // returns or the app regains focus. On success refreshUser flips the
+  // status to 'authed', this effect tears down, and retries stop.
+  useEffect(() => {
+    if (authStatus !== 'unverified') return undefined;
+    let cancelled = false;
+    const delays = [3000, 8000, 20000, 45000];
+    let i = 0;
+    let timer;
+    const attempt = async () => {
+      if (cancelled) return;
+      await refreshUser();
+      if (cancelled || i >= delays.length) return;
+      timer = setTimeout(attempt, delays[i++]);
+    };
+    timer = setTimeout(attempt, delays[i++]);
+    const kick = () => { if (!cancelled) { i = 0; clearTimeout(timer); attempt(); } };
+    const onVisible = () => { if (document.visibilityState === 'visible') kick(); };
+    window.addEventListener('online', kick);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      window.removeEventListener('online', kick);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authStatus]);
 
 
   function go(r, p = null) {
