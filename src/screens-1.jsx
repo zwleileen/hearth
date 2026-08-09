@@ -271,17 +271,6 @@ function HomeScreen({ go, user }) {
   // kept today, e.g. a Give answer).
   const past = log.filter((e) => e.id !== keptToday?.id).slice(0, 4);
 
-  // Once there is enough of the reader's own writing to draw from, one of
-  // their lines takes the masthead. Chosen by day-of-year so it holds
-  // steady through a day and turns over as the days do, and drawn from
-  // the wider log rather than only today, so returning to Home is a
-  // meeting with something you had forgotten you noticed.
-  const HERO_THRESHOLD = 5;
-  const heroPool = log.filter((e) => (e.text || '').trim().length >= 12);
-  const ownHero = (kept >= HERO_THRESHOLD && heroPool.length > 0)
-    ? heroPool[dayOfYearNum() % heroPool.length]
-    : null;
-
   // Your meaning narrative — the synthesis across everything you keep.
   // null = loading; { narrative, threads } once loaded.
   const [narr, setNarr] = useState1(null);
@@ -296,45 +285,29 @@ function HomeScreen({ go, user }) {
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       {/* ── The masthead ──
-          The daily quote used to hold this space permanently. On day one
-          that is right: a borrowed line is a threshold, a pause before
-          meaning, and a reader with nothing kept yet has nothing else to
-          put here.
+          The quote hero belongs to the canon, and only to the canon.
 
-          But this is an app about building your OWN meaning, and letting
-          someone else's sentence own the largest space on the home screen
-          forever quietly says the opposite. So the hero yields. Once a
-          reader has kept enough of their own lines, theirs takes the
-          display treatment and the quote steps down to a smaller line
-          beneath it. The thing you made outgrows the thing you were
-          given. See docs/DOCTRINE_AUDIT.md. */}
+          This briefly held the reader's own kept line instead, on the
+          reasoning that an app about building your own meaning should
+          not let someone else's sentence own its largest space forever.
+          The reasoning was fine and the execution was wrong: a private,
+          tender line about a friend, set in display Fraunces inside
+          curly quotes, reads as self-important rather than moving. It
+          also spends the quotation marks themselves. They only carry
+          weight while they mean "someone wrote this, in a book, and it
+          lasted".
+
+          So the hero stays Oliver, Rilke, Dickinson, Julian of Norwich.
+          The reader's own words live in "what you've been noticing"
+          below, dated and plainly set, which is the register they
+          actually want. See docs/DOCTRINE_AUDIT.md §7. */}
       <section className="hh-home-masthead" style={{ padding: '34px 22px 44px', textAlign: 'center' }}>
         <div className="hh-home-glow" aria-hidden="true"/>
         <AccumulatingLight count={kept}/>
         <p className="serif" style={{ margin: 0, fontSize: 15, lineHeight: 1.4, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)' }}>
           {greet}
         </p>
-        {ownHero ? (
-          <>
-            <p className="serif hh-quote-hero" style={{ margin: '30px auto 0', maxWidth: 600 }}>
-              &ldquo;{ownHero.text}&rdquo;
-            </p>
-            <p className="mono" style={{
-              margin: '28px 0 0', fontSize: 9.5, letterSpacing: '0.22em',
-              color: 'var(--paper-mute)', textTransform: 'uppercase',
-            }}>
-              Yours · {new Date(ownHero.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
-            </p>
-            {quote && (
-              <p className="serif" style={{
-                margin: '32px auto 0', maxWidth: 460, fontSize: 15, lineHeight: 1.5,
-                fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)',
-              }}>
-                &ldquo;{quote.text}&rdquo; {quote.author}
-              </p>
-            )}
-          </>
-        ) : quote ? (
+        {quote ? (
           <>
             <p className="serif hh-quote-hero" style={{ margin: '30px auto 0', maxWidth: 600 }}>
               &ldquo;{quote.text}&rdquo;

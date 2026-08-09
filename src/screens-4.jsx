@@ -1044,11 +1044,13 @@ function WeeklyDigestScreen({ go }) {
         <section style={{ padding: '36px 0 0' }}>
           <ColorBlock accent="green" bleed style={{ padding: '38px 28px' }}>
             <Kicker accent="ecru" style={{ color: 'var(--hh-ecru)' }}>From your own page</Kicker>
+            {/* Set plainly, not in curly quotes: quotation marks are for
+                quotations. See docs/DOCTRINE_AUDIT.md §7. */}
             <p className="serif" style={{
               margin: '14px 0 0', fontSize: 24, fontStyle: 'italic',
               fontWeight: 360, lineHeight: 1.32, color: 'var(--hh-lace)',
             }}>
-              &ldquo;{w.phrase}&rdquo;
+              {w.phrase}
             </p>
           </ColorBlock>
         </section>

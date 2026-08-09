@@ -238,6 +238,51 @@ half-built.
 
 ---
 
+## 7. A reversal: quotation marks belong to the canon
+
+Shipped, then reverted the same day, and recorded because the mistake is
+an easy one to make again.
+
+The home hero briefly yielded: once a reader had kept five lines, one of
+**their** lines took the masthead in display Fraunces, inside curly
+quotes, where Mary Oliver had been. The reasoning was sound — an app
+about building your own meaning should not let a borrowed sentence own
+its largest space forever.
+
+The execution was wrong, and wrong in a way that matters to the brand.
+A private, tender line ("Yong, for always being the open hearted,
+generous optimist. He is the light.") set as an epigraph does not read as
+moving. It reads as self-important. Personal writing and literature are
+different registers, and the display-quote treatment is a claim the
+sentence cannot support.
+
+It also spends something Hearth cannot afford to spend. Quotation marks
+carry weight only while they mean *someone wrote this, in a book, and it
+lasted*. Put them around everything and they mean nothing, and the whole
+restrained editorial register goes with them.
+
+**The rule, from here:** the quote hero, and the quotation-mark treatment
+anywhere, is for **actual quotations** — books, poems, philosophers,
+scripture, the mystics. The pool (49 entries: Oliver, Berry, Dillard,
+Robinson, Rilke, Dickinson, Eliot, Szymborska, Tranströmer, Baldwin,
+Hurston, Julian of Norwich, Augustine, Rumi, Hafiz) is exactly right and
+should stay that standard.
+
+The reader's own words are set **plainly**: dated, smaller, in "what
+you've been noticing", which is the register they actually want. On a
+shared card, `quoted` now defaults to false, so a personal line is set
+without marks and only a genuine quotation gets them.
+
+Small, muted, in-context echoes of what the reader wrote ("You wrote:
+…" in a Carry session, the mood line above a past Attune reading) are
+fine and stay. Those are reported speech, not epigraph.
+
+The underlying point still stands and is still unsolved: the reader's own
+meaning deserves a home more prominent than a list below the fold. The
+answer is a different form, not a bigger font.
+
+---
+
 ## 6. What is still open
 
 Ranked. Nothing below is blocked by anything above.

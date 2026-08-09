@@ -109,9 +109,16 @@ function drawMark(ctx, cx, cy, scale) {
 }
 
 // Render one card. `text` is the line; `attribution` is the small mono
-// label above it (e.g. the question it answered); `footer` overrides the
-// wordmark line at the bottom.
-export async function renderCard({ text, attribution = '', footer = 'Hearth · tend your why' }) {
+// label above it; `footer` overrides the wordmark line at the bottom.
+//
+// `quoted` is off by default and that is deliberate. Quotation marks are
+// only earned by an actual quotation: something written in a book or a
+// poem that outlasted its author. Wrapping a person's own private line
+// in curly quotes and setting it in display serif makes a tender thing
+// look self-important, and it spends the marks themselves, which only
+// carry weight while they still mean something. A reader's own words are
+// set plainly; only the canon gets quoted.
+export async function renderCard({ text, attribution = '', footer = 'Hearth · tend your why', quoted = false }) {
   await ensureFonts();
 
   const canvas = document.createElement('canvas');
@@ -135,7 +142,7 @@ export async function renderCard({ text, attribution = '', footer = 'Hearth · t
   const maxWidth = W - margin * 2;
 
   // The line itself: Fraunces italic, centred, sized to fit.
-  const { lines, size } = layoutText(ctx, `“${text}”`, {
+  const { lines, size } = layoutText(ctx, quoted ? `“${text}”` : text, {
     maxWidth,
     maxHeight: H * 0.46,
     font: (s) => `italic 300 ${s}px Fraunces, Georgia, serif`,
@@ -295,10 +302,10 @@ export async function shareLetter({ to, body, from, plain }) {
 // does something useful on every browser.
 //
 // Returns a short status string so the caller can say what happened.
-export async function shareCard({ text, attribution, footer, shareText }) {
+export async function shareCard({ text, attribution, footer, shareText, quoted = false }) {
   let blob = null;
   try {
-    blob = await renderCard({ text, attribution, footer });
+    blob = await renderCard({ text, attribution, footer, quoted });
   } catch {
     blob = null;
   }

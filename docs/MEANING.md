@@ -130,12 +130,14 @@ growing with everything ever kept, governed by one rule — it can only
 ever grow. No decay, no reset, no broken state. Loss aversion is the
 engine of a streak and the point here is the opposite feeling.
 
-**Also built:** the home hero yields. The daily quote earns the largest
-space on day one, when a reader has nothing of their own to put there.
-Once they have kept enough, *their* line takes the masthead and the
-borrowed one steps down beneath it. This is an app about building your
-own meaning; letting someone else's sentence own the home screen forever
-says the opposite.
+**Tried and reverted:** the home hero yielding to the reader's own kept
+line. A private line set in display serif inside curly quotes reads as
+self-important, not moving, and it spends the quotation marks, which only
+work while they mean "someone wrote this, in a book, and it lasted". The
+quote hero is for the canon. The reader's own words are set plainly,
+dated, below. The underlying problem is real and still open: their
+meaning wants a more prominent home, in a different form, not a bigger
+font. See `DOCTRINE_AUDIT.md` §7.
 
 ## 6. The growth engine *is* the methodology
 

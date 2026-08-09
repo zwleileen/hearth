@@ -505,6 +505,13 @@ Quiet, considered, a sentence can rest.
 
 ### 8.9 Anti-patterns (never do these)
 - **No em dashes** in any copy. Use commas, periods, or restructure.
+- **Quotation marks are for quotations.** The quote hero, and the
+  display-quote treatment anywhere, belongs to the canon: books, poems,
+  philosophers, scripture, the mystics. Never set a reader's own writing
+  in curly quotes as an epigraph; it reads as self-important and it
+  spends the marks, which only carry weight while they still mean
+  something. A reader's words are set plainly. (Small muted echoes of
+  what they just wrote, in context, are reported speech and are fine.)
 - **No side-stripe accent borders** (a thick coloured `border-left` on
   cards or callouts). Use full borders, background tints, or nothing.
 - **No gradient text, no glassmorphism, no drop-shadow-heavy "hero metric"
