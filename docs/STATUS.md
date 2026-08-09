@@ -1,11 +1,13 @@
 # Hearth — Project Status & Handoff
 
 > A living record of where Hearth is, so work can continue across
-> sessions. Last updated 2026-07-01 (HEAD: `f0fe34a`).
+> sessions. Last updated 2026-08-09.
 > Companion docs: `docs/MEANING.md` (design north star),
-> `docs/HEARTH_BRAND_BRIEF.md` (logotherapy + brand + design system, cited).
+> `docs/HEARTH_BRAND_BRIEF.md` (logotherapy + brand + design system, cited),
+> `docs/DOCTRINE_AUDIT.md` (the 2026-08 audit: what held, what was wrong,
+> what was retracted, what shipped).
 
-> **Most recent work:** see [Session log — 2026-07-01](#session-log--2026-07-01)
+> **Most recent work:** see [Session log — 2026-08-09](#session-log--2026-08-09)
 > at the bottom for what changed this session and where we left off.
 
 ---
@@ -174,3 +176,85 @@ all on `main`; Vercel + Render auto-deploy from `main`.
 - Optional cleanup: delete the orphaned bibliotherapy weekly-digest stack
   (`WeeklyDigestScreen`, `/api/digest/bibliotherapy`, `WeeklyBibliotherapy`,
   `BIBLIOTHERAPY_SCHEMA`) now that excerpts live in Attune.
+
+
+---
+
+## Session log — 2026-08-09
+
+A full audit of the product against its own doctrine, then the
+refinements shipped in one pass. Reasoning, including two retracted
+proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
+
+**New surfaces**
+
+- **A letter** (`src/letter.jsx`). Give's centre. Who it is for, what
+  they did, what it gave you; typeset on Old Lace and handed to the
+  reader's own share sheet. Recorded to the meaning log only once it is
+  actually sent. This is the growth loop and the method in one act.
+- **"Stay a moment"** (`src/savour.jsx`). Name what it reached, three
+  breaths with a longer out-breath, where it sits, then a beat where
+  nothing is asked. Wired into Attune, Three Good Things, the awe walk,
+  and a Carry turning. Skippable everywhere.
+- **Shareable cards** (`src/share.jsx`). Canvas-drawn on the reader's own
+  device: a kept line, a keepsake, a letter. `navigator.share` first,
+  then save, then copy, so it always does something on every browser.
+- **The care block** (`src/care.jsx`), shared by every free-text surface.
+
+**Backend**
+
+- `server/lib/care.js` — one detector, two tiers (stated intent and the
+  oblique phrasing distress is actually written in), plus region-aware
+  crisis lines resolved from an `X-Hearth-TZ` header the client sends on
+  every request. `findahelpline.com` is always appended. Applied in
+  `routes/kindle.js`, `routes/journal.js`, `routes/attune.js`.
+- `POST /api/kindle/:id/reseen` — the reader says the seeing missed them
+  and says how; only the naming and the seeing regenerate, the rest of
+  the session stands. The prompt forbids apologising or explaining.
+- **Continuity** — `buildKnowingBlock` passes the meaning narrative plus
+  the reader's own recent words into a session. Never the mirrors or
+  turnings Hearth itself offered them, and never to be performed back.
+- **`SESSION_VOICE`** (`lib/ai.js`) now governs Carry instead of
+  `HEARTH_VOICE`, which is mostly a content-curation brief. Plainness for
+  everything said to the reader; the literary register kept for the
+  mirror. Temperature 0.85 → 0.7 for a session, 0.6 for the close and the
+  re-seeing.
+- `PATCH /api/narrative` — affirm a row or replace it in your own words.
+  `own` and `affirmed` are excluded from the re-weave `$set`, so a
+  synthesis can never overwrite what a person said about their own life.
+- `MeaningLog.forWhom`; `GET /api/meaning` also returns `total`.
+
+**Home**
+
+- The accumulating light: grows with everything ever kept, can only ever
+  grow.
+- The hero yields: after five kept lines, the reader's own line takes the
+  masthead and the quote steps down beneath it.
+- The daily question is now the same for everyone.
+
+**Corrections**
+
+- Evidence copy no longer over-claims (Three Good Things, the awe walk,
+  the breath).
+- Three Good Things restored its attribution field.
+- Real timers replaced hardcoded `03:42` and `Cycle 02 of 06`.
+- Hover-only Remove buttons (invisible on touch) are always present, and
+  take two taps.
+- Banned styling removed: side-stripe borders, avatar gradients,
+  glassmorphism, 24px radii, the retired sprig code.
+- The reminders screen was deleted. It was a mock with no scheduler
+  behind it, and onboarding's promise of "one quiet nudge" was removed
+  with it. Both come back when push is real.
+
+**Verified before shipping:** full production build; server boots against
+Atlas; care detection unit-checked over 19 phrasings including
+false-positive guards; region routing checked for GB / US / none; a live
+Carry session, a live re-seeing, and a second session confirming
+continuity does not leak back into the copy; narrative authorship
+persisted and surviving a re-read.
+
+**Open / next** (fuller list in `DOCTRINE_AUDIT.md` §6): notifications
+done Hearth's way (outward-turning by default), password reset, draft
+autosave and an offline shell, the seasonal question, a finite "season"
+covering the meaning already made, account deletion and export, play
+links in Attune, and real URLs.

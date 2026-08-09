@@ -9,13 +9,26 @@
 // must pose an answerable question) occasionally come back thin under
 // strict JSON mode. One retry with the gap named resolves it.
 
-import { MODEL, HEARTH_VOICE, KINDLE_SESSION_SCHEMA, KINDLE_TURNING_SCHEMA } from './ai.js';
-import { buildKindleSessionPrompt, buildKindleTurningPrompt } from './kindlePrompt.js';
+import { MODEL, SESSION_VOICE, KINDLE_SESSION_SCHEMA, KINDLE_TURNING_SCHEMA, KINDLE_RESEEING_SCHEMA } from './ai.js';
+import { buildKindleSessionPrompt, buildKindleTurningPrompt, buildKindleReseeingPrompt } from './kindlePrompt.js';
 
-async function callModel(client, messages, schema, name) {
+// Temperature. The old single value of 0.85 was a creativity setting
+// applied to the whole session including the seeing, which is the one
+// movement where being inventive is a defect: if the reflection of what
+// someone just said is embellished, they do not feel met, and nothing
+// after that lands. Variety is wanted in the mirror, not in the mirror's
+// accuracy. Since one call produces both, we sit at 0.7: still varied
+// enough that six sessions do not converge on the same figure (the
+// companion-diversity block does that work), tighter on the reflection.
+const SESSION_TEMPERATURE = 0.7;
+// The re-seeing and the closing turning both work directly from the
+// reader's own words, so they want accuracy over invention.
+const CLOSE_TEMPERATURE = 0.6;
+
+async function callModel(client, messages, schema, name, temperature = SESSION_TEMPERATURE) {
   const completion = await client.chat.completions.create({
     model: MODEL,
-    temperature: 0.85,
+    temperature,
     messages,
     response_format: {
       type: 'json_schema',
@@ -39,10 +52,10 @@ function sessionGaps(data) {
 }
 
 // Generate the opening session. Returns { data, retried }.
-export async function generateKindleSession(client, { feeling, diversity } = {}) {
-  const userPrompt = buildKindleSessionPrompt({ feeling, diversity });
+export async function generateKindleSession(client, { feeling, diversity, knowing } = {}) {
+  const userPrompt = buildKindleSessionPrompt({ feeling, diversity, knowing });
   const baseMessages = [
-    { role: 'system', content: HEARTH_VOICE },
+    { role: 'system', content: SESSION_VOICE },
     { role: 'user', content: userPrompt },
   ];
 
@@ -74,52 +87,36 @@ export async function generateKindleTurning(client, { feeling, session, reply } 
   const data = await callModel(
     client,
     [
-      { role: 'system', content: HEARTH_VOICE },
+      { role: 'system', content: SESSION_VOICE },
       { role: 'user', content: userPrompt },
     ],
     KINDLE_TURNING_SCHEMA,
     'kindle_turning',
+    CLOSE_TEMPERATURE,
+  );
+  return { data };
+}
+
+// Re-see the reader after they say the opening seeing missed them.
+// Returns only the corrected naming and seeing; the rest of the session
+// stands. Kept deliberately cheap: one call, one small schema.
+export async function generateKindleReseeing(client, { feeling, session, correction } = {}) {
+  const userPrompt = buildKindleReseeingPrompt({ feeling, session, correction });
+  const data = await callModel(
+    client,
+    [
+      { role: 'system', content: SESSION_VOICE },
+      { role: 'user', content: userPrompt },
+    ],
+    KINDLE_RESEEING_SCHEMA,
+    'kindle_reseeing',
+    CLOSE_TEMPERATURE,
   );
   return { data };
 }
 
 // ── Acute-distress backstop ───────────────────────────────────────────
-// A cheap keyword scan that runs alongside the model's careFlag. We OR
-// the two so the resources block shows even if the model misses the
-// signal. Deliberately err toward showing help; a false positive costs
-// the reader nothing but a gentle line, a false negative is the failure
-// that matters. Word-boundary matched to avoid catching substrings
-// ("therapist", "assist") that contain these letters.
-const DISTRESS_PATTERNS = [
-  /\bkill myself\b/i,
-  /\bkilling myself\b/i,
-  /\bend (?:it|my life|things)\b/i,
-  /\b(?:want|going|plan) to die\b/i,
-  /\bwant to be dead\b/i,
-  /\bsuicid(?:e|al)\b/i,
-  /\bself[-\s]?harm\b/i,
-  /\bhurt(?:ing)? myself\b/i,
-  /\bcut(?:ting)? myself\b/i,
-  /\bno (?:reason|point) (?:to|in) (?:living|going on|being here)\b/i,
-  /\b(?:can'?t|cannot) go on\b/i,
-  /\bbetter off (?:dead|without me)\b/i,
-  /\bdon'?t want to (?:be here|live|wake up)\b/i,
-];
-
-export function detectDistress(text = '') {
-  const t = String(text || '');
-  return DISTRESS_PATTERNS.some((re) => re.test(t));
-}
-
-// Real, stable Singapore crisis lines, with an international fallback.
-// Composed server-side and never model-generated so a hallucinated
-// hotline number can never reach a reader at their lowest.
-export const CARE_RESOURCES = {
-  note: 'What you are carrying sounds heavier than a reading can hold on its own. You do not have to hold it alone, and you do not have to wait until it gets worse to reach someone.',
-  lines: [
-    { name: 'Samaritans of Singapore (SOS)', detail: '24-hour hotline', contact: '1767' },
-    { name: 'SOS CareText', detail: '24-hour WhatsApp', contact: '9151 1767' },
-    { name: 'IMH Mental Health Helpline', detail: '24-hour', contact: '6389 2222' },
-    { name: 'If you are outside Singapore', detail: 'find a local line', contact: 'findahelpline.com' },
-  ],
-};
+// Moved to server/lib/care.js so every free-text surface (Carry, the
+// journal, Attune) shares one detector and one set of real, region-aware
+// crisis lines. Re-exported here so existing importers keep working.
+export { detectDistress, resourcesFor, careBlockFor, regionFromTimeZone, CARE_RESOURCES } from './care.js';

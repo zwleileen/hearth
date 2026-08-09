@@ -9,6 +9,10 @@
 //            the dated list).
 //   prompt — the invitation they answered, kept for context.
 //   avenue — give | receive | carry, the avenue that day leaned toward.
+//   forWhom — who the giving was for, when there is a someone. Meaning
+//            through what you offer is strongest when it is aimed at a
+//            named person rather than at kindness in general, so Give
+//            asks for the name and keeps it here. Empty everywhere else.
 
 import mongoose from 'mongoose';
 
@@ -18,14 +22,15 @@ const meaningLogSchema = new mongoose.Schema({
   prompt: { type: String, default: '' },
   text: { type: String, required: true },
   avenue: { type: String, default: '' },
+  forWhom: { type: String, default: '' },
 }, { timestamps: true });
 
 // Primary read pattern: this reader's recent lines, newest first.
 meaningLogSchema.index({ userId: 1, createdAt: -1 });
 
 meaningLogSchema.method('toClient', function () {
-  const { _id, date, prompt, text, avenue, createdAt } = this;
-  return { id: _id.toString(), date, prompt, text, avenue, createdAt };
+  const { _id, date, prompt, text, avenue, forWhom, createdAt } = this;
+  return { id: _id.toString(), date, prompt, text, avenue, forWhom: forWhom || '', createdAt };
 });
 
 export const MeaningLog = mongoose.model('MeaningLog', meaningLogSchema);

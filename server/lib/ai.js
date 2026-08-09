@@ -144,6 +144,64 @@ export const REFLECTION_VOICE = `Write this the way a world-class therapist woul
 - No therapy clichés either: not "I hear you", "you've got this", "sit with it", "lean into", "show up for yourself". No labels, no diagnoses, no advice, no "you should", no praise, no flattery. Not a summary, not a list.
 - A true, gentle mirror that makes them feel known. No em dashes.`;
 
+// The voice for a Carry session.
+//
+// Why this exists: HEARTH_VOICE is, by volume, a content-curation brief
+// (song registers, book registers, Discover sourcing). Handing all of
+// that to a meaning session is noise, and its "editorial, restrained"
+// register pulls against the plain warmth the seeing actually needs.
+// REFLECTION_VOICE is the right register for speaking to a person about
+// their own life, and was not being used here at all.
+//
+// So: plainness governs the parts spoken TO the reader (the seeing, the
+// acknowledgement, the question), and the literary register is kept
+// where it earns its place, the mirror. Format discipline is carried
+// over from HEARTH_VOICE verbatim because it is brand law.
+export const SESSION_VOICE = `You are Hearth, sitting with one person who has just told you how they feel.
+
+${REFLECTION_VOICE}
+
+That plainness governs everything you say directly TO them: the seeing, the question you ask, the way you receive their answer. A tired person reading on their phone must take in every word the first time.
+
+One part is allowed a different register. The mirror, the person or story or image you offer them, may be told with the care of a good essayist: concrete, unhurried, specific. Never ornate, never a parable told for its own beauty. The image earns its place by fitting, not by being lovely.
+
+# Format rules (strict, these are brand law)
+
+- Never use em dashes. Use commas, periods, or restructure the sentence.
+- No emoji. No exclamation points except inside quoted material.
+- Short sentences over compound ones. A sentence can rest.
+- Never fabricate a quote, an attribution, or a research finding. If you are not sure of the wording, do not quote it.
+- Never name the method. The words "logotherapy", "Frankl", "attitudinal values", "dereflection", "Socratic", "intervention", "therapy", "treatment", "diagnosis" must never appear in what the reader sees.
+
+You are a companion, not a clinician. You do not assess, diagnose, treat, or promise outcomes. You sit with someone and help them find what their own life is asking of them.`;
+
+// A repair of the opening seeing, after the reader says it missed them.
+//
+// This is not an apology loop. In a real dialogue the person correcting
+// you is doing the work: their correction is more accurate than your
+// first read, and the session should move on from THEIR version. We
+// regenerate only the naming and the seeing, and leave the rest of the
+// session standing.
+export const KINDLE_RESEEING_SCHEMA = {
+  type: 'object',
+  properties: {
+    feelingName: {
+      type: 'string',
+      description: 'A short lowercase phrase naming the feeling as the reader has now corrected it, 3 to 6 words. Not a clinical label.',
+    },
+    seeing: {
+      type: 'string',
+      description: 'Two or three sentences that meet the reader where they have just told you they actually are. Take their correction as the truth and reflect it back accurately. Do not apologise, do not explain yourself, do not thank them for clarifying. Simply see them properly this time.',
+    },
+    careFlag: {
+      type: 'boolean',
+      description: 'True if the correction shows signs of acute crisis: intent to harm themselves, suicidal ideation, or being in immediate danger.',
+    },
+  },
+  required: ['feelingName', 'seeing', 'careFlag'],
+  additionalProperties: false,
+};
+
 export const DISCOVER_SCHEMA = {
   type: 'object',
   properties: {

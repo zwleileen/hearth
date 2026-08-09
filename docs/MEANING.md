@@ -2,6 +2,8 @@
 
 > Status: strategy / design reference. This is the north star we build
 > against, not a record of what is shipped. Drafted 2026-06.
+> Audited and amended 2026-08-09; §6 is now substantially built. The
+> reasoning, including what was retracted, is in `DOCTRINE_AUDIT.md`.
 
 Hearth is being re-centred on one idea: **a daily home for your sense of
 meaning**, grounded in Viktor Frankl's logotherapy, applied so naturally
@@ -66,10 +68,13 @@ Nothing already built is wasted; each surface is re-pointed.
   through the same dark) + the turning. The heart of the app. Keep it.
 - **Attune → "Receive, through sound."** Mood → songs / a book passage /
   a poem (affective bibliotherapy via the iso-principle) is already
-  experiential-values meaning. Add one move: after
-  listening, a one-tap *"what did this reach in you?"* — turning passive
-  consumption into **savoring** (Bryant), how experiential meaning
-  consolidates.
+  experiential-values meaning. **Built (2026-08):** "Stay a moment" now
+  follows the listening, and it is more than the one tap this called for.
+  Name what it reached, three slow breaths with a longer out-breath,
+  where it sits in the body, then a beat where nothing is asked. Bryant
+  and Veroff are the ground; Hanson supplies the encoding. Frankl says
+  where meaning is found and is silent on how a found moment is kept;
+  this is the missing half, and it is never named as a technique.
 - **Reading room (Discover) → "Receive, from the world."** Re-aim
   curation from "thoughtful culture" to *meaning-rich* pieces: people
   living with courage and contribution, acts of repair, awe, beauty.
@@ -110,10 +115,27 @@ A one-line answer captures into a private **Meaning Log**, which over
 time becomes a beautiful, visible record of a life being noticed — the
 retention surface and the emotional payoff.
 
+The question is **the same for everyone, every day**. This was originally
+built per-user and that was a mistake: a question everyone is asked today
+is an event, one generated privately for you is a notification. Frankl's
+consolation is that nobody is alone in the dark, and a shared question is
+the cheapest way to mean it.
+
 **No aggressive streaks.** Guilt-based streaks contradict the philosophy
-and the voice. Use a gentle continuity image (the existing flower /
-garden / dawn motif): meaning *accumulates* like light; it is not *lost*
-when a day is missed.
+and the voice. Use a gentle continuity image: meaning *accumulates* like
+light; it is not *lost* when a day is missed.
+
+**Built (2026-08):** the accumulating light behind the home masthead,
+growing with everything ever kept, governed by one rule — it can only
+ever grow. No decay, no reset, no broken state. Loss aversion is the
+engine of a streak and the point here is the opposite feeling.
+
+**Also built:** the home hero yields. The daily quote earns the largest
+space on day one, when a reader has nothing of their own to put there.
+Once they have kept enough, *their* line takes the masthead and the
+borrowed one steps down beneath it. This is an app about building your
+own meaning; letting someone else's sentence own the home screen forever
+says the opposite.
 
 ## 6. The growth engine *is* the methodology
 
@@ -121,16 +143,21 @@ Logotherapy's core mechanism is **self-transcendence**: meaning comes
 from reaching beyond the self, usually toward another person. So the
 viral loop is not a growth hack bolted on — it is the therapy.
 
-- **Gift a turning / gift a companion.** When a friend is struggling,
-  send them a Kindle companion or a turning. Helping another is itself a
-  creative-value meaning-act, so sharing makes the *sender* feel meaning
-  too. A rare growth loop that is ethically clean.
-- **Shareable artifacts as the organic engine.** People share beautiful,
-  meaningful objects, not "I use an app." Make every output a gorgeous,
-  Aesop-grade shareable card: the companion card, the typeset turning,
-  the meaning-of-the-moment, the weekly Meaning Mirror. The restrained
-  editorial design most wellness apps lack is exactly what gets
-  screenshotted.
+- **A letter. Built (2026-08), and it is the centre of Give.** The reader
+  writes what someone did and what it gave them; Hearth typesets it and
+  it is actually sent. This is the loop and the method in one act: the
+  sender benefits from the giving, and the person receiving it gets the
+  most considered thing anyone has sent them this year. No referral
+  scheme, no incentive, nothing to feel grubby about.
+- **Shareable artifacts. Built (2026-08).** The atom is the kept **line**,
+  not the journal entry: an entry is confessional and unshareable, one
+  noticed line is a haiku. Cards are drawn on the reader's own device and
+  handed to their own share sheet, so nothing about a person's inner life
+  leaves Hearth to make this work. The restrained editorial design most
+  wellness apps lack is exactly what gets screenshotted.
+- **Gift a turning / gift a companion.** Still open. The keepsake from a
+  turning is shareable as a card; sending a whole companion to a named
+  friend is the next step.
 - **Optional, later: a quiet wall of why.** Anonymised turnings /
   companions from others facing the same thing — solidarity, "you are
   not alone in this dark." High moderation cost; phase in only with
@@ -155,9 +182,17 @@ Frankl-aligned, research-grounded, retentive.
 
 ## 9. Safety (non-negotiable)
 
-The Kindle care backstop becomes app-wide: model careFlag + keyword
-backstop + real, server-composed crisis lines on every free-text
-surface. Everywhere, be explicit: *a companion, not a clinician.*
+**Built (2026-08).** The care backstop is app-wide: the model's careFlag
+OR a server-side scan, on every free-text surface, with real
+server-composed crisis lines chosen for the reader's own region.
+Detection catches oblique phrasing (burden, hopelessness, valediction),
+not only stated intent, because that is how distress is actually written.
+
+And a hard limit, which was tested and held: Hearth stops there. It does
+not administer safety plans or clinical screeners, however
+well-evidenced those are elsewhere. Doing so would make Hearth a crisis
+product and import a duty of care it cannot staff. Everywhere, be
+explicit: *a companion, not a clinician.* See `DOCTRINE_AUDIT.md` §4.
 
 ## 10. Voice & visual
 
@@ -168,6 +203,11 @@ darkness** (the hearth fire, dawn) — Frankl's own metaphor for the
 defiant power of the human spirit.
 
 ## 11. Roadmap on the current codebase
+
+> Items 2, 3, 5 and most of 6 shipped 2026-08-09. What remains open, in
+> priority order, is in `DOCTRINE_AUDIT.md` §6: notifications, password
+> reset, draft autosave, the seasonal question, a finite "season", and
+> real URLs.
 
 1. **Reposition + IA.** Three avenues (Give / Receive / Carry);
    rewrite landing + onboarding into the Socratic Meaning Profile.

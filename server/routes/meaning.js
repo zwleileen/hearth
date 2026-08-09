@@ -22,7 +22,7 @@ function todayISO() {
 }
 
 meaning.post('/', async (req, res) => {
-  const { text, prompt, avenue, date } = req.body || {};
+  const { text, prompt, avenue, date, forWhom } = req.body || {};
   if (!text || typeof text !== 'string' || !text.trim()) {
     return res.status(400).json({ error: 'text is required' });
   }
@@ -37,6 +37,7 @@ meaning.post('/', async (req, res) => {
       prompt: (prompt || '').slice(0, 500),
       text: text.trim().slice(0, TEXT_MAX),
       avenue: (avenue || '').slice(0, 20),
+      forWhom: (forWhom || '').trim().slice(0, 80),
     });
     res.json({ entry: row.toClient() });
   } catch (err) {
@@ -48,14 +49,20 @@ meaning.post('/', async (req, res) => {
 meaning.get('/', async (req, res) => {
   const limit = Math.min(Math.max(parseInt(req.query.limit) || LIST_DEFAULT, 1), LIST_MAX);
   try {
-    const rows = await MeaningLog.find({ userId: req.userId })
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .lean();
+    // `total` is everything this reader has ever kept, not just the page.
+    // Home's accumulating light reads it: the light must reflect a whole
+    // history, and it must only ever be able to grow.
+    const [rows, total] = await Promise.all([
+      MeaningLog.find({ userId: req.userId })
+        .sort({ createdAt: -1 })
+        .limit(limit)
+        .lean(),
+      MeaningLog.countDocuments({ userId: req.userId }),
+    ]);
     const entries = rows.map((r) => ({
-      id: r._id.toString(), date: r.date, prompt: r.prompt, text: r.text, avenue: r.avenue, createdAt: r.createdAt,
+      id: r._id.toString(), date: r.date, prompt: r.prompt, text: r.text, avenue: r.avenue, forWhom: r.forWhom || '', createdAt: r.createdAt,
     }));
-    res.json({ entries });
+    res.json({ entries, total });
   } catch (err) {
     console.error('[meaning] list failed:', err);
     res.status(500).json({ error: 'Failed to load your meaning log' });

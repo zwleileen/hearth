@@ -121,6 +121,12 @@ meaning.
 avenues (Give / Receive / Carry). The reader answers in a line and keeps
 it. Kept lines accumulate into a Meaning Log.
 
+The daily question is **the same for everyone**. It is deliberately not
+personalised: a question everyone is asked on the same day is an event,
+while one generated privately for you is a notification. Nobody is alone
+in the dark, and the cheapest way to mean it is for the question to be
+shared.
+
 **Why.** Logotherapy holds that meaning is **discovered moment to moment**
 and is **unique to the person and the situation** (Frankl, 1969). The act
 of noticing and keeping one true line per day is meaning-detection made
@@ -134,12 +140,25 @@ short menu of ways to give (an act of kindness, a gratitude letter,
 sharing what you know, giving your attention). Each is kept to the
 Meaning Log.
 
+Give asks **who it is for**. Giving is at its strongest when it is aimed
+at a named person rather than at kindness in general, and Give had no way
+of asking.
+
+The centre of Give is **a letter**: the reader writes what someone did
+and what it gave them, Hearth typesets it, and it is actually sent. The
+evidence for the gratitude letter is strongest when the letter is
+*delivered* rather than only written, and until this existed Give could
+only capture an intention, which is the one part that does nothing for
+anybody.
+
 **Why.** This is the avenue of **creative values** and the engine of
 **self-transcendence**: meaning grows by reaching beyond oneself toward a
-task or another person (Frankl, 1966; 1969). It is reinforced by the
-strongest findings in positive psychology that giving lifts the giver:
-acts of kindness (Lyubomirsky, Sheldon & Schkade, 2005), the gratitude
-visit and letter (Seligman et al., 2005; Emmons & McCullough, 2003).
+task or another person (Frankl, 1966; 1969). It is reinforced by findings
+in positive psychology that giving lifts the giver: acts of kindness
+(Lyubomirsky, Sheldon & Schkade, 2005), the gratitude visit and letter
+(Seligman et al., 2005; Emmons & McCullough, 2003). These effects are
+real and modest rather than transformative, and the wording throughout
+Hearth should say so.
 
 ### 5.4 Receive (Attune + the Reading Room)
 **What it is.** *Attune*: the reader describes how they feel, and Hearth
@@ -158,8 +177,17 @@ disciplines shape it:
   2015), and music regulates mood in everyday life (Saarikallio &
   Erkkilä, 2007; North & Hargreaves, 2008). Reading fiction and poetry
   supports empathy and wellbeing (Mar et al., 2009; Billington, 2015;
-  Croom, 2015). Savoring deepens experiential meaning (Bryant & Veroff,
-  2007).
+  Croom, 2015).
+- **Savouring, built rather than cited.** Bryant and Veroff (2007) are
+  the ground; Hanson (2013; 2018) is the clearest practical account of
+  the *encoding*: a good moment is far more likely to be kept when
+  attention rests on it a little longer, when it is felt in the body, and
+  when the person lets it land instead of moving straight on. Frankl says
+  where meaning is found; this says how a found moment is kept. It ships
+  as **"Stay a moment"**: name what it reached, three slow breaths with a
+  longer out-breath, where it sits in the body, then a beat where nothing
+  is asked. Never named as a technique, skippable at every step, and the
+  kept line joins the meaning log like everything else.
 
 ### 5.5 Carry (the meaning session + the companion)
 **What it is.** When a feeling is heavy, the reader is met in a guided
@@ -200,7 +228,12 @@ provisional, time-stamped, and re-woven as the reader adds to it.
 - **Frankl's caution against typology**: meaning is unique to the person
   and discovered, never assigned by a category (Frankl, 1969). Hearth's
   narrative is therefore always "yours to recognise and revise, never a
-  verdict," and never a personality type.
+  verdict," and never a personality type. **This is enforced, not only
+  stated**: every line of the glance can be affirmed or replaced in the
+  reader's own words, their wording wins on render, and a re-weave can
+  never overwrite it. An app that prints three declarative sentences
+  about a person's life with no way to answer back is telling them who
+  they are, which is the one thing this brief exists to prevent.
 - **Measuring the presence of meaning**: the very tradition of measuring
   meaning began in logotherapy with the Purpose in Life Test (Crumbaugh &
   Maholick, 1964) and continues in the Meaning in Life Questionnaire's
@@ -227,11 +260,24 @@ experiential-values avenue made into a keepsake; a record the meaning
 narrative reads from.
 
 ### 5.9 Safety
-**What it is.** When acute distress is detected, Hearth surfaces real
-crisis resources alongside the session.
+**What it is.** When acute distress is detected on **any** free-text
+surface (Carry, the journal, Attune), Hearth surfaces real crisis
+resources alongside what the reader came for. Detection is a server-side
+scan OR'd with the model's own read, erring toward showing help; the
+lines are composed server-side and never model-generated, and they are
+chosen for the reader's region from their own time zone so they can
+actually be dialled.
 
 **Why.** Logotherapy is meaning-centred care, not crisis intervention.
 Hearth is explicit everywhere that it is *a companion, not a clinician.*
+
+**Scope, deliberately narrow.** This block does not assess, score,
+triage, or plan. It notices that someone may be carrying more than a
+reading can hold, says one true thing, and gives a real number. Hearth
+does **not** administer safety plans or clinical screeners: doing so
+would make it a crisis product, import a duty of care it cannot staff,
+and put a clinical artifact inside a home for meaning. See
+`docs/DOCTRINE_AUDIT.md` §4.
 
 ---
 
@@ -251,7 +297,25 @@ Hearth is explicit everywhere that it is *a companion, not a clinician.*
 4. **Evidence, not novelty.** Every prompt and recommendation is chosen
    for replication, not invention.
 5. **Restraint.** Quiet, literary, warm without saccharine. No therapy
-   speak, no hype, no gamification, no guilt.
+   speak, no hype, no gamification, no guilt. Restraint forbids ten
+   moments of magic, not one: the sanctioned one is light that
+   accumulates (§8.9).
+6. **Invisible method, visible language.** The method stays hidden; the
+   *words* do not. Give, Receive and Carry are meant to be said out loud
+   ("I'm having a Carry day"). People only spread what they can name, so
+   the frame is the thing that travels while Frankl stays invisible.
+7. **Single-player by default, two-player by design.** Give is where
+   another person enters. A reader who sends something to someone else is
+   not doing marketing for Hearth, they are doing the thing the whole app
+   is about, which is why this is the only growth loop Hearth will ever
+   need and the only one that is ethically clean.
+
+A note on §7 of this brief (never position by contrast): that rule
+governs sentences, and it stands. The *product* may still make the
+argument. Do not write "unlike a feed"; show a screen with one line on it
+and let the contrast land in the body.
+
+Rationale, and the full audit these came from: `docs/DOCTRINE_AUDIT.md`.
 
 ---
 
@@ -387,7 +451,9 @@ Quiet, considered, a sentence can rest.
 - **The hearth glow** is the one permitted gradient: a single, very soft
   radial warm light (Ecru at low opacity, fading to nothing) behind the
   home masthead, the "constant light" made visible. It is atmosphere, not
-  a blob, and it is the only place a gradient appears.
+  a blob. It appears in exactly three places and nowhere else: behind the
+  home masthead, as the accumulating light within it, and on a shared
+  card. Everything else is flat.
 - **White/lace bookends**: screens open and close on paper, with colour
   used as punctuation in between, a rhythm, not a wash.
 
@@ -445,7 +511,11 @@ Quiet, considered, a sentence can rest.
   cards, no identical icon-card grids.**
 - **No gamification, no streaks-as-pressure, no badges, no emoji, no
   exclamation hype, no therapy-speak.** Continuity is shown as light that
-  accumulates, never as guilt.
+  accumulates, never as guilt. This is now built (the ember behind the
+  home masthead) and it is governed by one rule: **it can only ever
+  grow.** No decay, no reset, no broken state. Loss aversion is the
+  engine of a streak, and the feeling wanted here is the opposite: the
+  light you have tended is simply yours now.
 
 ### 8.10 Accessibility and mobile
 - Tinted neutrals and deep accent variants keep text legible on every
@@ -559,6 +629,23 @@ and you are welcome here.**
   research, The Reader / University of Liverpool.)
 - Croom, A. M. (2015). "The practice of poetry and the psychology of
   well-being." *Journal of Poetry Therapy, 28*(1), 21–41.
+- Hanson, R. (2013). *Hardwiring Happiness.* New York: Harmony. (The
+  practical account of taking in a good experience: duration, embodiment,
+  and letting it land.)
+- Hanson, R. (2018). *Resilient: How to Grow an Unshakable Core of Calm,
+  Strength, and Happiness.* New York: Harmony.
+- Quoidbach, J., Berry, E. V., Hansenne, M., & Mikolajczak, M. (2010).
+  "Positive emotion regulation and well-being: Comparing the impact of
+  eight savoring and dampening strategies." *Personality and Individual
+  Differences, 49*(5), 368–373.
+- Balban, M. Y., et al. (2023). "Brief structured respiration practices
+  enhance mood and reduce physiological arousal." *Cell Reports Medicine,
+  4*(1). (Exhale-extended breathing; one good trial, consistent with a
+  broader slow-breathing literature.)
+- White, C. A., Uttl, B., & Holder, M. D. (2019). "Meta-analyses of
+  positive psychology interventions: The effects are much smaller than
+  previously reported." *PLOS ONE, 14*(5). (Why the intervention copy in
+  Hearth is deliberately modest.)
 - Keltner, D., & Haidt, J. (2003). "Approaching awe, a moral, spiritual,
   and aesthetic emotion." *Cognition and Emotion, 17*(2), 297–314.
 - Sturm, V. E., et al. (2020). "Big smile, small self: Awe walks promote

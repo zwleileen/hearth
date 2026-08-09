@@ -69,8 +69,20 @@ export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+// The reader's own time zone, sent on every request. The server uses it
+// for one thing only: choosing crisis lines that can actually be dialled
+// where they are. Previously the list was Singapore-only, so a reader
+// anywhere else was handed numbers they could not call at the one moment
+// it mattered. No location is stored, and nothing else reads this.
+function localTimeZone() {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; }
+  catch { return ''; }
+}
+
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
+  const tz = localTimeZone();
+  if (tz) headers['X-Hearth-TZ'] = tz;
   if (auth) {
     const token = getToken();
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -161,6 +173,11 @@ export const api = {
     // Answer the session's one question and receive the closing turning.
     reply: (id, { reply } = {}) =>
       request(`/kindle/${id}/reply`, { method: 'POST', body: { reply } }),
+    // The reader says the opening seeing missed them, and says how.
+    // Returns a corrected { feelingName, seeing }; the rest of the
+    // session stands. This is the dialogue working, not an apology.
+    reseen: (id, { correction } = {}) =>
+      request(`/kindle/${id}/reseen`, { method: 'POST', body: { correction } }),
     // Logbook: past sessions, reverse-chronological.
     log: ({ limit = 30, before = null } = {}) => {
       const qs = new URLSearchParams();
@@ -177,8 +194,8 @@ export const api = {
     // moment" on Home. Persisted to the account, so it follows the
     // reader across devices.
     list: ({ limit = 30 } = {}) => request(`/meaning?limit=${limit}`),
-    create: ({ text, prompt, avenue, date } = {}) =>
-      request('/meaning', { method: 'POST', body: { text, prompt, avenue, date } }),
+    create: ({ text, prompt, avenue, date, forWhom } = {}) =>
+      request('/meaning', { method: 'POST', body: { text, prompt, avenue, date, forWhom } }),
     remove: (id) => request(`/meaning/${id}`, { method: 'DELETE' }),
   },
 
@@ -186,5 +203,13 @@ export const api = {
   // { narrative, threads, sourceCount }. Pass refresh to re-weave.
   narrative: {
     get: ({ refresh = false } = {}) => request(`/narrative${refresh ? '?refresh=1' : ''}`),
+    // The reader answers back on one row: affirms it, or replaces it in
+    // their own words. Their wording wins on render and is never
+    // overwritten by a re-weave.
+    //   author('give', { affirmed: true })
+    //   author('give', { text: 'in my own words' })
+    //   author('give', { text: '' })   // take mine away again
+    author: (row, { text, affirmed } = {}) =>
+      request('/narrative', { method: 'PATCH', body: { row, text, affirmed } }),
   },
 };

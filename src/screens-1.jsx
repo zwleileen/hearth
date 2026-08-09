@@ -6,6 +6,8 @@ import React from 'react';
 import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, bookmarkKindFor, isItemBookmarked } from './api.js';
+import { shareCard, SHARE_RESULT_MESSAGE } from './share.jsx';
+import { CareBlock } from './care.jsx';
 
 const { useState: useState1, useEffect: useEffect1 } = React;
 
@@ -119,14 +121,70 @@ function dayOfYearNum(d = new Date()) {
 }
 
 // Today's single invitation: an avenue chosen by the day, then a prompt
-// within it. Deterministic per day (stable across reloads), rotates
-// across days, and mixes in a per-user offset so two readers differ.
-function pickMeaningOfMoment(user) {
+// within it. Deterministic per day, so it is stable across reloads and
+// rotates as the days do.
+//
+// DELIBERATELY THE SAME FOR EVERYONE. This used to mix in a per-user
+// offset, as the daily quote still does, so that no two readers saw the
+// same thing. For the quote that is right: variety is the point. For
+// the moment it was a mistake. A question everyone is asked on the same
+// day is an event; a question generated privately for you is a
+// notification. Frankl's consolation is that nobody is alone in the
+// dark, and the cheapest way to mean it is for the question to be
+// shared. See docs/DOCTRINE_AUDIT.md.
+function pickMeaningOfMoment() {
   const doy = dayOfYearNum();
-  const off = user?.id ? hashStr(user.id) : 0;
-  const avenue = AVENUES[(doy + off) % AVENUES.length];
-  const prompt = avenue.prompts[(doy + off) % avenue.prompts.length];
+  const avenue = AVENUES[doy % AVENUES.length];
+  const prompt = avenue.prompts[doy % avenue.prompts.length];
   return { avenue, prompt };
+}
+
+// ── The accumulating light ────────────────────────────────────────────
+//
+// Hearth's own design doctrine asks for this and it had never been
+// built: "continuity is shown as light that accumulates, never as
+// guilt" (BRAND_BRIEF §8.9). Streaks were correctly refused, but
+// refusing them left nothing at all in their place, so a reader with a
+// hundred kept lines saw exactly what a reader with one saw.
+//
+// The rule that makes it safe is that it can only ever grow. There is
+// no decay, no reset, no broken state, nothing to lose by missing a
+// day. Loss aversion is the engine of the streak, and the whole point
+// here is to build the opposite feeling: the light you have tended is
+// simply yours now.
+const LIGHT_STEPS = [0, 1, 3, 7, 14, 30, 60, 120, 240];
+
+function lightLevel(count) {
+  let level = 0;
+  for (let i = 0; i < LIGHT_STEPS.length; i++) if (count >= LIGHT_STEPS[i]) level = i;
+  return level;
+}
+
+// The ember at the centre of the masthead glow. Grows in radius and
+// warmth with everything the reader has ever kept.
+function AccumulatingLight({ count }) {
+  const level = lightLevel(count);
+  const max = LIGHT_STEPS.length - 1;
+  const t = max === 0 ? 1 : level / max;
+  const size = 150 + t * 210;
+  const opacity = 0.16 + t * 0.34;
+  // The level is handed to CSS as a custom property rather than as a
+  // plain opacity: the slow breathing keyframe animates opacity, and a
+  // running animation wins over an inline style, so setting opacity here
+  // would be silently ignored and every reader would see the same light.
+  return (
+    <div
+      aria-hidden="true"
+      className="hh-home-light"
+      style={{
+        width: size,
+        height: size,
+        '--hh-light-o': opacity,
+        opacity,
+        background: 'radial-gradient(circle, rgba(225,190,116,0.85) 0%, rgba(225,190,116,0.28) 42%, rgba(225,190,116,0) 72%)',
+      }}
+    />
+  );
 }
 
 // A line you keep in answer to the meaning of the moment. Persisted to
@@ -172,18 +230,22 @@ function HomeScreen({ go, user }) {
     return `Welcome back${tail}.`; // night / late
   })();
   const quote = pickDailyQuote(D.dailyQuotes, user);
-  const moment = pickMeaningOfMoment(user);
+  const moment = pickMeaningOfMoment();
   const journalInvite = pickJournalInvite(user, part);
 
   const [answer, setAnswer] = useState1('');
   const [log, setLog] = useState1([]);
+  const [kept, setKept] = useState1(0);
   const [keeping, setKeeping] = useState1(false);
   useEffect1(() => {
     let cancelled = false;
     (async () => {
       try {
-        const { entries } = await api.meaning.list({ limit: 30 });
-        if (!cancelled) setLog(entries || []);
+        const { entries, total } = await api.meaning.list({ limit: 30 });
+        if (!cancelled) {
+          setLog(entries || []);
+          setKept(typeof total === 'number' ? total : (entries || []).length);
+        }
       } catch { /* unauthed or transient: leave the log empty */ }
     })();
     return () => { cancelled = true; };
@@ -200,7 +262,7 @@ function HomeScreen({ go, user }) {
       const { entry } = await api.meaning.create({
         text: t, prompt: moment.prompt, avenue: moment.avenue.key, date: todayKey(),
       });
-      if (entry) { setLog((prev) => [entry, ...prev]); setAnswer(''); }
+      if (entry) { setLog((prev) => [entry, ...prev]); setKept((n) => n + 1); setAnswer(''); }
     } catch { /* keep the text in the box so the reader can try again */ }
     finally { setKeeping(false); }
   }
@@ -208,6 +270,17 @@ function HomeScreen({ go, user }) {
   // one already shown as today's answer (which may include other lines
   // kept today, e.g. a Give answer).
   const past = log.filter((e) => e.id !== keptToday?.id).slice(0, 4);
+
+  // Once there is enough of the reader's own writing to draw from, one of
+  // their lines takes the masthead. Chosen by day-of-year so it holds
+  // steady through a day and turns over as the days do, and drawn from
+  // the wider log rather than only today, so returning to Home is a
+  // meeting with something you had forgotten you noticed.
+  const HERO_THRESHOLD = 5;
+  const heroPool = log.filter((e) => (e.text || '').trim().length >= 12);
+  const ownHero = (kept >= HERO_THRESHOLD && heroPool.length > 0)
+    ? heroPool[dayOfYearNum() % heroPool.length]
+    : null;
 
   // Your meaning narrative — the synthesis across everything you keep.
   // null = loading; { narrative, threads } once loaded.
@@ -222,13 +295,46 @@ function HomeScreen({ go, user }) {
 
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
-      {/* ── The daily quote as the key frame: a wallpaper-worthy hero ── */}
+      {/* ── The masthead ──
+          The daily quote used to hold this space permanently. On day one
+          that is right: a borrowed line is a threshold, a pause before
+          meaning, and a reader with nothing kept yet has nothing else to
+          put here.
+
+          But this is an app about building your OWN meaning, and letting
+          someone else's sentence own the largest space on the home screen
+          forever quietly says the opposite. So the hero yields. Once a
+          reader has kept enough of their own lines, theirs takes the
+          display treatment and the quote steps down to a smaller line
+          beneath it. The thing you made outgrows the thing you were
+          given. See docs/DOCTRINE_AUDIT.md. */}
       <section className="hh-home-masthead" style={{ padding: '34px 22px 44px', textAlign: 'center' }}>
         <div className="hh-home-glow" aria-hidden="true"/>
+        <AccumulatingLight count={kept}/>
         <p className="serif" style={{ margin: 0, fontSize: 15, lineHeight: 1.4, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)' }}>
           {greet}
         </p>
-        {quote ? (
+        {ownHero ? (
+          <>
+            <p className="serif hh-quote-hero" style={{ margin: '30px auto 0', maxWidth: 600 }}>
+              &ldquo;{ownHero.text}&rdquo;
+            </p>
+            <p className="mono" style={{
+              margin: '28px 0 0', fontSize: 9.5, letterSpacing: '0.22em',
+              color: 'var(--paper-mute)', textTransform: 'uppercase',
+            }}>
+              Yours · {new Date(ownHero.date).toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+            </p>
+            {quote && (
+              <p className="serif" style={{
+                margin: '32px auto 0', maxWidth: 460, fontSize: 15, lineHeight: 1.5,
+                fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)',
+              }}>
+                &ldquo;{quote.text}&rdquo; {quote.author}
+              </p>
+            )}
+          </>
+        ) : quote ? (
           <>
             <p className="serif hh-quote-hero" style={{ margin: '30px auto 0', maxWidth: 600 }}>
               &ldquo;{quote.text}&rdquo;
@@ -298,6 +404,15 @@ function HomeScreen({ go, user }) {
         <div className="hh-moment" style={{ background: moment.avenue.accent }}>
           <span className="hh-moment-eyebrow">The meaning of this moment</span>
           <p className="hh-moment-prompt">{moment.prompt}</p>
+          {/* The same question, everywhere, today. Said plainly, because
+              knowing that other people were asked this too is most of
+              what makes it bearable to answer honestly. */}
+          <p className="mono" style={{
+            margin: '0 0 20px', fontSize: 9, letterSpacing: '0.18em',
+            textTransform: 'uppercase', color: 'var(--hh-green)', opacity: 0.55,
+          }}>
+            Asked of everyone today
+          </p>
 
           {keptToday ? (
             <div className="fade-in" style={{ marginBottom: 18 }}>
@@ -694,9 +809,12 @@ const GIVE_DEEDS = [
 function GiveScreen({ go, user }) {
   const off = user?.id ? hashStr(user.id) : 0;
   const deed = GIVE_DEEDS[(dayOfYearNum() + off) % GIVE_DEEDS.length];
+  // The letter is first now, and it is the only way that leads somewhere
+  // rather than into a text box: it is the one act here that actually
+  // reaches the other person. See src/letter.jsx.
   const ways = [
-    { word: 'An act of kindness', prompt: 'One kindness you could do today, and who it is for.', meaning: 'A small kindness, done on purpose. The lift it gives the giver is one of the most reliable findings in the field.' },
-    { word: 'A gratitude letter', prompt: 'Someone whose effect on you they may not know, and what you would tell them.', meaning: 'Name what they did and what it gave you. Deliver it if you can.' },
+    { word: 'A letter', route: 'letter', meaning: 'Tell someone what they did for you and what it gave you. Written here, and actually sent.' },
+    { word: 'An act of kindness', prompt: 'One kindness you could do today, and who it is for.', meaning: 'A small kindness, done on purpose. The lift it gives the giver is one of the steadier findings in the field.' },
     { word: 'Share what you know', prompt: 'One thing only you can pass on, and who needs it.', meaning: 'Teach or hand on something only you carry. Meaning grows by being given away.' },
     { word: 'Give your attention', prompt: 'Who will have your whole, undivided attention today.', meaning: 'Be wholly present to one person. Attention is the rarest thing we have to offer.' },
   ];
@@ -706,6 +824,10 @@ function GiveScreen({ go, user }) {
   const activePrompt = chosen ? chosen.prompt : deed;
   const activeLabel = chosen ? chosen.word : 'The deed of the day';
   const [answer, setAnswer] = useState1('');
+  // Who the giving is for. Giving is strongest when it is aimed at a
+  // named person rather than at kindness in general, and Give had no
+  // way of asking. One field, optional, and it changes the act.
+  const [forWhom, setForWhom] = useState1('');
   const [log, setLog] = useState1([]);
   const [keeping, setKeeping] = useState1(false);
   useEffect1(() => {
@@ -723,8 +845,10 @@ function GiveScreen({ go, user }) {
     if (t.length < 2 || keeping) return;
     setKeeping(true);
     try {
-      const { entry } = await api.meaning.create({ text: t, prompt: activePrompt, avenue: 'give', date: todayKey() });
-      if (entry) { setLog((prev) => [entry, ...prev]); setAnswer(''); }
+      const { entry } = await api.meaning.create({
+        text: t, prompt: activePrompt, avenue: 'give', forWhom: forWhom.trim(), date: todayKey(),
+      });
+      if (entry) { setLog((prev) => [entry, ...prev]); setAnswer(''); setForWhom(''); }
     } catch { /* keep the text so the reader can retry */ }
     finally { setKeeping(false); }
   }
@@ -748,6 +872,13 @@ function GiveScreen({ go, user }) {
         <div className="hh-moment" style={{ background: 'var(--hh-ecru)' }}>
           <span className="hh-moment-eyebrow">{activeLabel}</span>
           <p className="hh-moment-prompt">{activePrompt}</p>
+          <input
+            className="hearth-input"
+            value={forWhom}
+            onChange={(e) => setForWhom(e.target.value)}
+            placeholder="Who is it for?"
+            style={{ fontSize: 17, background: 'var(--hh-lace)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '12px 16px', marginBottom: 10 }}
+          />
           <textarea
             ref={captureRef}
             className="hearth-input"
@@ -782,6 +913,7 @@ function GiveScreen({ go, user }) {
             const on = chosen?.word === w.word;
             return (
               <button key={w.word} className="hh-door" onClick={() => {
+                  if (w.route) { go(w.route); return; }
                   const next = on ? null : w;
                   setChosen(next);
                   setAnswer('');
@@ -815,6 +947,7 @@ function GiveScreen({ go, user }) {
               <div key={i} style={{ borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '16px 0' }}>
                 <div className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 6 }}>
                   {new Date(e.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  {e.forWhom ? ` · for ${e.forWhom}` : ''}
                 </div>
                 <p className="serif" style={{ margin: 0, fontSize: 16, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)' }}>
                   {e.text}
@@ -908,6 +1041,104 @@ function YoursScreen({ go }) {
 // YOUR MEANING — the full narrative synthesis behind the Home
 // glance: the three avenues in full, the prose, and the threads.
 // ─────────────────────────────────────────────────────────────
+// One row of the glance, with the reader's answer back.
+//
+// WHY THIS EXISTS (BRAND_BRIEF §5.6, §6.3; docs/DOCTRINE_AUDIT.md).
+// The brief is explicit that the narrative is "yours to recognise and
+// revise, never a verdict", on Frankl's own caution against typology.
+// The screen did not honour that: it printed three declarative lines
+// about a person's life with no way to answer back, which is an app
+// telling someone who they are. So each row can now be affirmed, or
+// replaced in the reader's own words, and their wording wins from then
+// on and survives every re-weave.
+function MeaningRow({ label, phrase, ink, rowKey, own, affirmed, onSaved }) {
+  const [editing, setEditing] = useState1(false);
+  const [draft, setDraft] = useState1(own || phrase || '');
+  const [busy, setBusy] = useState1(false);
+
+  const isOwn = !!(own || '').trim();
+
+  async function save(text) {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const next = await api.narrative.author(rowKey, { text });
+      if (next) onSaved(next);
+      setEditing(false);
+    } catch { /* leave the row as it was; nothing is lost */ }
+    finally { setBusy(false); }
+  }
+
+  async function affirm() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const next = await api.narrative.author(rowKey, { affirmed: true });
+      if (next) onSaved(next);
+    } catch { /* no-op */ }
+    finally { setBusy(false); }
+  }
+
+  return (
+    <div style={{ padding: '18px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.10)' }}>
+      <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: ink, marginBottom: 8 }}>
+        {label}{isOwn ? ' · in your words' : ''}
+      </div>
+
+      {editing ? (
+        <>
+          <textarea
+            className="hearth-input"
+            value={draft}
+            autoFocus
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Say it the way you would say it…"
+            style={{ minHeight: 64, background: 'var(--hh-isabel)', padding: '12px 14px', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', fontSize: 18 }}
+          />
+          <div style={{ marginTop: 12, display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button onClick={() => save(draft)} disabled={busy || !draft.trim()} style={{
+              background: draft.trim() ? 'var(--hh-green)' : 'transparent',
+              color: draft.trim() ? 'var(--hh-lace)' : 'var(--paper-mute)',
+              border: draft.trim() ? 0 : '1px solid rgba(31, 64, 69, 0.25)',
+              padding: '10px 18px', cursor: draft.trim() ? 'pointer' : 'default',
+              fontFamily: 'var(--sans)', fontSize: 10.5, fontWeight: 500,
+              letterSpacing: '0.2em', textTransform: 'uppercase',
+            }}>{busy ? 'Keeping…' : 'Keep mine'}</button>
+            <button onClick={() => { setDraft(own || phrase || ''); setEditing(false); }} style={rowLink}>Cancel</button>
+            {isOwn && (
+              <button onClick={() => save('')} disabled={busy} style={rowLink}>Use Hearth's again</button>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.4, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+            {phrase}
+          </p>
+          <div style={{ marginTop: 10, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+            {affirmed ? (
+              <span className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--hh-green)', opacity: 0.6 }}>
+                {isOwn ? 'Yours' : 'You said this is right'}
+              </span>
+            ) : (
+              <button onClick={affirm} disabled={busy} style={rowLink}>Yes, that's it</button>
+            )}
+            <button onClick={() => { setDraft(own || phrase || ''); setEditing(true); }} style={rowLink}>
+              {isOwn ? 'Change it' : 'Not quite. Let me say it'}
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+const rowLink = {
+  background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+  color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5,
+  letterSpacing: '0.16em', textTransform: 'uppercase',
+};
+
 function MeaningScreen({ go }) {
   const [narr, setNarr] = useState1(null);
   useEffect1(() => {
@@ -918,9 +1149,9 @@ function MeaningScreen({ go }) {
     return () => { cancelled = true; };
   }, []);
   const rows = narr ? [
-    { label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)' },
-    { label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)' },
-    { label: 'Carry', phrase: narr.carry, ink: 'var(--hh-dogwood-deep)' },
+    { key: 'give', label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)' },
+    { key: 'receive', label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)' },
+    { key: 'carry', label: 'Carry', phrase: narr.carry, ink: 'var(--hh-dogwood-deep)' },
   ].filter((r) => r.phrase) : [];
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
@@ -948,11 +1179,20 @@ function MeaningScreen({ go }) {
         <>
           {rows.length > 0 && (
             <section style={{ padding: '32px 22px 0' }}>
+              <p className="body-sm" style={{ margin: '0 0 6px', color: 'var(--paper-mute)', maxWidth: 460 }}>
+                This is Hearth's reading of you, not a verdict. Where it is wrong, say so, and your words will stand instead.
+              </p>
               {rows.map((r) => (
-                <div key={r.label} style={{ padding: '14px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.10)' }}>
-                  <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: r.ink, marginBottom: 6 }}>{r.label}</div>
-                  <p className="serif" style={{ margin: 0, fontSize: 19, lineHeight: 1.4, fontStyle: 'italic', color: 'var(--hh-green)' }}>{r.phrase}</p>
-                </div>
+                <MeaningRow
+                  key={r.key}
+                  label={r.label}
+                  phrase={r.phrase}
+                  ink={r.ink}
+                  rowKey={r.key}
+                  own={narr.own?.[r.key] || ''}
+                  affirmed={!!narr.affirmed?.[r.key]}
+                  onSaved={(next) => setNarr((prev) => ({ ...prev, ...next }))}
+                />
               ))}
             </section>
           )}
@@ -991,9 +1231,46 @@ function MeaningScreen({ go }) {
 // ─────────────────────────────────────────────────────────────
 const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
 
+// One line, made into an object worth sending.
+//
+// The shareable atom is deliberately the LINE, not the entry. A journal
+// entry is confessional and unshareable; a single noticed line is a
+// haiku, and Hearth's typography is what makes it worth a screenshot.
+// The image is drawn on the reader's own device, so nothing about their
+// inner life leaves Hearth to make this work. See src/share.jsx.
+function ShareLineButton({ text, attribution }) {
+  const [state, setState] = useState1('idle');
+  async function onShare() {
+    if (state === 'busy') return;
+    setState('busy');
+    try {
+      const result = await shareCard({
+        text,
+        attribution: attribution ? 'A line I kept' : '',
+        shareText: text,
+      });
+      setState(SHARE_RESULT_MESSAGE[result] ? 'done' : 'idle');
+      if (SHARE_RESULT_MESSAGE[result]) {
+        setTimeout(() => setState('idle'), 2200);
+      }
+    } catch {
+      setState('idle');
+    }
+  }
+  return (
+    <button onClick={onShare} style={rowLink}>
+      {state === 'busy' ? 'Setting it…' : state === 'done' ? 'Done' : 'Share this line'}
+    </button>
+  );
+}
+
 function MeaningLogScreen({ go }) {
   const [entries, setEntries] = useState1(null);
   const [error, setError] = useState1(null);
+  // Removal is permanent, so it takes two taps. A confirm dialog would
+  // be louder than anything else in the app; asking twice quietly does
+  // the same work.
+  const [pendingRemove, setPendingRemove] = useState1(null);
   useEffect1(() => {
     let cancelled = false;
     (async () => {
@@ -1004,6 +1281,11 @@ function MeaningLogScreen({ go }) {
   }, []);
   async function remove(id) {
     try { await api.meaning.remove(id); setEntries((prev) => (prev || []).filter((e) => e.id !== id)); } catch { /* leave as is */ }
+  }
+  function confirmRemove(id) {
+    if (pendingRemove === id) { setPendingRemove(null); remove(id); return; }
+    setPendingRemove(id);
+    setTimeout(() => setPendingRemove((cur) => (cur === id ? null : cur)), 4000);
   }
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
@@ -1041,10 +1323,11 @@ function MeaningLogScreen({ go }) {
           </p>
         )}
         {Array.isArray(entries) && entries.length > 0 && entries.map((e) => (
-          <div key={e.id} style={{ borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '20px 0', position: 'relative' }}>
+          <div key={e.id} style={{ borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '20px 0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
               <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
                 {new Date(e.date).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                {e.forWhom ? ` · for ${e.forWhom}` : ''}
               </span>
               {AVENUE_WORD[e.avenue] && (
                 <span className="mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--hh-green)', textTransform: 'uppercase', padding: '2px 9px', border: '1px solid rgba(31, 64, 69, 0.18)' }}>
@@ -1060,17 +1343,15 @@ function MeaningLogScreen({ go }) {
                 in answer to: {e.prompt}
               </p>
             )}
-            <button onClick={() => remove(e.id)} aria-label="Remove" style={{
-              position: 'absolute', top: 20, right: 0, background: 'transparent', border: 0,
-              padding: '4px 8px', cursor: 'pointer', color: 'var(--paper-mute)',
-              fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase',
-              opacity: 0, transition: 'opacity 200ms ease',
-            }}
-              onMouseEnter={(ev) => ev.currentTarget.style.opacity = 1}
-              onMouseLeave={(ev) => ev.currentTarget.style.opacity = 0}
-              onFocus={(ev) => ev.currentTarget.style.opacity = 1}
-              onBlur={(ev) => ev.currentTarget.style.opacity = 0}
-            >Remove</button>
+            {/* Actions were hover-only (opacity 0 until mouseenter), which
+                on a phone means invisible and unreachable. They are always
+                present now, quiet enough not to compete with the line. */}
+            <div style={{ marginTop: 14, display: 'flex', gap: 20, alignItems: 'center' }}>
+              <ShareLineButton text={e.text} attribution={e.prompt}/>
+              <button onClick={() => confirmRemove(e.id)} style={rowLink}>
+                {pendingRemove === e.id ? 'Tap again to remove' : 'Remove'}
+              </button>
+            </div>
           </div>
         ))}
       </section>
@@ -1362,14 +1643,29 @@ function JournalWriteScreen({ go, payload }) {
   const [shift, setShift] = useState1(2);
   const [saving, setSaving] = useState1(false);
   const [saveError, setSaveError] = useState1(null);
+  // The care backstop now covers the journal too. This is the longest
+  // free-text field in Hearth and it is written at night: if someone
+  // puts down the heaviest thing they have written all year, it will
+  // very likely be here. Null unless something was seen.
+  const [care, setCare] = useState1(null);
   const wordCount = text.trim().split(/\s+/).filter(Boolean).length;
+  // How long this page has been open. It used to read a hardcoded
+  // "03:42" for everyone, on every entry, forever.
+  const [startedAt] = useState1(() => Date.now());
+  const [elapsed, setElapsed] = useState1(0);
+  useEffect1(() => {
+    if (step !== 'write') return undefined;
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startedAt) / 1000)), 1000);
+    return () => clearInterval(id);
+  }, [step, startedAt]);
+  const clock = `${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
 
   async function keepEntry() {
     if (saving) return;
     setSaving(true);
     setSaveError(null);
     try {
-      await api.journal.create({
+      const res = await api.journal.create({
         mode,
         title: prompt.title || '',
         body: text,
@@ -1378,6 +1674,7 @@ function JournalWriteScreen({ go, payload }) {
         promptTitle: prompt.title || null,
         promptLineage: prompt.lineage || null,
       });
+      setCare(res?.care || null);
       setStep('done');
     } catch (err) {
       if (err.status === 401) {
@@ -1423,7 +1720,7 @@ function JournalWriteScreen({ go, payload }) {
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
           <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-            {wordCount} words · 03:42
+            {wordCount} words · {clock}
           </span>
           <button className="btn btn-ember" onClick={() => setStep('mood')}>
             Continue
@@ -1498,6 +1795,7 @@ function JournalWriteScreen({ go, payload }) {
       </>}
 
       {step === 'done' && <div style={{ paddingTop: 80 }}>
+        <div style={{ margin: '0 -22px' }}><CareBlock care={care}/></div>
         <Kicker>Kept</Kicker>
         <Headline size="display" italic style={{ marginTop: 14 }}>
           One more<br/>evening, written.

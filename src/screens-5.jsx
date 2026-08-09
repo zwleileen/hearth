@@ -12,6 +12,9 @@ import React from 'react';
 import { Headline, Kicker, Rule, Icon } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api } from './api.js';
+import { CareBlock } from './care.jsx';
+import { SavourOpener } from './savour.jsx';
+import { shareCard, SHARE_RESULT_MESSAGE } from './share.jsx';
 
 const { useState: useState5 } = React;
 
@@ -22,51 +25,10 @@ const AVENUE_LABEL = {
   attitude: 'Through how you carry it',
 };
 
-// ── Care block ────────────────────────────────────────────────────────
-// Shown only when acute distress was detected. Quiet, never alarmist.
-// The numbers come from the server (never the model), so they are real.
-function CareBlock({ care }) {
-  if (!care || !care.flagged) return null;
-  return (
-    <section style={{ padding: '28px 22px 0' }}>
-      <div style={{
-        background: 'var(--hh-isabel)', borderLeft: '2px solid var(--hh-green)',
-        padding: '20px 22px',
-      }}>
-        <div className="mono" style={{
-          fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase',
-          color: 'var(--hh-green)', marginBottom: 12,
-        }}>
-          Before we go on
-        </div>
-        {care.note && (
-          <p className="body" style={{ margin: 0, color: 'var(--paper-2)', lineHeight: 1.6 }}>
-            {care.note}
-          </p>
-        )}
-        <div style={{ marginTop: 16 }}>
-          {(care.lines || []).map((l, i) => (
-            <div key={i} style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
-              gap: 12, padding: '8px 0',
-              borderTop: i === 0 ? 'none' : '1px solid rgba(31, 64, 69, 0.10)',
-            }}>
-              <span className="body" style={{ fontSize: 13.5, color: 'var(--hh-green)' }}>
-                {l.name}
-                {l.detail && <span style={{ color: 'var(--paper-mute)' }}> · {l.detail}</span>}
-              </span>
-              <span className="mono" style={{
-                fontSize: 12, letterSpacing: '0.06em', color: 'var(--hh-green)', whiteSpace: 'nowrap',
-              }}>
-                {l.contact}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
+// The care block moved to src/care.jsx so every free-text surface in
+// Hearth renders the same one from the same server signal. It also
+// dropped its coloured border-left, which the design doctrine forbids
+// (BRAND_BRIEF §8.9): it is a full Isabelline block now.
 
 // A labelled movement block: a kicker, then serif body. The shared
 // shape of every part of the session.
@@ -94,6 +56,36 @@ function KindleScreen({ go }) {
   const [reply, setReply] = useState5('');
   const [replyBusy, setReplyBusy] = useState5(false);
   const [replyError, setReplyError] = useState5(null);
+
+  // "That's not quite it." The reader is the author of their own
+  // meaning, so when Hearth's reading and theirs disagree, theirs is the
+  // true one. Correcting the seeing is not an error state, it is the
+  // dialogue working: the correction is more accurate than the first
+  // read, and the session simply carries on from their version.
+  const [correcting, setCorrecting] = useState5(false);
+  const [correction, setCorrection] = useState5('');
+  const [correctBusy, setCorrectBusy] = useState5(false);
+
+  async function submitCorrection() {
+    const t = correction.trim();
+    if (correctBusy || !current?.id || t.length < 2) return;
+    setCorrectBusy(true);
+    try {
+      const data = await api.kindle.reseen(current.id, { correction: t });
+      setCurrent((c) => ({
+        ...c,
+        session: {
+          ...c.session,
+          feelingName: data.feelingName || c.session.feelingName,
+          seeing: data.seeing || c.session.seeing,
+        },
+        care: data.care || c.care,
+      }));
+      setCorrecting(false);
+      setCorrection('');
+    } catch { /* leave the seeing as it was; nothing is lost */ }
+    finally { setCorrectBusy(false); }
+  }
 
   const [logbook, setLogbook] = useState5({ entries: [], hasMore: false, loading: false, error: null });
 
@@ -197,6 +189,13 @@ function KindleScreen({ go }) {
     setView('session');
   }
 
+  const [pendingDelete, setPendingDelete] = useState5(null);
+  function confirmDelete(id) {
+    if (pendingDelete === id) { setPendingDelete(null); deleteLogEntry(id); return; }
+    setPendingDelete(id);
+    setTimeout(() => setPendingDelete((cur) => (cur === id ? null : cur)), 4000);
+  }
+
   async function deleteLogEntry(id) {
     try {
       await api.kindle.deleteEntry(id);
@@ -269,7 +268,7 @@ function KindleScreen({ go }) {
 
         <CareBlock care={current.care}/>
 
-        {/* 1. The seeing */}
+        {/* 1. The seeing, and the reader's right to correct it */}
         <Movement label={s.feelingName || 'Where you are'}>
           <p className="serif" style={{
             margin: 0, fontSize: 22, lineHeight: 1.45, fontWeight: 360,
@@ -277,6 +276,35 @@ function KindleScreen({ go }) {
           }}>
             {s.seeing}
           </p>
+
+          {!fromLog && current?.id && (
+            correcting ? (
+              <div style={{ marginTop: 20 }}>
+                <p className="body" style={{ margin: '0 0 12px', maxWidth: 460 }}>
+                  Then tell me how it actually is.
+                </p>
+                <textarea
+                  className="hearth-input"
+                  value={correction}
+                  autoFocus
+                  onChange={(e) => setCorrection(e.target.value)}
+                  placeholder="It's more that…"
+                  style={{ minHeight: 90, background: 'var(--hh-isabel)', padding: '14px 16px', borderBottom: '1px solid rgba(31, 64, 69, 0.18)' }}
+                />
+                <div style={{ marginTop: 14, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button onClick={submitCorrection} disabled={correctBusy || correction.trim().length < 2}
+                    style={correction.trim().length >= 2 && !correctBusy ? solidBtn : ghostBtn}>
+                    {correctBusy ? 'Looking again…' : 'See it again'}
+                  </button>
+                  <button onClick={() => { setCorrecting(false); setCorrection(''); }} style={quietLink}>Leave it</button>
+                </div>
+              </div>
+            ) : (
+              <button onClick={() => setCorrecting(true)} style={{ ...quietLink, marginTop: 18 }}>
+                That's not quite it
+              </button>
+            )
+          )}
         </Movement>
 
         {/* 2. The widening */}
@@ -403,7 +431,18 @@ function KindleScreen({ go }) {
                 </p>
               )}
             </Movement>
-            <section style={{ padding: '40px 22px 0' }}>
+            {/* A turning that lands is exactly the kind of moment that
+                used to go straight through the reader. Hold it open. */}
+            {!fromLog && (
+              <SavourOpener
+                label="Stay a moment with this"
+                question="What did that reach in you?"
+                avenue="carry"
+                prompt="What the turning reached in me"
+              />
+            )}
+
+            <section style={{ padding: '40px 22px 0', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => go('journal')} style={{
                 background: 'transparent', border: '1px solid rgba(31, 64, 69, 0.18)',
                 padding: '13px 22px', cursor: 'pointer', color: 'var(--hh-green)',
@@ -412,6 +451,9 @@ function KindleScreen({ go }) {
               }}>
                 Take this to the journal
               </button>
+              {(rt.step?.keepsake || rt.turning) && (
+                <KeepsakeShare line={rt.step?.keepsake || rt.turning}/>
+              )}
             </section>
           </>
         ) : (
@@ -442,7 +484,7 @@ function KindleScreen({ go }) {
               )}
             </div>
             {replyError && (
-              <div style={{ marginTop: 16, padding: 14, background: 'var(--hh-isabel)', borderLeft: '2px solid var(--ember)' }}>
+              <div style={{ marginTop: 16, padding: 14, background: 'var(--hh-isabel)' }}>
                 <p className="body" style={{ margin: 0 }}>
                   {replyError.kind === 'unauthed' ? 'Your session ended. Sign in to continue.'
                     : replyError.detail || 'Something went wrong. Try again.'}
@@ -513,17 +555,13 @@ function KindleScreen({ go }) {
                   </p>
                 )}
               </button>
-              <button onClick={() => deleteLogEntry(entry.id)} aria-label="Delete session" style={{
-                position: 'absolute', top: 22, right: 0, background: 'transparent', border: 0,
-                padding: '4px 8px', cursor: 'pointer', color: 'var(--paper-mute)',
-                fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.16em',
-                textTransform: 'uppercase', opacity: 0, transition: 'opacity 200ms ease',
-              }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
-                onFocus={(e) => e.currentTarget.style.opacity = 1}
-                onBlur={(e) => e.currentTarget.style.opacity = 0}
-              >Remove</button>
+              {/* Always present. This was hover-only (opacity 0 until
+                  mouseenter), which on a phone means unreachable. Two
+                  taps to remove, since removal is permanent. */}
+              <button onClick={() => confirmDelete(entry.id)} aria-label="Remove session"
+                style={{ ...quietLink, marginTop: 12 }}>
+                {pendingDelete === entry.id ? 'Tap again to remove' : 'Remove'}
+              </button>
             </div>
           ))}
 
@@ -583,7 +621,7 @@ function KindleScreen({ go }) {
         </div>
 
         {error && (
-          <div style={{ marginTop: 22, padding: 16, background: 'var(--hh-isabel)', borderLeft: '2px solid var(--ember)' }}>
+          <div style={{ marginTop: 22, padding: 16, background: 'var(--hh-isabel)' }}>
             {error.kind === 'unauthed' && (
               <p className="body" style={{ margin: 0 }}>
                 <span onClick={() => go('auth')} style={{ textDecoration: 'underline', cursor: 'pointer', color: 'var(--ember)' }}>Sign in</span> to use Carry.
@@ -648,6 +686,34 @@ function KindleScreen({ go }) {
   );
 }
 
+// The line worth carrying, made into something you can send.
+// This is the object people actually screenshot: a single typeset line
+// on Old Lace, no app chrome, drawn on the reader's own device.
+function KeepsakeShare({ line }) {
+  const [state, setState] = useState5('idle');
+  async function onShare() {
+    if (state === 'busy') return;
+    setState('busy');
+    try {
+      const result = await shareCard({ text: line, attribution: 'Carry this', shareText: line });
+      if (SHARE_RESULT_MESSAGE[result]) {
+        setState('done');
+        setTimeout(() => setState('idle'), 2200);
+      } else setState('idle');
+    } catch { setState('idle'); }
+  }
+  return (
+    <button onClick={onShare} style={quietLink}>
+      {state === 'busy' ? 'Setting it…' : state === 'done' ? 'Done' : 'Keep this as a card'}
+    </button>
+  );
+}
+
+const quietLink = {
+  background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+  color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5,
+  letterSpacing: '0.18em', textTransform: 'uppercase',
+};
 const ghostBtn = {
   background: 'transparent', color: 'var(--paper-mute)', border: '1px solid rgba(31, 64, 69, 0.18)',
   padding: '14px 22px', cursor: 'not-allowed', fontFamily: 'var(--sans)', fontSize: 11,

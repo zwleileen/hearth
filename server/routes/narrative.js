@@ -13,8 +13,11 @@
 // the two high-signal sources instead, so the input stays flat as a
 // reader's history grows.
 //
-//   GET /api/narrative        cached; regenerated when inputs grow, when
+//   GET   /api/narrative      cached; regenerated when inputs grow, when
 //                             it ages past a week, or on ?refresh=1.
+//   PATCH /api/narrative      the reader affirms a row, or replaces it
+//                             in their own words. Their words win, and
+//                             a re-weave never overwrites them.
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
@@ -30,12 +33,29 @@ const MIN_SOURCES = 3;
 const REGEN_DAYS = 7;
 // Bump when the prompt or voice changes so every reader re-weaves once
 // into the new voice rather than waiting out their cache.
-const PROMPT_VERSION = 1;
+const PROMPT_VERSION = 2;
 // Recent-window caps. Bound the corpus so the prompt stays a constant
 // size no matter how long someone has used Hearth — recency over volume.
 const RECENT_LOGS = 40;
 const RECENT_SESSIONS = 8;
 const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
+
+// The reader's own wording always wins on render, and a row they have
+// written themselves is never re-generated over. Everything downstream
+// (Home's glance, the full narrative page) reads through this, so there
+// is exactly one place where authorship is decided.
+function withAuthorship(row, doc) {
+  const own = doc?.own || {};
+  const affirmed = doc?.affirmed || {};
+  return {
+    ...row,
+    give: (own.give || '').trim() || row.give,
+    receive: (own.receive || '').trim() || row.receive,
+    carry: (own.carry || '').trim() || row.carry,
+    own: { give: own.give || '', receive: own.receive || '', carry: own.carry || '' },
+    affirmed: { give: !!affirmed.give, receive: !!affirmed.receive, carry: !!affirmed.carry },
+  };
+}
 
 narrative.get('/', async (req, res) => {
   const userId = req.userId;
@@ -64,10 +84,10 @@ narrative.get('/', async (req, res) => {
   const hasShape = !cached?.narrative || cached?.give || cached?.receive || cached?.carry;
   const voiceOk = cached?.promptVersion === PROMPT_VERSION;
   if (cached && !refresh && cached.sourceCount === total && ageOk && hasShape && voiceOk) {
-    return res.json({
+    return res.json(withAuthorship({
       narrative: cached.narrative, give: cached.give || '', receive: cached.receive || '', carry: cached.carry || '',
       threads: cached.threads || [], sourceCount: total, generatedAt: cached.generatedAt, cached: true,
-    });
+    }, cached));
   }
 
   // Cold start: too little to read honestly. Cache the empty result.
@@ -77,8 +97,16 @@ narrative.get('/', async (req, res) => {
       { $set: { userId, narrative: '', give: '', receive: '', carry: '', threads: [], sourceCount: total, generatedAt: new Date() } },
       { upsert: true },
     );
-    return res.json({ narrative: '', give: '', receive: '', carry: '', threads: [], sourceCount: total, cached: false });
+    return res.json(withAuthorship({ narrative: '', give: '', receive: '', carry: '', threads: [], sourceCount: total, cached: false }, cached));
   }
+
+  // Keep each free-text input bounded so one long entry can't dominate
+  // the prompt (and so cost stays flat). Collapse whitespace for a clean read.
+  const SESSION_TEXT_MAX = 400;
+  const clip = (s) => {
+    const t = (s || '').trim().replace(/\s+/g, ' ');
+    return t.length > SESSION_TEXT_MAX ? t.slice(0, SESSION_TEXT_MAX) + '…' : t;
+  };
 
   const parts = [];
   if (logs.length) {
@@ -86,10 +114,22 @@ narrative.get('/', async (req, res) => {
       logs.map((l) => `  - [${AVENUE_WORD[l.avenue] || 'note'}] ${l.text}`).join('\n'));
   }
   if (sessions.length) {
-    const lines = sessions
-      .map((s) => `${s.session?.feelingName || ''}${s.session?.companion?.name ? ' (met by ' + s.session.companion.name + ')' : ''}`.trim())
-      .filter(Boolean);
-    if (lines.length) parts.push('Heavier feelings they brought to a meaning session:\n' + lines.map((x) => `  - ${x}`).join('\n'));
+    // From a Carry session we read ONLY the reader's own words: the feeling
+    // they brought, and, if they replied, what they said back. Never the
+    // companion, mirror, metaphor, image, or turning the session offered
+    // them. Those are Hearth's words, not theirs; folding them in makes the
+    // synthesis mistake the app's images (e.g. "a stone laid by a mason")
+    // for the reader's own sources of meaning.
+    const blocks = sessions.map((s) => {
+      const brought = clip(s.feeling);
+      const said = clip(s.reply);
+      if (!brought && !said) return '';
+      const rows = [];
+      if (brought) rows.push(`  - brought: ${brought}`);
+      if (said) rows.push(`    and answered, in their own words: ${said}`);
+      return rows.join('\n');
+    }).filter(Boolean);
+    if (blocks.length) parts.push('Heavier things they brought to a Carry session, in their own words. These are burdens they came to sit with, what they hold, not necessarily what gives them meaning:\n' + blocks.join('\n'));
   }
   const corpus = parts.join('\n\n');
 
@@ -100,6 +140,8 @@ ${corpus}
 """
 
 Write a "meaning narrative": two to four sentences that mirror how this person makes meaning, framed through how they GIVE (what they offer), RECEIVE (what moves them), and CARRY (what they hold). Notice the balance among the three, and the through-lines that repeat. Use their own words where you can. This is a provisional reading of where they are now, not a verdict and never a personality type; write it as theirs to recognise or revise.
+
+Reflect back only what THEY brought and said. If a person, character, metaphor, image, or parable appears in their words, it was a mirror offered to them in a session, not a thing they love or draw meaning from; never fold it into what they give, receive, or carry. What grounds them and moves them are the real, concrete things of their own life.
 
 ${REFLECTION_VOICE}
 
@@ -137,14 +179,72 @@ Return JSON matching the schema.`;
     const carry = (data.carry || '').trim();
     const threads = Array.isArray(data.threads) ? data.threads.filter(Boolean).slice(0, 3) : [];
     const generatedAt = new Date();
-    await MeaningNarrative.findOneAndUpdate(
+    // Note the $set list: it never touches `own` or `affirmed`. A
+    // re-weave may replace Hearth's reading; it must never replace what
+    // the reader wrote about their own life.
+    const saved = await MeaningNarrative.findOneAndUpdate(
       { userId },
       { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, promptVersion: PROMPT_VERSION } },
-      { upsert: true },
+      { upsert: true, new: true },
     );
-    res.json({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, cached: false });
+    res.json(withAuthorship({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, cached: false }, saved));
   } catch (err) {
     console.error('[narrative]', err);
     res.status(500).json({ error: 'Failed to weave your meaning', detail: err.message });
+  }
+});
+
+// ── PATCH /api/narrative ──────────────────────────────────────────────
+//
+// The reader answers back. Two moves, both cheap and both local to one
+// row (give / receive / carry):
+//
+//   { row: 'give', affirmed: true }      yes, that's it
+//   { row: 'give', text: 'in my words' } no, let me say it
+//   { row: 'give', text: '' }            take mine away, use yours again
+//
+// No model call: this is the reader's own sentence, and running it
+// through a model to be improved would defeat the entire point.
+const ROWS = new Set(['give', 'receive', 'carry']);
+const OWN_MAX = 140;
+
+narrative.patch('/', async (req, res) => {
+  const { row, text, affirmed } = req.body || {};
+  if (!ROWS.has(row)) {
+    return res.status(400).json({ error: 'row must be give, receive, or carry' });
+  }
+
+  const update = {};
+  if (typeof text === 'string') {
+    // A short phrase, matching the glance. Trimmed, never rewritten.
+    update[`own.${row}`] = text.trim().slice(0, OWN_MAX);
+    // Writing your own version is itself the strongest form of "this is
+    // mine", so it affirms the row too.
+    if (text.trim()) update[`affirmed.${row}`] = true;
+  }
+  if (typeof affirmed === 'boolean') {
+    update[`affirmed.${row}`] = affirmed;
+  }
+  if (Object.keys(update).length === 0) {
+    return res.status(400).json({ error: 'nothing to change' });
+  }
+
+  try {
+    const doc = await MeaningNarrative.findOneAndUpdate(
+      { userId: req.userId },
+      { $set: update },
+      { new: true, upsert: true, setDefaultsOnInsert: true },
+    );
+    res.json(withAuthorship({
+      narrative: doc.narrative || '',
+      give: doc.give || '', receive: doc.receive || '', carry: doc.carry || '',
+      threads: doc.threads || [],
+      sourceCount: doc.sourceCount || 0,
+      generatedAt: doc.generatedAt,
+      cached: true,
+    }, doc));
+  } catch (err) {
+    console.error('[narrative] patch failed:', err);
+    res.status(500).json({ error: 'Failed to keep your words' });
   }
 });

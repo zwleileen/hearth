@@ -96,6 +96,13 @@ const kindleSessionSchema = new mongoose.Schema(
     reply: { type: String, default: '' },
     replyTurning: { type: replyTurningSchema, default: null },
 
+    // If the reader told us the opening seeing missed them, what they
+    // said it actually was. The session's feelingName and seeing are
+    // rewritten in place from this, so the record holds what they meant
+    // rather than the reading they rejected. Empty when the first
+    // seeing landed, which is the common case.
+    correction: { type: String, default: '' },
+
     // True if either the model's careFlag or the server-side keyword
     // scan saw signs of acute distress at any point in this session.
     // When true, the client showed (and the logbook will re-show) the
@@ -109,7 +116,7 @@ const kindleSessionSchema = new mongoose.Schema(
 kindleSessionSchema.index({ userId: 1, createdAt: -1 });
 
 kindleSessionSchema.method('toClient', function () {
-  const { _id, userId, feeling, session, reply, replyTurning, careFlagged, createdAt } = this;
+  const { _id, userId, feeling, session, reply, replyTurning, correction, careFlagged, createdAt } = this;
   return {
     id: _id.toString(),
     userId: userId.toString(),
@@ -117,6 +124,7 @@ kindleSessionSchema.method('toClient', function () {
     session,
     reply: reply || '',
     replyTurning: replyTurning || null,
+    correction: correction || '',
     careFlagged: !!careFlagged,
     createdAt,
   };

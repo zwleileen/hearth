@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js';
 import { getOpenAI } from '../lib/ai.js';
 import { normalisePreferences } from '../lib/attunePrompt.js';
 import { generateAttuneReading } from '../lib/attuneRunner.js';
+import { detectDistress, careBlockFor, regionFromTimeZone } from '../lib/care.js';
 import { AttuneEntry } from '../models/AttuneEntry.js';
 
 export const attune = Router();
@@ -111,7 +112,16 @@ attune.post('/', async (req, res) => {
     console.warn('[attune] failed to save log entry:', err.message);
   }
 
-  res.json(data);
+  // The care backstop, same as Carry and the journal. Someone can put
+  // something very heavy into a box that only asked how they feel, and
+  // a reading of three songs is not the answer to it. Null when nothing
+  // was seen, so the ordinary case renders nothing.
+  const care = careBlockFor(
+    detectDistress(mood),
+    regionFromTimeZone(req.get('X-Hearth-TZ') || ''),
+  );
+
+  res.json({ ...data, care });
 });
 
 // ── GET /api/attune/log ───────────────────────────────────────────────

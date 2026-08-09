@@ -1090,7 +1090,34 @@ html, body {
   pointer-events: none;
   z-index: 0;
 }
-.hh-home-masthead > *:not(.hh-home-glow) { position: relative; z-index: 1; }
+.hh-home-masthead > *:not(.hh-home-glow):not(.hh-home-light) { position: relative; z-index: 1; }
+
+/* The accumulating light.
+   The design doctrine asks for continuity to be shown "as light that
+   accumulates, never as guilt" (BRAND_BRIEF §8.9) and this is it. It
+   grows with everything the reader has ever kept and it has no decay,
+   no reset, and no broken state: loss aversion is the engine of a
+   streak, and the whole point here is the opposite feeling. Sits behind
+   the masthead text, breathing slowly, doing nothing that asks to be
+   looked at. */
+.hh-home-light {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  animation: hh-tend 9s ease-in-out infinite;
+  transition: width 1200ms ease, height 1200ms ease, opacity 1200ms ease;
+}
+@keyframes hh-tend {
+  0%, 100% { opacity: var(--hh-light-o, 1); }
+  50%      { opacity: calc(var(--hh-light-o, 1) * 0.82); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hh-home-light { animation: none; }
+}
 
 /* The daily quote as the home's key frame, wallpaper-worthy. Scales up
    on wider screens so it reads as a poster, not a caption. */

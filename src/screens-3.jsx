@@ -1,7 +1,7 @@
 // Hearth — onboarding, auth, settings, notification mocks
 
 import React from 'react';
-import { BackRow, Eyebrow, Icon, LeafMark, Ph, Sprig } from './atoms.jsx';
+import { BackRow, Eyebrow, Icon } from './atoms.jsx';
 import { api, setToken } from './api.js';
 
 // ─────────────────────────────────────────────────────────────
@@ -19,21 +19,6 @@ const READING_GARDEN = [
   { k: 'creative',  label: 'Studio life',          sub: 'Artists, architects, designers at work',                tone: 'fern',     glyph: '❉' },
   { k: 'wisdom',    label: 'Old wisdom',           sub: 'Ancient practice translated for now',                   tone: 'wisteria', glyph: '✶' },
 ];
-
-// ─────────────────────────────────────────────────────────────
-// SPRIGS — signature sprig (Step 4)
-// THREE trees. Each maps to a distinct tone in the new
-// Hygge Haven palette. Restraint over abundance — three
-// real choices land harder than seven near-identical ones.
-// Keys retained for storage compatibility with old saves.
-// ─────────────────────────────────────────────────────────────
-const SPRIGS = [
-  { k: 'wisteria', label: 'Oak',   meaning: 'endurance, deep roots',  tone: 'wisteria' }, // midnight green
-  { k: 'poppy',    label: 'Birch', meaning: 'beginnings, light',      tone: 'ember'    }, // ecru gold
-  { k: 'cornflower',label: 'Pine', meaning: 'steadiness through cold',tone: 'bloom'    }, // carolina blue
-];
-// Back-compat alias
-const FLOWERS = SPRIGS;
 
 // ─────────────────────────────────────────────────────────────
 // ONBOARDING — 6 screens
@@ -248,7 +233,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
       { k: 'morning',   label: 'Mornings',   sub: 'Set the day before it sets you', tone: 'rose' },
       { k: 'evening',   label: 'Evenings',   sub: 'Close the day before sleep',     tone: 'wisteria' },
       { k: 'both',      label: 'Both',       sub: 'A small fire, twice a day',      tone: 'ember' },
-      { k: 'flexible',  label: 'When I can', sub: 'No reminders, just here when needed', tone: 'meadow' },
+      { k: 'flexible',  label: 'When I can', sub: 'No rhythm, just here when needed', tone: 'meadow' },
     ];
     return (
       <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
@@ -258,7 +243,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           When do you<br/><span style={{ fontStyle: 'italic' }}>tend the fire?</span>
         </h1>
         <p className="body" style={{ margin: '0 0 22px' }}>
-          We'll send one quiet nudge, and only one. Change it any time.
+          This shapes what Hearth puts in front of you, and when. Change it any time.
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {TIMES.map(t => {
@@ -368,62 +353,10 @@ function OnboardingScreen({ go, payload, onAuthed }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// LEAF GLYPHS — pure SVG, theme-aware. Single pointed leaf with
-// center vein, herbarium register.
-// ─────────────────────────────────────────────────────────────
-function LeafGlyph({ tone = 'rose', size = 24, active = true }) {
-  const c = active ? `var(--${tone})` : 'var(--paper-faint)';
-  const cDeep = active ? `var(--${tone}-deep)` : 'var(--paper-faint)';
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M12 2 C 17 6, 18 14, 12 22 C 6 14, 7 6, 12 2 Z" fill={c} opacity="0.85"/>
-      <path d="M12 3 L 12 21" stroke={cDeep} strokeWidth="0.7" opacity="0.7" fill="none"/>
-      <path d="M12 8 L 9 11 M12 8 L 15 11 M12 13 L 9.5 15.5 M12 13 L 14.5 15.5"
-        stroke={cDeep} strokeWidth="0.4" opacity="0.5" fill="none" strokeLinecap="round"/>
-    </svg>
-  );
-}
-// alias for any old callers
-const FlowerGlyph = LeafGlyph;
-
-function SprigPreview({ sprig, name }) {
-  return (
-    <div style={{ position: 'relative', borderRadius: 16, padding: 18, overflow: 'hidden',
-      background: `linear-gradient(135deg, var(--${sprig.tone}-tint) 0%, var(--paper-2-bg, rgba(247,245,238,0.4)) 100%)`,
-      border: `1px solid var(--${sprig.tone}-line)` }}>
-      {/* avatar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div style={{ width: 44, height: 44, borderRadius: '50%',
-          background: `linear-gradient(135deg, var(--${sprig.tone}) 0%, var(--${sprig.tone}-deep) 100%)`,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: `var(--on-${sprig.tone})`, fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 20, fontWeight: 380, position: 'relative' }}>
-          {(name[0] || 'F').toUpperCase()}
-          <div style={{ position: 'absolute', right: -4, bottom: -4, background: 'var(--night)', borderRadius: '50%', padding: 2 }}>
-            <LeafGlyph tone={sprig.tone} size={14} active/>
-          </div>
-        </div>
-        <div style={{ flex: 1 }}>
-          <div className="mono" style={{ fontSize: 9, letterSpacing: '0.18em', color: `var(--${sprig.tone}-deep)`, textTransform: 'uppercase' }}>
-            Tonight at the hearth
-          </div>
-          <div className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380, marginTop: 4 }}>
-            Three good things, {name.toLowerCase() || 'friend'}.
-          </div>
-        </div>
-      </div>
-      {/* scattered leaves */}
-      <div style={{ position: 'absolute', right: 12, top: 8, opacity: 0.4, transform: 'rotate(20deg)' }}>
-        <LeafGlyph tone={sprig.tone} size={36} active/>
-      </div>
-      <div style={{ position: 'absolute', left: -8, bottom: -10, opacity: 0.25, transform: 'rotate(-30deg)' }}>
-        <LeafGlyph tone={sprig.tone} size={56} active/>
-      </div>
-    </div>
-  );
-}
-// alias for any old callers
-const FlowerPreview = ({ flower, name }) => <SprigPreview sprig={flower} name={name}/>;
+// The sprig step, its leaf glyphs and its preview card were retired
+// with the botanical vocabulary (BRAND_BRIEF §8.8) and were the last
+// gradients, 16px radii and leaf marks left in the app. Deleted rather
+// than restyled: nothing rendered them.
 
 function OnboardingProgress({ n, total }) {
   return (
@@ -630,7 +563,7 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
       {/* Account card */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '18px 0', borderTop: '2px solid var(--hh-green)', borderBottom: '1px solid var(--paper-line-2)' }}>
         <div style={{ width: 52, height: 52, borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--hh-ecru) 0%, var(--hh-dogwood) 100%)',
+          background: 'var(--hh-ecru)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--hh-green)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 24, fontWeight: 380 }}>
           {initial}
@@ -815,82 +748,15 @@ function SettingsRow({ icon, label, right, onClick, danger, tone }) {
 }
 
 
-// ─────────────────────────────────────────────────────────────
-// NOTIFICATIONS — schedule
-// ─────────────────────────────────────────────────────────────
-function NotificationsScreen({ go }) {
-  const [morning, setMorning] = React.useState(true);
-  const [evening, setEvening] = React.useState(true);
-  const [weekly,  setWeekly]  = React.useState(true);
-
-  return (
-    <div className="fade-in" style={{ padding: '4px 22px 32px' }}>
-      <BackRow go={go} label="Settings" dest="settings"/>
-      <Eyebrow tone="ember" style={{ marginTop: 18 }}>Reminders</Eyebrow>
-      <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
-        Quiet nudges,<br/><span style={{ fontStyle: 'italic' }}>not noise.</span>
-      </h1>
-      <p className="body" style={{ margin: '0 0 22px' }}>
-        Hearth never beeps. Reminders arrive as a single gentle line on your lock screen.
-      </p>
-
-      <ReminderRow tone="ember"   on={morning} onChange={setMorning} title="Morning prompt" sub="A line to begin the day" time="7:15 am"/>
-      <ReminderRow tone="wisteria" on={evening} onChange={setEvening} title="Evening prompt" sub="Close the day before sleep" time="8:30 pm"/>
-      <ReminderRow tone="meadow"  on={weekly}  onChange={setWeekly}  title="Sunday review" sub="A small look back" time="Sundays · 5:00 pm"/>
-
-      <Eyebrow style={{ marginTop: 28 }}>Preview</Eyebrow>
-      <div style={{ marginTop: 12, padding: 18, borderRadius: 18, background: 'linear-gradient(180deg, var(--hh-green-2) 0%, var(--hh-green) 100%)', position: 'relative', overflow: 'hidden' }}>
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.35, background: 'radial-gradient(circle at 70% 20%, rgba(225,190,116,0.35), transparent 50%)' }}/>
-        <div style={{ position: 'relative' }}>
-          <div className="mono" style={{ color: 'rgba(247,245,238,0.6)', fontSize: 10, letterSpacing: '0.2em', textAlign: 'center' }}>
-            FRIDAY · NOV 27
-          </div>
-          <div className="serif" style={{ color: 'rgba(247,245,238,0.95)', fontSize: 38, fontWeight: 320, textAlign: 'center', margin: '4px 0 18px' }}>
-            8:30
-          </div>
-          <div style={{ background: 'rgba(247,245,238,0.10)', backdropFilter: 'blur(20px)', borderRadius: 14, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div className="hearth-mark" style={{ width: 14, height: 14 }}/>
-            <div style={{ flex: 1 }}>
-              <div className="sans" style={{ color: 'rgba(247,245,238,0.95)', fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-                Hearth
-                <LeafMark size={10} tone="sig" opacity={0.95}/>
-              </div>
-              <div className="serif" style={{ color: 'rgba(247,245,238,0.85)', fontSize: 14, fontStyle: 'italic', marginTop: 2, fontWeight: 350 }}>
-                The light is going. Sit a moment with three good things.
-              </div>
-            </div>
-            <span className="mono" style={{ color: 'rgba(247,245,238,0.5)', fontSize: 9 }}>now</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ReminderRow({ tone, on, onChange, title, sub, time }) {
-  return (
-    <div className={`card${on ? '-' + tone : '-soft'}`} style={{ marginBottom: 10, padding: 14, display: 'flex', alignItems: 'center', gap: 12 }}>
-      <div style={{ flex: 1 }}>
-        <div className="serif" style={{ fontSize: 17, fontStyle: 'italic', fontWeight: 380 }}>{title}</div>
-        <div className="body-sm" style={{ marginTop: 2 }}>{sub} · <span className="mono" style={{ fontSize: 11 }}>{time}</span></div>
-      </div>
-      <button onClick={() => onChange(!on)} style={{
-        width: 44, height: 26, borderRadius: 999, border: 0, cursor: 'pointer', flexShrink: 0,
-        background: on ? `var(--${tone})` : 'var(--paper-line)',
-        position: 'relative', transition: 'background 0.2s ease',
-      }}>
-        <div style={{
-          position: 'absolute', top: 3, left: on ? 21 : 3,
-          width: 20, height: 20, borderRadius: '50%',
-          background: 'var(--night)',
-          transition: 'left 0.2s ease',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-        }}/>
-      </button>
-    </div>
-  );
-}
-
+// The reminders screen is gone. It was a mock: three toggles held in
+// local state that persisted nowhere, with no scheduler, no service
+// worker and no push behind them, reachable only from the dev panel. It
+// also carried the app's last piece of glassmorphism and an 18px radius,
+// both forbidden (BRAND_BRIEF §8.5, §8.9).
+//
+// Shipping a settings screen that pretends to control something real is
+// worse than not having one. When notifications are actually built, this
+// comes back with a scheduler behind it.
 
 // ─────────────────────────────────────────────────────────────
 // PROFILE
@@ -980,7 +846,7 @@ function ProfileScreen({ go, user, refreshUser }) {
 
       <div style={{ textAlign: 'center', margin: '8px 0 24px' }}>
         <div style={{ width: 96, height: 96, borderRadius: '50%',
-          background: 'linear-gradient(135deg, var(--hh-ecru) 0%, var(--hh-dogwood) 100%)',
+          background: 'var(--hh-ecru)',
           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
           color: 'var(--hh-green)', fontFamily: 'var(--serif)', fontStyle: 'italic', fontSize: 40, fontWeight: 380 }}>
           {initial}
@@ -1269,4 +1135,4 @@ function LandingScreen({ go }) {
   );
 }
 
-export { OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, NotificationsScreen, ProfileScreen, LeafGlyph, FlowerGlyph, READING_GARDEN, SPRIGS, FLOWERS };
+export { OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, ProfileScreen, READING_GARDEN };

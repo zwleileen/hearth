@@ -44,6 +44,57 @@ Use these in service of the reader, never as a checklist. One session might lean
 
 If the reader's words carry signs of acute crisis, intent to harm themselves, suicidal thoughts, or being in immediate danger, set careFlag true. Still write with care, but a meaning session is not a substitute for crisis help, and the app will surface real support alongside it.`;
 
+// ── What Hearth already knows of this reader ─────────────────────────
+//
+// Continuity is the difference between a beautiful reading and being
+// known. Without this block every session meets a stranger: the model
+// has the sentence in front of it and nothing else, so it cannot notice
+// that this is the third time in a month the same thing has been
+// brought, or that what steadies this person is their work rather than
+// their people.
+//
+// What we pass, and deliberately what we do not:
+//   - the meaning narrative (how they give / receive / carry), because
+//     it is already a bounded, provisional synthesis of their own words;
+//   - the last few things they BROUGHT here, in their own words only.
+// We never pass back the mirrors, turnings or images Hearth itself
+// offered them. Those are Hearth's words, not theirs, and feeding them
+// back compounds the app's inventions into a portrait of a person.
+//
+// The instruction matters as much as the material: this is context to
+// listen with, never something to perform back at them. Nothing is
+// worse than an app that says "I notice you often mention your father."
+export function buildKnowingBlock({ narrative, recentFeelings } = {}) {
+  const rows = [];
+
+  const n = narrative || {};
+  const shape = [
+    n.give ? `they tend to give: ${n.give}` : '',
+    n.receive ? `what reaches them: ${n.receive}` : '',
+    n.carry ? `what they carry: ${n.carry}` : '',
+  ].filter(Boolean);
+  if (shape.length) rows.push(`  - ${shape.join('; ')}`);
+  if ((n.narrative || '').trim()) rows.push(`  - in fuller form: ${n.narrative.trim()}`);
+
+  const brought = (recentFeelings || [])
+    .map((f) => (f || '').trim().replace(/\s+/g, ' '))
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((f) => `  - ${f.length > 220 ? f.slice(0, 220) + '…' : f}`);
+  if (brought.length) {
+    rows.push('  - things they have brought here recently, in their own words:');
+    rows.push(...brought.map((b) => `  ${b}`));
+  }
+
+  if (!rows.length) return '';
+
+  return `\n\nYou have sat with this reader before. What you already know of them:
+
+${rows.join('\n')}
+
+Hold this the way a friend holds what they remember: it shapes how closely you listen, and it must never be performed back. Do not say that you noticed a pattern, do not refer to previous sessions, do not tell them what they always do. If none of it fits what they have written today, set it down entirely. Today's words are the truth; this is only what you bring to hearing them.`;
+}
+
 // Build the "recently met companions" block so the session does not
 // reach for the same figure every time (the same convergence problem
 // Attune solves for artists). Pure; caller loads the history.
@@ -54,9 +105,10 @@ export function buildCompanionDiversityBlock(recentCompanions = []) {
 }
 
 // The first session. feeling = the reader's free text.
-export function buildKindleSessionPrompt({ feeling, diversity } = {}) {
+export function buildKindleSessionPrompt({ feeling, diversity, knowing } = {}) {
   const diversityBlock = buildCompanionDiversityBlock(diversity?.recentCompanions);
-  return `${METHOD}
+  const knowingBlock = buildKnowingBlock(knowing);
+  return `${METHOD}${knowingBlock}
 
 A reader has come to Hearth and written how they feel, in their own words:
 
@@ -111,4 +163,41 @@ Close the session. Receive their answer first (acknowledgement: one or two hones
 If their reply shows signs of acute crisis or intent to harm themselves, set careFlag true.
 
 Return JSON matching the schema. Hearth's voice throughout: quiet, specific, no therapy-speak, no platitudes, no em dashes.`;
+}
+
+// The re-seeing, after the reader says the opening seeing missed them.
+//
+// The reader correcting you is not a failure to apologise for, it is the
+// dialogue working: their correction is truer than your first read, and
+// the session should simply move on from their version. So we do not
+// apologise, do not explain, and do not thank them for clarifying. We
+// see them properly and carry on.
+export function buildKindleReseeingPrompt({ feeling, session, correction } = {}) {
+  return `${METHOD}
+
+A reader wrote how they felt:
+
+"""
+${(feeling || '').trim()}
+"""
+
+You met them by naming it "${session?.feelingName || ''}" and saying:
+
+"""
+${(session?.seeing || '').trim()}
+"""
+
+They have told you that is not quite right. In their words:
+
+"""
+${(correction || '').trim()}
+"""
+
+They are right. Their correction is the truth of it. Name the feeling again as they have now put it, and write the seeing again: two or three sentences that meet them where they actually are.
+
+Do not apologise. Do not explain your first reading. Do not thank them for clarifying or say anything about having misunderstood. Do not perform humility. Simply see them properly, as though this had been the seeing all along.
+
+If their correction shows signs of acute crisis or intent to harm themselves, set careFlag true.
+
+Return JSON matching the schema. Plain, warm, no therapy-speak, no platitudes, no em dashes.`;
 }

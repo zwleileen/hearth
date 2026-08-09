@@ -12,10 +12,10 @@ import {
   DiscoverScreen, AttuneScreen, RitualDetailScreen,
 } from './screens-2.jsx';
 import {
-  OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen,
-  NotificationsScreen, ProfileScreen,
+  OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, ProfileScreen,
 } from './screens-3.jsx';
 import { KindleScreen } from './screens-5.jsx';
+import { LetterScreen } from './letter.jsx';
 import {
   JournalArchiveScreen, EntryDetailScreen, ArticleScreen,
   BookmarksScreen, StreakBrokenScreen,
@@ -177,7 +177,7 @@ function App() {
   const tab =
       route === 'home' ? 'today'
     : route === 'kindle' ? 'carry'
-    : route === 'give' ? 'give'
+    : (route === 'give' || route === 'letter') ? 'give'
     : (route === 'receive' || route === 'attune' || route === 'attune-history' || route === 'reading' || route === 'article' || route === 'discover') ? 'receive'
     : (route === 'yours' || route === 'meaning' || route === 'meaning-log' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks') ? 'yours'
     : route.startsWith('settings') ? 'settings'
@@ -212,12 +212,12 @@ function App() {
       {route === 'attune' && <AttuneScreen go={go}/>}
       {route === 'attune-history' && <AttuneHistoryScreen go={go}/>}
       {route === 'kindle' && <KindleScreen go={go}/>}
+      {route === 'letter' && <LetterScreen go={go} user={user}/>}
       {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}
       {route === 'streak-broken' && <StreakBrokenScreen go={go}/>}
 
       {/* Settings */}
       {route === 'settings' && <SettingsScreen go={go} user={user} refreshUser={refreshUser} onSignOut={user ? signOut : null}/>}
-      {route === 'settings-notifications' && <NotificationsScreen go={go}/>}
       {route === 'settings-profile' && <ProfileScreen go={go} user={user} refreshUser={refreshUser}/>}
     </>
   );
@@ -342,9 +342,9 @@ function App() {
             {value:'attune',label:'Attune'},
             {value:'attune-history',label:'Attune · history'},
             {value:'kindle',label:'Carry'},
+            {value:'letter',label:'Give · a letter'},
             {value:'streak-broken',label:'Streak broken'},
             {value:'settings',label:'Settings'},
-            {value:'settings-notifications',label:'Notifications'},
             {value:'settings-profile',label:'Profile'},
           ]}
           onChange={v => { setTweak('startingScreen', v); go(v); }}/>

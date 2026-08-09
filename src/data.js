@@ -330,7 +330,7 @@ export const HEARTH_DATA = {
       lineage: "Slow breathing · Zaccaro et al., 2018",
       duration: "4 minutes",
       pattern: "4 · 4 · 4 · 4",
-      blurb: "Inhale 4, hold 4, exhale 4, hold 4. Equal-ratio breathing increases heart-rate variability and dampens the stress response within minutes."
+      blurb: "Inhale 4, hold 4, exhale 4, hold 4. Slow, even breathing settles the body within a few minutes, which is often enough to think again."
     },
     {
       key: "gratitude",
@@ -338,7 +338,7 @@ export const HEARTH_DATA = {
       lineage: "Seligman et al., 2005",
       duration: "5 minutes",
       pattern: "3 things · why · your part",
-      blurb: "One of the most replicated positive-psychology interventions: depressive symptoms down, well-being up at 6 months."
+      blurb: "Name three, then why each went well and what your part in it was. The naming is the easy half; the why is what makes it hold. Modest, real, and best in short spells rather than forever."
     },
     {
       key: "awe",
@@ -346,7 +346,7 @@ export const HEARTH_DATA = {
       lineage: "Sturm, Keltner, 2020",
       duration: "15 minutes",
       pattern: "walk · notice · expand",
-      blurb: "A weekly walk with attention turned outward toward the vast or beautiful. Older adults reported greater daily joy and pro-social emotion in an 8-week trial."
+      blurb: "A walk with attention turned outward, toward the vast or the beautiful. Promising early work, on small numbers. Worth doing for the walk itself."
     },
     {
       key: "values",

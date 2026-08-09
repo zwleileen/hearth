@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { JournalEntry } from '../models/JournalEntry.js';
 import { requireAuth } from '../middleware/auth.js';
+import { detectDistress, careBlockFor, regionFromTimeZone } from '../lib/care.js';
 
 export const journal = Router();
 journal.use(requireAuth);
@@ -23,7 +24,20 @@ journal.post('/', async (req, res) => {
     userId: req.userId,
     mode, title, body, mood, shift, tags, promptTitle, promptLineage,
   });
-  res.status(201).json({ entry: entry.toClient() });
+
+  // The care backstop runs here too, not only in a Carry session. The
+  // journal is the longest free-text field in Hearth and it is written
+  // at night: if someone is going to put the heaviest thing they have
+  // written all year anywhere, it is on this page. Leaving it uncovered
+  // was the real gap. Resources are composed server-side and chosen for
+  // the reader's own region. Null when nothing was seen, so the calm
+  // case stays completely quiet.
+  const care = careBlockFor(
+    detectDistress(body),
+    regionFromTimeZone(req.get('X-Hearth-TZ') || ''),
+  );
+
+  res.status(201).json({ entry: entry.toClient(), care });
 });
 
 journal.patch('/:id', async (req, res) => {

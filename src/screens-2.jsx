@@ -8,6 +8,8 @@ import React from 'react';
 import { BackRow, ColorBlock, Headline, Icon, Kicker, Ph, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, isItemBookmarked, bookmarkKindFor } from './api.js';
+import { CareBlock } from './care.jsx';
+import { SavourMoment, SavourOpener } from './savour.jsx';
 
 const { useState: useState2 } = React;
 
@@ -494,6 +496,11 @@ function AttuneScreen({ go }) {
           </section>
         )}
 
+        {/* Someone can put something very heavy into a box that only
+            asked how they feel, and three songs are not the answer to
+            it. Same block, same server signal, as Carry and the journal. */}
+        {!fromLog && <CareBlock care={reading.care}/>}
+
         {/* Mood summary + register */}
         <section style={{ padding: '36px 22px 0' }}>
           <Kicker>What I'm hearing</Kicker>
@@ -584,7 +591,7 @@ function AttuneScreen({ go }) {
                   fontWeight: 380, color: 'var(--hh-green)',
                   whiteSpace: 'pre-wrap', wordBreak: 'break-word',
                   fontFamily: 'inherit', maxWidth: 560,
-                  paddingLeft: 16, borderLeft: '2px solid rgba(31, 64, 69, 0.25)',
+                  background: 'var(--hh-isabel)', padding: '20px 22px',
                 }}>{ex.text}</pre>
               )}
               <Headline size="section" italic style={{ marginTop: 14, fontWeight: 380 }}>
@@ -692,6 +699,20 @@ function AttuneScreen({ go }) {
             })}
           </div>
         </section>
+
+        {/* Receiving used to end here, with the reader scrolling away
+            from something that had just moved them. Meaning received
+            through beauty is an avenue in its own right, and a moment
+            that is noticed and stayed with is far more likely to be
+            kept. See src/savour.jsx. */}
+        {!fromLog && (
+          <SavourOpener
+            label="Stay a moment with what that reached"
+            question="What did that reach in you?"
+            avenue="receive"
+            prompt="What the listening reached in me"
+          />
+        )}
 
         {/* Closing */}
         <section style={{ padding: '40px 22px 0', textAlign: 'left' }}>
@@ -1417,12 +1438,26 @@ function RitualKept({ go, back, kicker, line, where = 'meaning log', viewRoute =
   );
 }
 
+const BREATH_CYCLES = 6;
+
 function BreathRitual({ go, back }) {
   const [phase, setPhase] = useState2('in');
+  // The cycle counter used to read a hardcoded "Cycle 02 of 06" for the
+  // whole four minutes. It counts now, and the ritual completes.
+  const [cycle, setCycle] = useState2(0);
+  const [done, setDone] = useState2(false);
   React.useEffect(() => {
     const seq = ['in', 'hold1', 'out', 'hold2'];
     let i = 0;
-    const id = setInterval(() => { i = (i + 1) % 4; setPhase(seq[i]); }, 4000);
+    const id = setInterval(() => {
+      i += 1;
+      if (i % seq.length === 0) {
+        const completed = i / seq.length;
+        if (completed >= BREATH_CYCLES) { setDone(true); clearInterval(id); return; }
+        setCycle(completed);
+      }
+      setPhase(seq[i % seq.length]);
+    }, 4000);
     return () => clearInterval(id);
   }, []);
   const label = phase === 'in' ? 'Breathe in' : phase === 'out' ? 'Breathe out' : 'Hold';
@@ -1444,16 +1479,16 @@ function BreathRitual({ go, back }) {
           }}/>
         </div>
         <Headline size="title" italic style={{ marginTop: 28 }}>
-          {label}.
+          {done ? 'Done.' : `${label}.`}
         </Headline>
         <p className="mono" style={{
           marginTop: 14, fontSize: 9.5, letterSpacing: '0.22em',
           textTransform: 'uppercase', color: 'var(--hh-green-3)',
-        }}>Cycle 02 of 06</p>
+        }}>Cycle {String(Math.min(cycle + 1, BREATH_CYCLES)).padStart(2, '0')} of {String(BREATH_CYCLES).padStart(2, '0')}</p>
       </ColorBlock>
       <section style={{ padding: '36px 22px 0' }}>
         <p className="body" style={{ margin: 0, maxWidth: 320 }}>
-          Equal-ratio breathing increases heart-rate variability and dampens the stress response within four minutes.
+          Slow, even breathing settles the body within a few minutes. Not a cure for anything. Often enough to be able to think again.
         </p>
         <button onClick={() => go(back || 'home')} style={{
           marginTop: 30,
@@ -1467,23 +1502,74 @@ function BreathRitual({ go, back }) {
   );
 }
 
+// Three good things — with the part that actually does the work.
+//
+// The protocol is three things AND, for each, why it went well and what
+// your own part in it was. That causal attribution is the mechanism: it
+// is what turns "nice things happened to me" into "I had a hand in
+// this", and it is the difference between noticing and building.
+//
+// The instruction was in the header and the UI gave one undifferentiated
+// box per item, so in practice people wrote "coffee with Sam" and
+// stopped. Two fields per row restores the intervention.
 function GratitudeRitual({ go, back }) {
-  const [items, setItems] = useState2(['', '', '']);
+  const [items, setItems] = useState2([
+    { what: '', why: '' }, { what: '', why: '' }, { what: '', why: '' },
+  ]);
   const [kept, setKept] = useState2(false);
   const [keeping, setKeeping] = useState2(false);
-  const filled = items.map(s => s.trim()).filter(Boolean);
+  const [savour, setSavour] = useState2(false);
+  const filled = items.filter((it) => it.what.trim());
+
+  function setField(i, field, value) {
+    setItems((prev) => prev.map((it, idx) => (idx === i ? { ...it, [field]: value } : it)));
+  }
 
   async function keep() {
     if (!filled.length || keeping) return;
     setKeeping(true);
+    const text = filled
+      .map((it, i) => `${i + 1}. ${it.what.trim()}${it.why.trim() ? `\n   ${it.why.trim()}` : ''}`)
+      .join('\n');
     try {
-      await api.meaning.create({ text: filled.map((s, i) => `${i + 1}. ${s}`).join('\n'), prompt: 'Three good things', avenue: 'receive', date: new Date().toISOString().slice(0, 10) });
+      await api.meaning.create({ text, prompt: 'Three good things', avenue: 'receive', date: new Date().toISOString().slice(0, 10) });
     } catch { /* unauthed or transient; still let them finish */ }
     setKept(true); setKeeping(false);
   }
 
-  if (kept) return <RitualKept go={go} back={back} kicker="Three good things · Kept"
-    line="Noticing what went well, and the part you played in it, is among the most reliably steadying practices there is. These gather into your sense of what matters."/>;
+  // Having named three good things is precisely the moment worth staying
+  // with, rather than closing the page on.
+  if (kept && savour) {
+    return (
+      <div className="fade-in" style={{ paddingBottom: 32 }}>
+        <RitualHeader go={go} back={back} kicker="Three good things · Kept" title={<>Stay with<br/>one of them.</>}/>
+        <SavourMoment
+          question="Pick the one that was best. What was it like?"
+          avenue="receive"
+          prompt="The best of three good things"
+          onDone={() => go(back || 'home')}
+        />
+      </div>
+    );
+  }
+
+  if (kept) return (
+    <div className="fade-in" style={{ paddingBottom: 32 }}>
+      <RitualHeader go={go} back={back} kicker="Three good things · Kept" title={<>Kept.</>}
+        body="Noticing what went well, and the part you played in it, gathers over time into your sense of what matters."/>
+      <section style={{ padding: '32px 22px 0', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button onClick={() => setSavour(true)} style={{
+          background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0, padding: '14px 22px',
+          cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+          letterSpacing: '0.22em', textTransform: 'uppercase',
+        }}>Stay a moment</button>
+        <button onClick={() => go('meaning-log')} style={{
+          background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-mute)',
+          fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase',
+        }}>The meaning log</button>
+      </section>
+    </div>
+  );
 
   return (
     <div className="fade-in" style={{ paddingBottom: 32 }}>
@@ -1504,14 +1590,34 @@ function GratitudeRitual({ go, back }) {
                 fontSize: 11, color: 'var(--hh-green)', letterSpacing: '0.06em',
                 minWidth: 28, fontWeight: 500,
               }}>{String(i + 1).padStart(2, '0')}</span>
-              <textarea value={v}
-                onChange={e => { const n = items.slice(); n[i] = e.target.value; setItems(n); }}
-                placeholder={['the warmth of the kettle', 'a friend remembered', 'the quiet hour before dinner'][i]}
-                style={{
-                  flex: 1, background: 'transparent', border: 0, outline: 'none', resize: 'none',
-                  fontFamily: 'var(--serif)', fontSize: 17, fontStyle: 'italic',
-                  fontWeight: 380, color: 'var(--hh-green)', minHeight: 44, lineHeight: 1.45,
-                }}/>
+              <div style={{ flex: 1 }}>
+                <textarea value={v.what}
+                  onChange={e => setField(i, 'what', e.target.value)}
+                  placeholder={['the warmth of the kettle', 'a friend remembered', 'the quiet hour before dinner'][i]}
+                  style={{
+                    width: '100%', background: 'transparent', border: 0, outline: 'none', resize: 'none',
+                    fontFamily: 'var(--serif)', fontSize: 17, fontStyle: 'italic',
+                    fontWeight: 380, color: 'var(--hh-green)', minHeight: 44, lineHeight: 1.45,
+                  }}/>
+                {v.what.trim() && (
+                  <div className="fade-in" style={{ marginTop: 8 }}>
+                    <div className="mono" style={{
+                      fontSize: 9, letterSpacing: '0.18em', textTransform: 'uppercase',
+                      color: 'var(--paper-mute)', marginBottom: 4,
+                    }}>
+                      Why it went well, and your part in it
+                    </div>
+                    <textarea value={v.why}
+                      onChange={e => setField(i, 'why', e.target.value)}
+                      placeholder="I made the time for it…"
+                      style={{
+                        width: '100%', background: 'transparent', border: 0, outline: 'none', resize: 'none',
+                        fontFamily: 'var(--sans)', fontSize: 14, fontWeight: 380,
+                        color: 'var(--hh-green-3)', minHeight: 38, lineHeight: 1.5,
+                      }}/>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ))}
@@ -1556,6 +1662,7 @@ function AweRitual({ go, back }) {
   const [noticed, setNoticed] = useState2('');
   const [kept, setKept] = useState2(false);
   const [keeping, setKeeping] = useState2(false);
+  const [savour, setSavour] = useState2(false);
 
   async function keepNotice() {
     const t = noticed.trim();
@@ -1614,10 +1721,19 @@ function AweRitual({ go, back }) {
                 The small things you stop to notice are where meaning often hides. They gather, over time, into your sense of what matters.
               </p>
               <p className="body-sm" style={{ margin: '18px 0 0', color: 'var(--paper-mute)' }}>You'll find this in your meaning log, on the Yours page.</p>
-              <div style={{ marginTop: 26, display: 'flex', gap: 18, alignItems: 'center' }}>
-                <button onClick={() => go('meaning-log')} style={{ background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0, padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase' }}>View meaning log</button>
+              <div style={{ marginTop: 26, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button onClick={() => setSavour(true)} style={{ background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0, padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase' }}>Stay a moment</button>
+                <button onClick={() => go('meaning-log')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>View meaning log</button>
                 <button onClick={() => go(back || 'home')} style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Done</button>
               </div>
+              {savour && (
+                <SavourMoment
+                  question="Bring it back for a second. What was it like?"
+                  avenue="receive"
+                  prompt="What the walk reached in me"
+                  onDone={() => go(back || 'home')}
+                />
+              )}
             </div>
           ) : (
             <>

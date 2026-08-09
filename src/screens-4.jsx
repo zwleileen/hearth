@@ -4,6 +4,7 @@ import React from 'react';
 import { BackRow, ColorBlock, Eyebrow, Headline, Icon, Kicker, LeafMark, Ph, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, isItemBookmarked } from './api.js';
+import { shareCard, SHARE_RESULT_MESSAGE } from './share.jsx';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers — format backend records for display
@@ -258,36 +259,83 @@ function EntryDetailScreen({ go, payload }) {
   );
 }
 
+// Keep an entry.
+//
+// This used to be four buttons with no onClick handlers at all: "Export
+// as PDF", "Email to yourself", "Copy as text", "Read-only link", none
+// of which did anything. It also carried a blur backdrop and 24px radii,
+// both forbidden (BRAND_BRIEF §8.5, §8.9).
+//
+// Now it does one thing properly. A journal entry is confessional and is
+// not the thing to broadcast, so what leaves here is a single line set
+// on Old Lace, drawn on the reader's own device, handed to their own
+// share sheet. Plus a plain copy, for wherever else it belongs.
 function ShareSheet({ entry, onClose }) {
+  const [note, setNote] = React.useState('');
+  const [busy, setBusy] = React.useState(false);
+
+  const line = (entry?.body || '').trim().split(/\n+/)[0] || entry?.title || '';
+
+  async function asCard() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const result = await shareCard({ text: line, attribution: 'From my journal', shareText: line });
+      setNote(SHARE_RESULT_MESSAGE[result] || '');
+    } catch { setNote('Could not share that just now.'); }
+    setBusy(false);
+  }
+
+  async function asText() {
+    const body = [entry?.title, '', entry?.body].filter(Boolean).join('\n');
+    try {
+      await navigator.clipboard.writeText(body);
+      setNote('Copied.');
+    } catch { setNote('Could not copy just now.'); }
+  }
+
   return (
-    <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(13,16,14,0.5)', backdropFilter: 'blur(6px)', zIndex: 50, display: 'flex', alignItems: 'flex-end' }}>
+    <div onClick={onClose} style={{
+      position: 'absolute', inset: 0, background: 'rgba(31, 64, 69, 0.35)',
+      zIndex: 50, display: 'flex', alignItems: 'flex-end',
+    }}>
       <div onClick={e => e.stopPropagation()} className="fade-in" style={{
-        width: '100%', background: 'var(--night)', borderRadius: '24px 24px 0 0',
-        padding: 22, paddingBottom: 30, borderTop: '1px solid var(--paper-line)',
+        width: '100%', background: 'var(--hh-lace)', padding: '24px 22px 30px',
+        borderTop: '2px solid var(--hh-green)',
       }}>
-        <div style={{ width: 36, height: 4, borderRadius: 999, background: 'var(--paper-line)', margin: '0 auto 14px' }}/>
-        <Eyebrow tone="rose">Share quietly</Eyebrow>
-        <h3 className="h-section serif" style={{ margin: '6px 0 14px', fontStyle: 'italic', fontWeight: 380 }}>
-          How would you like to keep it?
+        <Eyebrow>Keep it</Eyebrow>
+        <h3 className="h-section serif" style={{ margin: '8px 0 6px', fontStyle: 'italic', fontWeight: 380 }}>
+          One line, set properly.
         </h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {[
-            { label: 'Export as PDF',     sub: 'Letter-pressed paper feel',         tone: 'ember' },
-            { label: 'Email to yourself', sub: 'A future-you postcard',             tone: 'rose' },
-            { label: 'Copy as text',      sub: 'For wherever else it belongs',      tone: 'meadow' },
-            { label: 'Read-only link',    sub: 'Expires in 7 days · no account',    tone: 'wisteria' },
-          ].map(o => (
-            <button key={o.label} className="card-soft" style={{ padding: 14, display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', border: '1px solid var(--paper-line)', textAlign: 'left' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: `var(--${o.tone}-tint)`, flexShrink: 0 }}/>
-              <div style={{ flex: 1 }}>
-                <div className="serif" style={{ fontSize: 16, fontStyle: 'italic', fontWeight: 380 }}>{o.label}</div>
-                <div className="body-sm" style={{ marginTop: 2 }}>{o.sub}</div>
-              </div>
-              {Icon.arrow(14, 'var(--paper-faint)')}
-            </button>
-          ))}
+        <p className="body-sm" style={{ margin: '0 0 18px', maxWidth: 420 }}>
+          The entry stays yours. What leaves is a single line, typeset, made here on your own device.
+        </p>
+
+        {line && (
+          <p className="serif" style={{
+            margin: '0 0 18px', padding: '18px 20px', background: 'var(--hh-isabel)',
+            fontSize: 17, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)',
+          }}>{line}</p>
+        )}
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <button onClick={asCard} disabled={busy || !line} style={{
+            background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0,
+            padding: '13px 22px', cursor: line ? 'pointer' : 'default',
+            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+            letterSpacing: '0.22em', textTransform: 'uppercase', opacity: busy ? 0.6 : 1,
+          }}>{busy ? 'Setting it…' : 'Share the line'}</button>
+          <button onClick={asText} style={{
+            background: 'transparent', border: '1px solid rgba(31, 64, 69, 0.25)',
+            padding: '13px 22px', cursor: 'pointer', color: 'var(--hh-green)',
+            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+            letterSpacing: '0.22em', textTransform: 'uppercase',
+          }}>Copy the entry</button>
         </div>
-        <button className="btn btn-ghost" onClick={onClose} style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}>Close</button>
+
+        {note && <p className="body-sm" style={{ margin: '14px 0 0', color: 'var(--paper-mute)' }}>{note}</p>}
+
+        <button className="btn btn-ghost" onClick={onClose} style={{ marginTop: 18, width: '100%', justifyContent: 'center' }}>Close</button>
       </div>
     </div>
   );

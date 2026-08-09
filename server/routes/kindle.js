@@ -7,6 +7,7 @@
 //
 //   POST   /api/kindle              generate the opening session
 //   POST   /api/kindle/:id/reply    answer the question, get the turning
+//   POST   /api/kindle/:id/reseen   say the seeing missed, get seen again
 //   GET    /api/kindle/log          past sessions, reverse-chronological
 //   DELETE /api/kindle/log/:id      remove a session from the logbook
 
@@ -16,28 +17,63 @@ import { getOpenAI } from '../lib/ai.js';
 import {
   generateKindleSession,
   generateKindleTurning,
-  detectDistress,
-  CARE_RESOURCES,
+  generateKindleReseeing,
 } from '../lib/kindleRunner.js';
+import { detectDistress, careBlockFor, regionFromTimeZone } from '../lib/care.js';
 import { KindleSession } from '../models/KindleSession.js';
+import { MeaningNarrative } from '../models/MeaningNarrative.js';
 
 export const kindle = Router();
 kindle.use(requireAuth);
 
 const FEELING_MAX = 2000;
 const REPLY_MAX = 2000;
+const CORRECTION_MAX = 2000;
 
 // How many recent sessions to look back over for companion diversity.
 const DIVERSITY_WINDOW = 6;
+// How many recent sessions to pass as continuity (their words only).
+// Small on purpose: enough to be known, not enough to be profiled, and
+// it keeps the prompt a constant size however long someone stays.
+const KNOWING_WINDOW = 3;
 
 const LOG_DEFAULT_LIMIT = 30;
 const LOG_MAX_LIMIT = 100;
 
 // Build the care block for a response when distress was seen. Resources
-// are composed here, never by the model, so hotline numbers are always
-// real. Returns null when no distress, so the client renders nothing.
-function careBlock(flagged) {
-  return flagged ? { flagged: true, ...CARE_RESOURCES } : null;
+// are composed server-side, never by the model, so hotline numbers are
+// always real, and are chosen for the reader's own region so they can
+// actually be called. Returns null when no distress, so a calm surface
+// renders nothing at all.
+function careBlock(flagged, req) {
+  return careBlockFor(flagged, regionFromTimeZone(req.get('X-Hearth-TZ') || ''));
+}
+
+// Everything Hearth already knows of this reader, for the session
+// prompt: their meaning narrative, and the last few things they brought
+// here in their own words. Never the mirrors or turnings Hearth itself
+// offered them. Best-effort: a failure here costs continuity, not the
+// session.
+async function loadKnowing(userId) {
+  try {
+    const [narr, recent] = await Promise.all([
+      MeaningNarrative.findOne({ userId }).lean(),
+      KindleSession.find({ userId })
+        .sort({ createdAt: -1 })
+        .limit(KNOWING_WINDOW)
+        .select('feeling')
+        .lean(),
+    ]);
+    return {
+      narrative: narr
+        ? { narrative: narr.narrative || '', give: narr.give || '', receive: narr.receive || '', carry: narr.carry || '' }
+        : null,
+      recentFeelings: (recent || []).map((r) => r.feeling).filter(Boolean),
+    };
+  } catch (err) {
+    console.warn('[kindle] failed to load continuity:', err.message);
+    return null;
+  }
 }
 
 // ── POST /api/kindle ──────────────────────────────────────────────────
@@ -79,11 +115,14 @@ kindle.post('/', async (req, res) => {
     return res.status(503).json({ error: 'AI service not configured', detail: err.message });
   }
 
+  const knowing = await loadKnowing(userId);
+
   let session;
   try {
     const result = await generateKindleSession(client, {
       feeling,
       diversity: { recentCompanions },
+      knowing,
     });
     session = result.data;
   } catch (err) {
@@ -112,7 +151,7 @@ kindle.post('/', async (req, res) => {
   res.json({
     id: saved ? saved._id.toString() : null,
     session,
-    care: careBlock(flagged),
+    care: careBlock(flagged, req),
     createdAt: saved ? saved.createdAt : new Date(),
   });
 });
@@ -171,7 +210,73 @@ kindle.post('/:id/reply', async (req, res) => {
   res.json({
     id: record._id.toString(),
     turning,
-    care: careBlock(flaggedNow),
+    care: careBlock(flaggedNow, req),
+  });
+});
+
+// ── POST /api/kindle/:id/reseen ───────────────────────────────────────
+// The reader says the opening seeing missed them, and tells us how.
+//
+// This is the dialogue working, not a failure to apologise for: the
+// reader is the author of their own meaning, so when Hearth's reading
+// and theirs disagree, theirs is the true one. We regenerate only the
+// naming and the seeing and leave the rest of the session standing, so
+// a correction costs one small call rather than the whole session.
+kindle.post('/:id/reseen', async (req, res) => {
+  const userId = req.userId;
+  const { id } = req.params;
+  const { correction } = req.body || {};
+  if (!correction || typeof correction !== 'string' || !correction.trim()) {
+    return res.status(400).json({ error: 'correction (free text) is required' });
+  }
+  if (correction.length > CORRECTION_MAX) {
+    return res.status(400).json({ error: `correction is too long, please keep it under ${CORRECTION_MAX} characters` });
+  }
+
+  const record = await KindleSession.findOne({ _id: id, userId });
+  if (!record) return res.status(404).json({ error: 'Session not found' });
+
+  let client;
+  try {
+    client = getOpenAI();
+  } catch (err) {
+    return res.status(503).json({ error: 'AI service not configured', detail: err.message });
+  }
+
+  let reseen;
+  try {
+    const result = await generateKindleReseeing(client, {
+      feeling: record.feeling,
+      session: record.session,
+      correction,
+    });
+    reseen = result.data;
+  } catch (err) {
+    console.error('[kindle/reseen]', err);
+    return res.status(500).json({ error: 'Failed to see it again', detail: err.message });
+  }
+
+  const flaggedNow = !!reseen.careFlag || detectDistress(correction);
+
+  // Persist the correction and the corrected seeing onto the record, so
+  // the logbook shows what the reader actually meant rather than the
+  // first reading they rejected.
+  try {
+    if (reseen.feelingName?.trim()) record.session.feelingName = reseen.feelingName.trim();
+    if (reseen.seeing?.trim()) record.session.seeing = reseen.seeing.trim();
+    record.correction = correction.trim();
+    record.careFlagged = record.careFlagged || flaggedNow;
+    record.markModified('session');
+    await record.save();
+  } catch (err) {
+    console.warn('[kindle] failed to save re-seeing:', err.message);
+  }
+
+  res.json({
+    id: record._id.toString(),
+    feelingName: reseen.feelingName || '',
+    seeing: reseen.seeing || '',
+    care: careBlock(flaggedNow, req),
   });
 });
 
@@ -200,6 +305,7 @@ kindle.get('/log', async (req, res) => {
       session: e.session || {},
       reply: e.reply || '',
       replyTurning: e.replyTurning || null,
+      correction: e.correction || '',
       careFlagged: !!e.careFlagged,
       createdAt: e.createdAt,
     }));
