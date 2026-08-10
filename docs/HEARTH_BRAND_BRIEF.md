@@ -106,6 +106,22 @@ stance remains (Frankl, 1946).
 
 ## 5. The features, and why each is designed that way
 
+> **This is Hearth's feature register.** Every surface in the app has an
+> entry here, with what it is, why it exists, and the research it rests
+> on. If a feature ships without an entry, the register is wrong; if an
+> entry describes something that is no longer in the app, the register
+> is wrong. Keep it true.
+>
+> 5.1 Today · 5.2 The meaning of this moment + the Meaning Log ·
+> 5.3 Give (the deed, and the letter) · 5.4 Receive (today's thing,
+> Attune, encounter) · 5.5 Carry (the session, the mirror, the
+> re-seeing) · 5.6 Your Meaning, this season · 5.7 The Journal ·
+> 5.8 The Nook · 5.9 Safety · 5.10 Stay a moment · 5.11 The
+> accumulating light · 5.12 What may be shared
+>
+> Decisions and reversals behind these are recorded in
+> `docs/DOCTRINE_AUDIT.md`; what shipped when is in `docs/STATUS.md`.
+
 ### 5.1 Today, the daily home
 **What it is.** The home screen: a daily-changing quote presented as a
 still, framed centerpiece; one daily invitation ("the meaning of this
@@ -181,6 +197,13 @@ Four disciplines shape it:
   vast, something made, something true, something overlooked, and
   occasionally one piece of writing worth a whole reading. Topic breadth
   is what makes a feed; four of these five map onto Frankl's own list.
+- **Every song is playable.** Attune used to name three songs, give a
+  real reason for each, and offer no way to hear any of them, dead-ending
+  at the moment the reader's intent was highest. Each now deep-links to a
+  search on Spotify, Apple Music or YouTube Music, switchable in one tap
+  and remembered per device. Universal `https` links, never `spotify:`
+  URI schemes: a scheme fails silently on a device without the app, and a
+  tap that does nothing is the worst outcome available.
 - **The iso-principle** (Altshuler, 1948) in Attune: meet the listener's
   present state first, then let the music move them. Reinforced by the
   sad-music paradox (Vuoskoski et al., 2012; Garrido & Schubert, 2015)
@@ -223,6 +246,24 @@ literary figure who faced the same predicament or worse and still carried
 light), a turning (toward meaning through one of the three avenues), and
 a small step. Steadying practices (breathing, a shutdown ritual) sit
 alongside.
+
+**Two things run underneath the session.**
+
+*The reader can correct it.* If the opening seeing misses them, **"that's
+not quite it"** takes their correction as the truth and re-sees them,
+without apologising, explaining itself or thanking them for clarifying.
+This is not an error state: the reader is the author of their own
+meaning, so when Hearth's reading and theirs disagree, theirs is the true
+one, and a person correcting your understanding is Socratic dialogue
+working rather than failing.
+
+*It remembers.* A session is given the reader's meaning narrative and the
+last few things they brought here, **in their own words only** — never
+the mirrors or turnings Hearth itself offered them, which are Hearth's
+words and would compound the app's inventions into a portrait of a
+person. It is context to listen with and must never be performed back:
+no "I notice you often", no reference to previous sessions. Without it
+every session met a stranger.
 
 **Why.** This is the avenue of **attitudinal values**, the stance taken
 toward unavoidable suffering, the heart of logotherapy (Frankl, 1946;
@@ -309,6 +350,89 @@ does **not** administer safety plans or clinical screeners: doing so
 would make it a crisis product, import a duty of care it cannot staff,
 and put a clinical artifact inside a home for meaning. See
 `docs/DOCTRINE_AUDIT.md` §4.
+
+### 5.10 Stay a moment (savouring)
+**What it is.** A short beat offered wherever something good has just
+happened: after an Attune reading, after three good things, on returning
+from an awe walk, after a Carry turning lands, and after seeing someone
+properly. Name what it reached, three slow breaths with the out-breath
+longer, where it sits in the body, then a beat where nothing at all is
+asked. About twenty seconds, skippable at every step, and the line it
+produces joins the meaning log like everything else kept.
+
+**Why.** Frankl gives Hearth the avenue: meaning is received through
+what we let in. He says almost nothing about the *mechanics of keeping*
+a good moment once it arrives, and without those the app's whole Receive
+side ended the same way, with the reader scrolling away from something
+that had just moved them.
+
+- **Savouring** (Bryant & Veroff, 2007) is the academic ground; Quoidbach
+  et al. (2010) on savouring versus dampening strategies.
+- **The encoding** (Hanson, 2013; 2018): a positive experience is far more
+  likely to be retained when attention rests on it a little longer, when
+  it is felt in the body, and when the person lets it land instead of
+  moving straight on. The *structure* is well founded; the specific
+  durations he popularises are practical heuristics, not findings, and
+  should never be cited as such.
+- **The body question** is also affect labelling (Lieberman et al., 2007).
+- **The breath is exhale-extended, and that is a deliberate departure**
+  from Carry's box breathing. Carry's job is to bring a loud feeling
+  down (Zaccaro et al., 2018, equal-ratio). This one's job is to let
+  something settle in, and a longer out-breath is the pattern with the
+  better recent evidence for that (Balban et al., 2023). One good trial,
+  consistent with a broad slow-breathing literature. Same brand,
+  different instrument.
+
+**Deliberately not built:** Hanson's fourth move, holding a good thing
+alongside a hard one so the good gradually soothes the hard. It is the
+deepest idea here and structurally the same move as tragic optimism, but
+it can flood someone when the hard thing is too big. It needs the care
+flag clear, explicit opt-in, and the positive kept firmly in the
+foreground. Recorded rather than half-built.
+
+### 5.11 The accumulating light
+**What it is.** A warm light behind the home masthead that grows with
+everything the reader has ever kept.
+
+**Why.** The doctrine asks for exactly this (§8.9: continuity shown as
+light that accumulates, never as guilt) and it went unbuilt for a long
+time, so a reader with a hundred kept lines saw precisely what a reader
+with one saw. Streaks were correctly refused on philosophy, but refusing
+them left nothing at all in their place.
+
+**The rule that makes it safe: it can only ever grow.** No decay, no
+reset, no broken state, nothing lost by missing a day. Loss aversion is
+the engine of a streak, and the feeling wanted here is the opposite: the
+light you have tended is simply yours now. Any future accumulation
+surface inherits this rule.
+
+### 5.12 What may be shared
+**What it is.** A single quiet share affordance, used on some surfaces
+and deliberately absent from others.
+
+| May be shared | Why |
+|---|---|
+| **Conclusions** — a kept line, the keepsake from a turning | short, arrived-at, and able to stand outside your life because they do not need your life explained first |
+| **Quotations** — the daily quote, a saved poem or passage, the line a mirror is remembered for | real quotations, and the only text allowed the quote marks (§8.9) |
+| **Elsewhere** — a reading-room piece, today's thing, a song | someone else's public work; the link is the object |
+
+| May not | Why |
+|---|---|
+| **Drafts and confessions** — a journal entry, the feeling brought to Carry, the mood typed into Attune | written to work something out, unfinished, usually about other people who did not agree to appear in them. Expressive writing also works partly *because* it is unwitnessed, so a shareable journal quietly makes the writing worse. These get *copy*, which moves something you own somewhere else you own |
+
+**Why at all.** Self-transcendence is Hearth's growth loop (`MEANING.md`
+§6), which means sharing has to be *giving* and never broadcasting. A
+letter is neither shared nor copied: it is giving, and it has its own
+screen.
+
+**Two rules that follow.** The message never repeats the card, because
+the words are already in the image and saying them twice reads as
+automated. And **share copy is the one place Hearth is not literary**:
+everywhere else the reader is alone with the words, but a share message
+is read by their friend, in a thread, next to everything else in their
+life, so it must sound like the person who sent it. "This made me think
+of you." If a line could not be typed with one thumb while walking, it
+is wrong.
 
 ---
 
@@ -680,6 +804,17 @@ and you are welcome here.**
   Science of Motivation.* (Mental contrasting / WOOP.)
 - Bryant, F. B., & Veroff, J. (2007). *Savoring: A New Model of Positive
   Experience.* Mahwah, NJ: Lawrence Erlbaum.
+- Zaccaro, A., et al. (2018). "How breath-control can change your life: a
+  systematic review on psycho-physiological correlates of slow
+  breathing." *Frontiers in Human Neuroscience, 12*, 353. (Equal-ratio
+  breathing, the steadying practice in Carry.)
+- Curry, O. S., et al. (2018). "Happy to help? A systematic review and
+  meta-analysis of the effects of performing acts of kindness on the
+  well-being of the actor." *Journal of Experimental Social Psychology,
+  76*, 320–329. (Why Give asks who it is for.)
+- Gollwitzer, P. M., & Sheeran, P. (2006). "Implementation intentions and
+  goal achievement: a meta-analysis of effects and processes."
+  *Advances in Experimental Social Psychology, 38*, 69–119.
 - Lieberman, M. D., et al. (2007). "Putting feelings into words: Affect
   labeling disrupts amygdala activity in response to affective stimuli."
   *Psychological Science, 18*(5), 421–428.

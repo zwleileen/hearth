@@ -1,7 +1,14 @@
 # Hearth — Project Status & Handoff
 
 > A living record of where Hearth is, so work can continue across
-> sessions. Last updated 2026-08-09.
+> sessions. Last updated 2026-08-10.
+>
+> **Which doc is which.**
+> `HEARTH_BRAND_BRIEF.md` §5 is the **feature register**: every surface
+> in the app, what it is, why it exists, and the research it rests on.
+> `DOCTRINE_AUDIT.md` holds **decisions and reversals**, including things
+> deliberately not built and why. `MEANING.md` is the **north star**.
+> This file is the **shipping record**.
 > Companion docs: `docs/MEANING.md` (design north star),
 > `docs/HEARTH_BRAND_BRIEF.md` (logotherapy + brand + design system, cited),
 > `docs/DOCTRINE_AUDIT.md` (the 2026-08 audit: what held, what was wrong,
@@ -386,3 +393,30 @@ real request anyway.
 
 **Cost note.** The daily surface went from one GPT-5.1 web-search call
 per reader per day to one call per day in total.
+
+
+---
+
+## Session log — 2026-08-10 (third)
+
+**The second question in encounter is now gated on knowing the person.**
+Frankl's potential-seeing presupposes love and knowledge, so asked about
+a stranger it is projection. It appears only once you have noticed that
+person before, which means it surfaces on a second visit; kinship terms
+count immediately. The gallery loads on arrival to drive this, which also
+makes opening it instant.
+
+**The feature register was completed.** `HEARTH_BRAND_BRIEF.md` §5 is the
+answer to "what does Hearth do and why", and it had drifted behind what
+shipped. Added: §5.10 Stay a moment (savouring, with the Bryant/Hanson
+lineage and the reason its breath differs from Carry's), §5.11 the
+accumulating light, §5.12 what may and may not be shared. Extended §5.4
+with the listening links and §5.5 with the re-seeing and session
+continuity. Fixed a dangling cross-reference to a §5.10 that did not
+exist, added an index at the top of §5, and added the four references
+cited in the text but missing from §9 (Zaccaro, Curry, Gollwitzer &
+Sheeran, Quoidbach).
+
+The register now carries an instruction: if a feature ships without an
+entry, or an entry describes something no longer in the app, the
+register is wrong. Keep it true.
