@@ -388,21 +388,30 @@ function hearthUrl() {
   try { return window.location.origin; } catch { return ''; }
 }
 
-// Said the way Hearth says things: quiet, warm, specific, no hype, no
-// em dashes, and never "resonate", "journey" or "speaks to", which the
-// voice rules ban outright.
+// Said the way a person actually types it.
+//
+// The first attempt read "in case it finds you too", which is abstract
+// and, worse, has the tell of machine-written warmth: it gestures at
+// feeling without saying anything a person would say out loud. When
+// somebody sends you a poem they do not write "in case it finds you".
+// They write "this made me think of you".
+//
+// So: short, plain, first person, and about the actual reason you are
+// sending it. No literary reach, no cadence, nothing that sounds
+// composed. If a line could not be typed with one thumb while walking,
+// it is wrong.
 const SIGNATURE = 'Hearth, a daily home for meaning.';
 
 export const SHARE_MESSAGE = {
-  quote: 'Today\'s line at Hearth. Sending it on, in case it finds you too.',
-  kept: 'Something I noticed today. I wanted you to have it.',
-  keepsake: 'Something I am carrying today. Sending it on.',
-  mirror: 'This met me where I was today. Sending it on.',
-  passage: 'A passage that kept me company today.',
-  poem: 'A poem that kept me company today.',
-  saved: 'Something I have kept. Sending it on.',
-  song: 'This is what today sounded like.',
-  reading: 'Worth stopping for.',
+  quote: 'This made me think of you.',
+  kept: 'I wrote this down today.',
+  keepsake: "I'm carrying this one today.",
+  mirror: 'This helped me today.',
+  passage: 'This one got me today.',
+  poem: 'This poem got me today.',
+  saved: 'I kept this. Thought of you.',
+  song: "Been listening to this today.",
+  reading: "Thought you'd like this.",
 };
 
 // message + a blank line + where it came from. The signature is small on

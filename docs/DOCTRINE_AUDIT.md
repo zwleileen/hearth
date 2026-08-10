@@ -346,11 +346,25 @@ points back to wherever Hearth is actually running, with nothing to
 configure and nothing to keep in sync with a deploy.
 
 The lines live in `SHARE_MESSAGE` in `src/share.jsx`, one per kind of
-object. Note that "in case it resonates", the obvious phrasing, is
-unusable: `REFLECTION_VOICE` bans "resonate" along with "journey",
-"navigate", "holds space" and "speaks to". The quote line reads "in case
-it finds you too" instead, which says the same thing in Hearth's own
-register.
+object, and they went through two drafts worth recording.
+
+"In case it resonates" is unusable: `REFLECTION_VOICE` bans "resonate"
+along with "journey", "navigate", "holds space" and "speaks to". The
+replacement, "in case it finds you too", avoided the banned word and
+introduced a worse problem: it is abstract, and it has the tell of
+machine-written warmth, gesturing at feeling without saying anything a
+person would actually say.
+
+The rule that settled it: **if a line could not be typed with one thumb
+while walking, it is wrong.** Nobody sending a poem writes "in case it
+finds you". They write "this made me think of you". Every line is now
+short, first person, and about the real reason you are sending it.
+Longest is 29 characters.
+
+The register elsewhere in Hearth is literary because a reader is alone
+with it. A share message is not read by the reader; it is read by their
+friend, in a message thread, next to everything else in their life. It
+has to sound like the person who sent it, not like the app.
 
 ---
 

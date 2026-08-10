@@ -530,6 +530,12 @@ Quiet, considered, a sentence can rest.
   and two links in one message is clutter. The signature stays small:
   people pass on beautiful things, not apps, and a card that works as an
   advertisement stops working as a gift.
+  **Share copy is the one place Hearth is not literary.** Everywhere else
+  the reader is alone with the words. A share message is read by their
+  friend, in a thread, next to everything else in their life, so it has
+  to sound like the person who sent it and not like the app. Short, first
+  person, plain: "This made me think of you." If a line could not be
+  typed with one thumb while walking, it is wrong.
 - **Quotation marks are for quotations.** The quote hero, and the
   display-quote treatment anywhere, belongs to the canon: books, poems,
   philosophers, scripture, the mystics. Never set a reader's own writing
