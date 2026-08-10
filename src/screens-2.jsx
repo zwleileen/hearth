@@ -378,6 +378,16 @@ function AttuneScreen({ go }) {
     setView('reading');
   }
 
+  // Removal is permanent, so it takes two taps. A confirm dialog would
+  // be louder than anything else on the page; asking twice does the same
+  // work quietly. Same pattern as the Carry logbook and the meaning log.
+  const [pendingDelete, setPendingDelete] = React.useState(null);
+  function confirmDelete(id) {
+    if (pendingDelete === id) { setPendingDelete(null); deleteLogEntry(id); return; }
+    setPendingDelete(id);
+    setTimeout(() => setPendingDelete((cur) => (cur === id ? null : cur)), 4000);
+  }
+
   async function deleteLogEntry(id) {
     try {
       await api.attune.deleteEntry(id);
@@ -815,7 +825,7 @@ function AttuneScreen({ go }) {
           )}
 
           {logbook.error && (
-            <div style={{ padding: 16, background: 'var(--hh-isabel)', borderLeft: '2px solid var(--ember)' }}>
+            <div style={{ padding: 16, background: 'var(--hh-isabel)' }}>
               <p className="body" style={{ margin: 0 }}>{logbook.error}</p>
             </div>
           )}
@@ -836,7 +846,6 @@ function AttuneScreen({ go }) {
             <div key={entry.id} style={{
               borderBottom: '1px solid rgba(31, 64, 69, 0.10)',
               padding: '22px 0',
-              position: 'relative',
             }}>
               <button onClick={() => openLogEntry(entry)} style={{
                 display: 'block', width: '100%', textAlign: 'left',
@@ -889,23 +898,21 @@ function AttuneScreen({ go }) {
                   </p>
                 )}
               </button>
-              <button onClick={() => deleteLogEntry(entry.id)}
-                aria-label="Delete entry"
+              {/* This was hover-only (opacity 0 until mouseenter),
+                  which on a phone means invisible and unreachable: the
+                  reader could not remove a reading at all on the device
+                  they actually use. Always present now, and in flow
+                  rather than absolutely positioned, so it cannot sit on
+                  top of the entry text. */}
+              <button onClick={() => confirmDelete(entry.id)}
+                aria-label="Remove reading"
                 style={{
-                  position: 'absolute', top: 22, right: 0,
-                  background: 'transparent', border: 0, padding: '4px 8px',
+                  marginTop: 12, background: 'transparent', border: 0, padding: 0,
                   cursor: 'pointer', color: 'var(--paper-mute)',
                   fontFamily: 'var(--mono)', fontSize: 9.5,
                   letterSpacing: '0.16em', textTransform: 'uppercase',
-                  opacity: 0,
-                  transition: 'opacity 200ms ease',
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.opacity = 1}
-                onMouseLeave={(e) => e.currentTarget.style.opacity = 0}
-                onFocus={(e) => e.currentTarget.style.opacity = 1}
-                onBlur={(e) => e.currentTarget.style.opacity = 0}
-              >
-                Remove
+                }}>
+                {pendingDelete === entry.id ? 'Tap again to remove' : 'Remove'}
               </button>
             </div>
           ))}

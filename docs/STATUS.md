@@ -297,6 +297,14 @@ the web player instead of a tap that does nothing. Resolving the exact
 track needs a Spotify developer app and a client secret, which only the
 account owner can create; scoped in `DOCTRINE_AUDIT.md` §9.
 
+**Attune logbook: Remove made reachable.** It already had a delete
+button, but on the old hover-only pattern (opacity 0 until mouseenter),
+so on a phone it was invisible and unreachable and readings could not be
+removed at all on the device people actually use. Now always present,
+two taps, in flow rather than absolutely positioned over the entry text,
+matching the Carry logbook and the meaning log. That was the last
+hover-only action in the app; there are none left.
+
 **Also fixed: a crash from the initial commit.** `EntryDetailScreen`
 assumed `shift` was always a signed string. Home builds it that way, but
 the journal archive passes the raw API record where it is a number, and
