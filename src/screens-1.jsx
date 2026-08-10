@@ -7,6 +7,7 @@ import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, bookmarkKindFor, isItemBookmarked } from './api.js';
 import { ShareLink, SHARE_MESSAGE } from './share.jsx';
+import { SavourMoment } from './savour.jsx';
 import { CareBlock } from './care.jsx';
 
 const { useState: useState1, useEffect: useEffect1 } = React;
@@ -474,9 +475,9 @@ function HomeScreen({ go, user }) {
       {/* ── Go further: the reading room, and today's page ── */}
       <section style={{ padding: '44px 22px 0' }}>
         <div className="hh-doors">
-          <DoorRow word="The reading room" ink="var(--hh-blue-deep)"
-            meaning="Find inspiration today, essays, poems, and slow news worth stopping for."
-            onClick={() => go('reading')} />
+          <DoorRow word="One thing worth stopping for" ink="var(--hh-blue-deep)"
+            meaning="Today's, waiting in Receive. Something vast, or made, or easily walked past."
+            onClick={() => go('receive')} />
           {journalInvite && (
             <DoorRow word="Today's page"
               meaning={`${journalInvite.title}. A few minutes of writing, for when a line is not enough.`}
@@ -489,272 +490,10 @@ function HomeScreen({ go, user }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// READING ROOM — the Receive surface (was the body of Home).
-// A small daily-curated room of things worth taking in: essays,
-// poems, slow news. Reached via the Receive door on Home.
-// ─────────────────────────────────────────────────────────────
-function ReadingRoomScreen({ go }) {
-  const [items, setItems] = useState1(null);
-  const [issueNote, setIssueNote] = useState1('');
-  const [feedState, setFeedState] = useState1('loading'); // loading|ready|empty|unauthed
-  const [bookmarks, setBookmarks] = React.useState([]);
-
-  async function saveDiscoverItem(item) {
-    if (isItemBookmarked(bookmarks, item)) return;
-    try {
-      const kind = bookmarkKindFor(item);
-      const { bookmark } = await api.bookmarks.create({
-        kind, title: item.title, source: item.source || '', url: item.url || '',
-        excerpt: item.dek || '',
-        meta: { savedFrom: 'reading', readTime: item.readTime, image: item.image },
-      });
-      if (bookmark) setBookmarks(prev => [bookmark, ...prev]);
-    } catch (err) {
-      if (err.status === 409) {
-        try { const { bookmarks: latest } = await api.bookmarks.list(); setBookmarks(latest || []); } catch {}
-      }
-    }
-  }
-
-  useEffect1(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const data = await api.discover.today();
-        if (cancelled) return;
-        const list = data.items || [];
-        setItems(list);
-        setIssueNote(data.issueNote || '');
-        setFeedState(list.length > 0 ? 'ready' : 'empty');
-      } catch (err) {
-        if (cancelled) return;
-        setFeedState(err.status === 401 ? 'unauthed' : 'empty');
-      }
-    })();
-    (async () => {
-      try { const { bookmarks: list } = await api.bookmarks.list(); if (!cancelled) setBookmarks(list || []); } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  const hero = items?.[0];
-  const rest = items?.slice(1) || [];
-
-  return (
-    <div className="fade-in" style={{ paddingBottom: 48 }}>
-      {/* breadcrumb */}
-      <section style={{ padding: '4px 22px 0' }}>
-        <button onClick={() => go('home')} style={{
-          background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
-          display: 'flex', alignItems: 'center', gap: 6, color: 'var(--hh-green)',
-          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-          letterSpacing: '0.22em', textTransform: 'uppercase',
-        }}>
-          {Icon.back(18, 'currentColor')}<span>Home</span>
-        </button>
-      </section>
-
-      {/* header */}
-      <section style={{ padding: '20px 22px 0' }}>
-        <Kicker>Receive</Kicker>
-        <Headline size="display" style={{ marginTop: 12 }}>
-          The reading room.
-        </Headline>
-        <p className="body" style={{ margin: '14px 0 0', maxWidth: 460 }}>
-          A small room of things worth taking in. Essays, poems, slow news, gathered fresh for you each day. Meaning through what you let in.
-        </p>
-      </section>
-
-      {/* the spread */}
-      <section style={{ padding: '40px 22px 0' }}>
-        <div className="hearth-dept-head">
-          <span className="hearth-dept-head-title">Today's room</span>
-          {feedState === 'ready' && (
-            <span className="hearth-dept-head-meta">{items.length} {items.length === 1 ? 'piece' : 'pieces'}</span>
-          )}
-        </div>
-        {issueNote && feedState === 'ready' && (
-          <p className="serif" style={{ margin: '14px 0 0', fontSize: 17, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)', maxWidth: 580, lineHeight: 1.45 }}>
-            {issueNote}
-          </p>
-        )}
-
-        {feedState === 'loading' && (
-          <div style={{ marginTop: 28 }}>
-            <div style={{ height: 280, background: 'var(--paper-line)', opacity: 0.25 }}/>
-            <div style={{ height: 24, background: 'var(--paper-line)', opacity: 0.35, marginTop: 18, width: '70%' }}/>
-            <div style={{ height: 14, background: 'var(--paper-line)', opacity: 0.25, marginTop: 10, width: '90%' }}/>
-          </div>
-        )}
-
-        {feedState === 'unauthed' && (
-          <div style={{ marginTop: 22 }}>
-            <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 420 }}>
-              Your reading room opens once you sign in. We keep it small, and we keep it yours.
-            </p>
-            <button className="btn btn-ember" onClick={() => go('auth')} style={{ marginTop: 18 }}>
-              Sign in
-            </button>
-          </div>
-        )}
-
-        {feedState === 'empty' && (
-          <div style={{ marginTop: 22 }}>
-            <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 420 }}>
-              Today's reading room is being gathered for you. Check back in a moment.
-            </p>
-          </div>
-        )}
-
-        {/* Hero article — magazine cover treatment */}
-        {feedState === 'ready' && hero && (() => {
-          const heroSaved = isItemBookmarked(bookmarks, hero);
-          return (
-            <article style={{ marginTop: 28 }}>
-              <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
-                style={{ cursor: hero.url ? 'pointer' : 'default' }}>
-                {hero.image ? (
-                  <img
-                    src={hero.image}
-                    alt=""
-                    referrerPolicy="no-referrer"
-                    loading="lazy"
-                    style={{ width: '100%', height: 320, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
-                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                  />
-                ) : null}
-              </div>
-              <div style={{ display: 'flex', gap: 14, marginTop: 18, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span className="mono" style={{ fontSize: 10, letterSpacing: '0.24em', color: 'var(--hh-ecru-deep)', textTransform: 'uppercase', fontWeight: 500 }}>
-                    Cover · {hero.kind}
-                  </span>
-                  {hero.source && (
-                    <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                      · {hero.source}
-                    </span>
-                  )}
-                  {hero.readTime && (
-                    <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {hero.readTime}</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-                  {hero.url && <ShareLink text={hero.title} url={hero.url} message={SHARE_MESSAGE.reading} label="Share"/>}
-                  <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(hero); }}
-                    disabled={heroSaved} className="hearth-save-btn" data-saved={heroSaved}>
-                    {Icon.bookmark(12, 'currentColor')}
-                    <span>{heroSaved ? 'Saved' : 'Save'}</span>
-                  </button>
-                </div>
-              </div>
-              <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
-                style={{ cursor: hero.url ? 'pointer' : 'default' }}>
-                <h2 className="serif" style={{
-                  margin: '14px 0 12px', fontSize: 30, lineHeight: 1.1, fontStyle: 'italic',
-                  fontWeight: 360, letterSpacing: '-0.01em', color: 'var(--hh-green)',
-                }}>
-                  {hero.title}
-                </h2>
-                <p className="body" style={{ margin: 0, maxWidth: 580, fontSize: 16, lineHeight: 1.55 }}>
-                  {hero.dek}
-                </p>
-              </div>
-            </article>
-          );
-        })()}
-
-        {/* Heavier hairline between hero and the grid */}
-        {feedState === 'ready' && rest.length > 0 && (
-          <div style={{ marginTop: 48 }}>
-            <hr className="hearth-hero-rule"/>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 14, marginBottom: 6 }}>
-              <span className="mono" style={{ fontSize: 10.5, letterSpacing: '0.26em', color: 'var(--hh-green)', textTransform: 'uppercase', fontWeight: 500 }}>
-                Also in this issue
-              </span>
-              <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)', textTransform: 'uppercase' }}>
-                {rest.length} {rest.length === 1 ? 'piece' : 'pieces'}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Grid of remaining items, each on a rotating accent */}
-        {feedState === 'ready' && rest.length > 0 && (() => {
-          const ACCENTS = [
-            { color: 'var(--hh-ecru)',    deep: 'var(--hh-ecru-deep)' },
-            { color: 'var(--hh-blue)',    deep: 'var(--hh-blue-deep)' },
-            { color: 'var(--hh-dogwood)', deep: 'var(--hh-dogwood-deep)' },
-            { color: 'var(--hh-green)',   deep: 'var(--hh-green)' },
-          ];
-          return (
-            <div className="hearth-feed-grid" style={{ marginTop: 28 }}>
-              {rest.map((it, i) => {
-                const itemKey = it.url || `${it.kind}:${it.title}:${i}`;
-                const itemSaved = isItemBookmarked(bookmarks, it);
-                const accent = ACCENTS[i % ACCENTS.length];
-                return (
-                  <article key={itemKey} className="hearth-article"
-                    style={{
-                      '--card-accent': accent.color,
-                      '--card-accent-deep': accent.deep,
-                    }}>
-                    <div onClick={() => it.url && window.open(it.url, '_blank', 'noopener,noreferrer')}
-                      style={{ cursor: it.url ? 'pointer' : 'default' }}>
-                      <div className="hearth-article-no">
-                        № {String(i + 1).padStart(2, '0')} · {it.kind}
-                      </div>
-                      {it.image ? (
-                        <img
-                          src={it.image}
-                          alt=""
-                          referrerPolicy="no-referrer"
-                          loading="lazy"
-                          style={{ width: '100%', height: 160, objectFit: 'cover', display: 'block', background: 'var(--paper-line)', marginTop: 14 }}
-                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                        />
-                      ) : null}
-                      <h3 className="hearth-article-title">{it.title}</h3>
-                      <p className="body-sm" style={{ margin: 0, lineHeight: 1.6 }}>
-                        {it.dek}
-                      </p>
-                      {(it.source || it.readTime) && (
-                        <div className="hearth-article-source">
-                          {it.source}{it.source && it.readTime ? ' · ' : ''}{it.readTime}
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, alignItems: 'center', marginTop: 14 }}>
-                      {it.url && <ShareLink text={it.title} url={it.url} message={SHARE_MESSAGE.reading} label="Share"/>}
-                      <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(it); }}
-                        disabled={itemSaved} className="hearth-save-btn" data-saved={itemSaved}>
-                        {Icon.bookmark(11, 'currentColor')}
-                        <span>{itemSaved ? 'Saved' : 'Save'}</span>
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
-          );
-        })()}
-
-        {/* Heavy section break to journal CTA */}
-        <div style={{ marginTop: 56, paddingTop: 28, borderTop: '2px solid var(--hh-green)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-            <p className="serif" style={{ margin: 0, fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper)', maxWidth: 380, lineHeight: 1.4 }}>
-              When the reading is done, the page is here. Five minutes is enough.
-            </p>
-            <button className="btn btn-ember" onClick={() => go('journal')}>
-              Begin today's entry {Icon.arrow(14, 'var(--on-ember)')}
-            </button>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
-}
-
+// The reading room screen is gone. It served a per-user room of six to
+// ten interest-matched pieces a day, which was a feed: topic-driven,
+// unbounded, and impossible to stay with. Its place is taken by
+// TodayThing, one shared object a day. See docs/DOCTRINE_AUDIT.md §10.
 
 // A door row, the shared building block of every avenue hub. onClick is
 // a thunk so a row can open a screen or a specific practice.
@@ -952,6 +691,180 @@ function GiveScreen({ go, user }) {
 // reading room (words), and savoring (awe, noticing the good).
 // Meaning through what you let in.
 // ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
+// TODAY'S THING — the one object at the top of Receive.
+//
+// This replaced the reading room, which was six to ten interest-matched
+// pieces a day. Two things were wrong with that (docs/DOCTRINE_AUDIT.md
+// §10). It was topic-driven, which is the mechanic of every content app
+// and is not what receiving means here. And it was a queue: ten items
+// accrue guilt, and you cannot stay with ten things, which made the
+// savour beat incoherent attached to it.
+//
+// One thing, shared by everyone, asking nothing. The register rotates
+// day to day (something vast, something made, something true, something
+// overlooked, and occasionally one piece of writing worth your whole
+// attention), and that rotation is where variety comes from now.
+// ─────────────────────────────────────────────────────────────
+function TodayThing({ go }) {
+  const [thing, setThing] = useState1(null); // null = loading
+  const [state, setState] = useState1('loading'); // loading | ready | empty | unauthed
+  const [saved, setSaved] = useState1(false);
+  const [savour, setSavour] = useState1(false);
+
+  useEffect1(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.today.get();
+        if (cancelled) return;
+        if (data && data.title) { setThing(data); setState('ready'); }
+        else setState('empty');
+      } catch (err) {
+        if (cancelled) return;
+        setState(err.status === 401 ? 'unauthed' : 'empty');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function keep() {
+    if (!thing || saved) return;
+    try {
+      await api.bookmarks.create({
+        kind: 'article',
+        title: thing.title,
+        source: thing.sourceName || '',
+        url: thing.url || '',
+        excerpt: thing.body || '',
+        meta: { savedFrom: 'today', register: thing.register },
+      });
+      setSaved(true);
+    } catch (err) {
+      if (err.status === 409) setSaved(true);
+    }
+  }
+
+  if (state === 'loading') {
+    return (
+      <section style={{ padding: '30px 22px 0' }}>
+        <div style={{ height: 200, background: 'var(--paper-line)', opacity: 0.22 }}/>
+        <div style={{ height: 22, background: 'var(--paper-line)', opacity: 0.3, marginTop: 18, width: '46%' }}/>
+        <div style={{ height: 13, background: 'var(--paper-line)', opacity: 0.22, marginTop: 12, width: '86%' }}/>
+      </section>
+    );
+  }
+
+  if (state === 'unauthed') {
+    return (
+      <section style={{ padding: '30px 22px 0' }}>
+        <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 420 }}>
+          Today's thing is waiting once you sign in.
+        </p>
+        <button className="btn btn-ember" onClick={() => go('auth')} style={{ marginTop: 16 }}>Sign in</button>
+      </section>
+    );
+  }
+
+  if (state === 'empty' || !thing) {
+    return (
+      <section style={{ padding: '30px 22px 0' }}>
+        <p className="serif" style={{ fontSize: 18, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-mute)', maxWidth: 420 }}>
+          Today's thing is still being found. It will be here shortly.
+        </p>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <section style={{ padding: '30px 22px 0' }}>
+        {thing.image && (
+          <img
+            src={thing.image}
+            alt=""
+            referrerPolicy="no-referrer"
+            loading="lazy"
+            style={{ width: '100%', height: 260, objectFit: 'cover', display: 'block', background: 'var(--paper-line)' }}
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        )}
+        <div className="mono" style={{
+          marginTop: thing.image ? 18 : 0, fontSize: 9.5, letterSpacing: '0.24em',
+          textTransform: 'uppercase', color: 'var(--hh-blue-deep)', fontWeight: 500,
+        }}>
+          Today
+        </div>
+        <h2 className="serif" style={{
+          margin: '12px 0 0', fontSize: 30, lineHeight: 1.1, fontStyle: 'italic',
+          fontWeight: 360, letterSpacing: '-0.01em', color: 'var(--hh-green)',
+        }}>
+          {thing.title}
+        </h2>
+        <p className="body" style={{ margin: '14px 0 0', maxWidth: 560, fontSize: 16, lineHeight: 1.65 }}>
+          {thing.body}
+        </p>
+
+        <div style={{ marginTop: 20, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+          {thing.url && (
+            <a href={thing.url} target="_blank" rel="noopener noreferrer" style={{
+              color: 'var(--hh-green)', fontFamily: 'var(--mono)', fontSize: 9.5,
+              letterSpacing: '0.16em', textTransform: 'uppercase', textDecoration: 'none',
+              borderBottom: '1px solid currentColor', paddingBottom: 2,
+            }}>
+              {thing.sourceName ? `More at ${thing.sourceName}` : 'Read more'} →
+            </a>
+          )}
+          <ShareLink text={`${thing.title}. ${thing.body}`} url={thing.url || null} message={SHARE_MESSAGE.reading} label="Share"/>
+          <button onClick={keep} disabled={saved} style={{
+            background: 'transparent', border: 0, padding: 0,
+            cursor: saved ? 'default' : 'pointer',
+            color: saved ? 'var(--paper-faint)' : 'var(--paper-mute)',
+            fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase',
+          }}>{saved ? 'In your Nook' : 'Keep it'}</button>
+        </div>
+
+        {/* One thing can be stayed with. Ten could not, which is why the
+            savour beat never belonged on the old reading room. */}
+        {!savour && (
+          <button onClick={() => setSavour(true)} style={{
+            marginTop: 22, width: '100%', textAlign: 'left', background: 'var(--hh-isabel)',
+            border: 0, padding: '18px 22px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          }}>
+            <span className="serif" style={{ fontSize: 17, fontStyle: 'italic', color: 'var(--hh-green)', fontWeight: 380 }}>
+              Stay a moment with this
+            </span>
+            {Icon.arrow(16, 'var(--hh-green)')}
+          </button>
+        )}
+      </section>
+
+      {savour && (
+        <SavourMoment
+          question="What did that reach in you?"
+          avenue="receive"
+          prompt="What today's thing reached in me"
+          onDone={() => setSavour(false)}
+        />
+      )}
+    </>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────
+// RECEIVE — the avenue hub.
+//
+// Rebuilt around one idea: Receive should have something that is TODAY
+// and asks nothing, before it has any doors at all. It used to be four
+// doors of wildly different cost (two minutes, or fifteen and leaving
+// the house) presented identically, and every one of them required the
+// reader to bring something. Someone arriving with nothing particular in
+// mind had no move.
+//
+// Now: today's thing at the top, then the doors grouped by what they
+// actually cost, with the cost said plainly.
+// ─────────────────────────────────────────────────────────────
 function ReceiveScreen({ go }) {
   const ink = 'var(--hh-blue-deep)';
   return (
@@ -962,23 +875,39 @@ function ReceiveScreen({ go }) {
           What moves you.
         </Headline>
         <p className="body" style={{ margin: '16px 0 0', maxWidth: 460 }}>
-          Meaning through what you let in: beauty, awe, ideas, another person. Let the world reach you.
+          Meaning through what you let in. Beauty, other people, and the world turning out to be larger than your day.
         </p>
       </section>
-      <section style={{ padding: '40px 22px 0' }}>
-        <div className="hh-doors">
-          <DoorRow word="Attune" ink={ink} meaning="Songs, a book passage, and a poem shaped to how you feel right now. Met where you are, then moved with, gently." onClick={() => go('attune')} />
-          <DoorRow word="The reading room" ink={ink} meaning="A small daily room of essays, poems, and slow news worth stopping for." onClick={() => go('reading')} />
-        </div>
-      </section>
-      <section style={{ padding: '40px 22px 0' }}>
+
+      <TodayThing go={go}/>
+
+      <section style={{ padding: '44px 22px 0' }}>
         <div className="hearth-dept-head">
-          <span className="hearth-dept-head-title">Savor</span>
+          <span className="hearth-dept-head-title">Whenever you want</span>
           <span className="hearth-dept-head-meta">a few minutes</span>
         </div>
         <div className="hh-doors" style={{ marginTop: 6 }}>
-          <DoorRow word="An awe walk" ink={ink} meaning="A walk with attention turned outward, toward the vast or the beautiful. It widens the day." onClick={() => openRitual(go, 'awe', 'receive')} />
-          <DoorRow word="Three good things" ink={ink} meaning="Notice three that went right, and your part in them. Small, and steadying over time." onClick={() => openRitual(go, 'gratitude', 'receive')} />
+          <DoorRow word="Attune" ink={ink}
+            meaning="How you feel right now, met with songs, a book passage, and a poem."
+            onClick={() => go('attune')} />
+          <DoorRow word="Someone you saw" ink={ink}
+            meaning="One person, looked at properly. What you noticed that most people would walk past."
+            onClick={() => go('encounter')} />
+        </div>
+      </section>
+
+      <section style={{ padding: '40px 22px 0' }}>
+        <div className="hearth-dept-head">
+          <span className="hearth-dept-head-title">Longer</span>
+          <span className="hearth-dept-head-meta">outdoors, or at the end of a day</span>
+        </div>
+        <div className="hh-doors" style={{ marginTop: 6 }}>
+          <DoorRow word="An awe walk" ink={ink}
+            meaning="Fifteen minutes with your attention turned outward, toward the vast or the beautiful."
+            onClick={() => openRitual(go, 'awe', 'receive')} />
+          <DoorRow word="Three good things" ink={ink}
+            meaning="What went well today, and the part you played in it."
+            onClick={() => openRitual(go, 'gratitude', 'receive')} />
         </div>
       </section>
     </div>
@@ -1769,4 +1698,4 @@ function JournalWriteScreen({ go, payload }) {
   );
 }
 
-export { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen };
+export { HomeScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen };

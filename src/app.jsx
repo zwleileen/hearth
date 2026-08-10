@@ -4,22 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { HearthMarkSmall, HearthTopbar, Icon } from './atoms.jsx';
 import {
   useTweaks, TweaksPanel, TweakSection, TweakRadio, TweakSelect,
-  TweakToggle, TweakNumber, TweakButton,
+  TweakToggle, TweakButton,
 } from './tweaks-panel.jsx';
 import { HEARTH_DATA } from './data.js';
-import { HomeScreen, ReadingRoomScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
-import {
-  DiscoverScreen, AttuneScreen, RitualDetailScreen,
-} from './screens-2.jsx';
+import { HomeScreen, GiveScreen, ReceiveScreen, YoursScreen, MeaningScreen, MeaningLogScreen, JournalScreen, JournalWriteScreen } from './screens-1.jsx';
+import { AttuneScreen, RitualDetailScreen } from './screens-2.jsx';
 import {
   OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, ProfileScreen,
 } from './screens-3.jsx';
 import { KindleScreen } from './screens-5.jsx';
 import { LetterScreen } from './letter.jsx';
+import { EncounterScreen } from './encounter.jsx';
 import {
-  JournalArchiveScreen, EntryDetailScreen, ArticleScreen,
-  BookmarksScreen, StreakBrokenScreen,
-  AttuneHistoryScreen, MiniPlayer, OfflineBanner, Toast,
+  JournalArchiveScreen, EntryDetailScreen, BookmarksScreen,
+  OfflineBanner, Toast,
 } from './screens-4.jsx';
 import { api, getToken, clearToken } from './api.js';
 
@@ -38,15 +36,13 @@ const TABS = [
 
 const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
   "partOfDay": "morning",
-  "streak": 23,
   "showGrain": true,
   "startingScreen": "home",
-  "miniPlayer": false,
   "offline": false,
   "transition": "lift"
 }/*EDITMODE-END*/;
 
-const FULLBLEED_ROUTES = new Set(['landing', 'onboarding', 'auth', 'streak-broken']);
+const FULLBLEED_ROUTES = new Set(['landing', 'onboarding', 'auth']);
 
 function App() {
   const [values, setTweak] = useTweaks(TWEAK_DEFAULTS);
@@ -178,14 +174,13 @@ function App() {
       route === 'home' ? 'today'
     : route === 'kindle' ? 'carry'
     : (route === 'give' || route === 'letter') ? 'give'
-    : (route === 'receive' || route === 'attune' || route === 'attune-history' || route === 'reading' || route === 'article' || route === 'discover') ? 'receive'
+    : (route === 'receive' || route === 'attune' || route === 'encounter') ? 'receive'
     : (route === 'yours' || route === 'meaning' || route === 'meaning-log' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks') ? 'yours'
     : route.startsWith('settings') ? 'settings'
     : 'today';
 
   const isFullBleed = FULLBLEED_ROUTES.has(route);
   const D = HEARTH_DATA;
-  const playerSong = values.miniPlayer ? D.attuneArchetypes[0].song : null;
 
   const screenContent = (
     <>
@@ -196,7 +191,6 @@ function App() {
 
       {/* Main */}
       {route === 'home' && <HomeScreen go={go} user={user}/>}
-      {route === 'reading' && <ReadingRoomScreen go={go}/>}
       {route === 'give' && <GiveScreen go={go} user={user}/>}
       {route === 'receive' && <ReceiveScreen go={go}/>}
       {route === 'yours' && <YoursScreen go={go}/>}
@@ -206,15 +200,12 @@ function App() {
       {route === 'journal-write' && <JournalWriteScreen go={go} payload={payload}/>}
       {route === 'journal-archive' && <JournalArchiveScreen go={go}/>}
       {route === 'entry-detail' && <EntryDetailScreen go={go} payload={payload}/>}
-      {route === 'discover' && <DiscoverScreen go={go}/>}
-      {route === 'article' && <ArticleScreen go={go} payload={payload}/>}
       {route === 'bookmarks' && <BookmarksScreen go={go}/>}
       {route === 'attune' && <AttuneScreen go={go}/>}
-      {route === 'attune-history' && <AttuneHistoryScreen go={go}/>}
       {route === 'kindle' && <KindleScreen go={go}/>}
       {route === 'letter' && <LetterScreen go={go} user={user}/>}
+      {route === 'encounter' && <EncounterScreen go={go}/>}
       {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}
-      {route === 'streak-broken' && <StreakBrokenScreen go={go}/>}
 
       {/* Settings */}
       {route === 'settings' && <SettingsScreen go={go} user={user} refreshUser={refreshUser} onSignOut={user ? signOut : null}/>}
@@ -287,7 +278,6 @@ function App() {
             )}
           </div>
 
-          {!isFullBleed && playerSong && <MiniPlayer song={playerSong} onClose={() => setTweak('miniPlayer', false)} onOpen={() => go('attune-history')}/>}
           {toast && <Toast message={toast}/>}
 
           {!isFullBleed && (
@@ -320,11 +310,8 @@ function App() {
             {value:'none',label:'None, instant'},
           ]}
           onChange={v => setTweak('transition', v)}/>
-        <TweakToggle label="Show mini-player" value={values.miniPlayer} onChange={v => setTweak('miniPlayer', v)}/>
         <TweakToggle label="Offline banner" value={values.offline} onChange={v => setTweak('offline', v)}/>
         <TweakSection label="State"/>
-        <TweakNumber label="Streak (days)" value={values.streak} min={0} max={999}
-          onChange={v => setTweak('streak', v)}/>
         <TweakSelect label="Open to" value={values.startingScreen}
           options={[
             {value:'onboarding',label:'Onboarding'},
@@ -332,18 +319,14 @@ function App() {
             {value:'home',label:'Today (home)'},
             {value:'receive',label:'Receive (hub)'},
             {value:'yours',label:'Yours (hub)'},
-            {value:'reading',label:'Reading room (Receive)'},
             {value:'journal',label:'Journal'},
             {value:'journal-archive',label:'Journal · Archive'},
             {value:'entry-detail',label:'Entry detail'},
-            {value:'discover',label:'Discover (legacy)'},
-            {value:'article',label:'Article'},
             {value:'bookmarks',label:'Bookmarks'},
             {value:'attune',label:'Attune'},
-            {value:'attune-history',label:'Attune · history'},
             {value:'kindle',label:'Carry'},
             {value:'letter',label:'Give · a letter'},
-            {value:'streak-broken',label:'Streak broken'},
+            {value:'encounter',label:'Receive · someone you saw'},
             {value:'settings',label:'Settings'},
             {value:'settings-profile',label:'Profile'},
           ]}

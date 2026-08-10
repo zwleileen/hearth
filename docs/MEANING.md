@@ -75,11 +75,20 @@ Nothing already built is wasted; each surface is re-pointed.
   and Veroff are the ground; Hanson supplies the encoding. Frankl says
   where meaning is found and is silent on how a found moment is kept;
   this is the missing half, and it is never named as a technique.
-- **Reading room (Discover) → "Receive, from the world."** Re-aim
-  curation from "thoughtful culture" to *meaning-rich* pieces: people
-  living with courage and contribution, acts of repair, awe, beauty.
-  Lead with exemplars and the awe register (Keltner: awe → meaning and
-  self-transcendence).
+- **Reading room → replaced (2026-08).** The re-aim called for here was
+  attempted and the diagnosis went deeper: the room was topic-driven,
+  which is a feed, and no re-aiming fixes the mechanic. It is now **one
+  thing worth stopping for**, shared by everyone, with a rotating
+  register (vast, made, true, overlooked, and occasionally one real
+  read). The awe register survives and is now central rather than a
+  buried walk.
+  The "lead with exemplars" half was **rejected on doctrine**: a daily
+  portrait of someone who lived well is a meaningful model, which is
+  attitudinal, which is Carry. It would have duplicated the mirror while
+  being worse than it. See `DOCTRINE_AUDIT.md` §10.2.
+- **Encounter → built (2026-08).** The real gap in Receive, and the one
+  Frankl ranks highest: the people actually in your life, as meaning
+  received. One person, looked at properly. Never a contact list.
 - **Journal → "Socratic dialogue."** Replace generic prompts with
   logotherapy's actual technique: questions that draw out the person's
   *own* meaning, tagged by avenue. The crown jewel is the Copernican

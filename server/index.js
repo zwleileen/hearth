@@ -6,11 +6,12 @@ import { auth } from './routes/auth.js';
 import { journal } from './routes/journal.js';
 import { profile } from './routes/profile.js';
 import { bookmarks } from './routes/bookmarks.js';
-import { discover } from './routes/discover.js';
+import { today } from './routes/today.js';
 import { attune } from './routes/attune.js';
 import { digest } from './routes/digest.js';
 import { kindle } from './routes/kindle.js';
 import { meaning } from './routes/meaning.js';
+import { encounter } from './routes/encounter.js';
 import { narrative } from './routes/narrative.js';
 
 const app = express();
@@ -51,11 +52,12 @@ app.use('/api/auth', auth);
 app.use('/api/journal', journal);
 app.use('/api/profile', profile);
 app.use('/api/bookmarks', bookmarks);
-app.use('/api/discover', discover);
+app.use('/api/today', today);
 app.use('/api/attune', attune);
 app.use('/api/digest', digest);
 app.use('/api/kindle', kindle);
 app.use('/api/meaning', meaning);
+app.use('/api/encounter', encounter);
 app.use('/api/narrative', narrative);
 
 app.use((err, req, res, _next) => {

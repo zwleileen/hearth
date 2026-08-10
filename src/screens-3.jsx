@@ -4,21 +4,13 @@ import React from 'react';
 import { BackRow, Eyebrow, Icon } from './atoms.jsx';
 import { api, setToken } from './api.js';
 
-// ─────────────────────────────────────────────────────────────
-// READING GARDEN — interest taxonomy (Step 3)
-// Cross-disciplinary, world-spanning. Each maps to a botanical tone.
-// ─────────────────────────────────────────────────────────────
-const READING_GARDEN = [
-  { k: 'repair',    label: 'Quiet repair',         sub: 'Restoration · slow ecology · craft revivals',           tone: 'fern',     glyph: '❀' },
-  { k: 'craft',     label: 'Hands & makers',       sub: 'Bakers, builders, weavers, gardeners',                  tone: 'ember',    glyph: '✦' },
-  { k: 'ideas',     label: 'Long ideas',           sub: 'Philosophy, literature, the long view',                 tone: 'wisteria', glyph: '◆' },
-  { k: 'science',   label: 'Quiet science',        sub: 'Mind, body, climate · the human-scale findings',        tone: 'meadow',   glyph: '☘' },
-  { k: 'place',     label: 'Places & journeys',    sub: 'Field notes from cities, coasts, kitchens',             tone: 'rose',     glyph: '✿' },
-  { k: 'justice',   label: 'Just worlds',          sub: 'People building fairer systems',                        tone: 'bloom',    glyph: '✧' },
-  { k: 'food',      label: 'The table',            sub: 'Cooking, growing, the rituals of feeding',              tone: 'citron',   glyph: '✺' },
-  { k: 'creative',  label: 'Studio life',          sub: 'Artists, architects, designers at work',                tone: 'fern',     glyph: '❉' },
-  { k: 'wisdom',    label: 'Old wisdom',           sub: 'Ancient practice translated for now',                   tone: 'wisteria', glyph: '✶' },
-];
+// The reading garden (nine interest cards) is gone. It existed to
+// personalise the reading room, and the reading room is gone: today's
+// one thing is the same for everyone, because beauty and scale are not
+// topics and a shared object makes the day an event. Nothing else read
+// `interests`, so asking for them was asking a reader to do work that
+// changed nothing. Onboarding is five steps now instead of six.
+// See docs/DOCTRINE_AUDIT.md §10.
 
 // ─────────────────────────────────────────────────────────────
 // ONBOARDING — 6 screens
@@ -28,7 +20,6 @@ function OnboardingScreen({ go, payload, onAuthed }) {
   const [name, setName] = React.useState(payload?.name || '');
   const [reasons, setReasons] = React.useState(payload?.reasons || []);
   const [time, setTime] = React.useState(payload?.time || 'evening');
-  const [interests, setInterests] = React.useState(payload?.interests || []);
   const [email, setEmail] = React.useState(payload?.email || '');
   const [password, setPassword] = React.useState(payload?.password || '');
   const [showPw, setShowPw] = React.useState(false);
@@ -44,8 +35,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     { k: 'wonder',   label: 'Notice more',          tone: 'meadow' },
   ];
 
-  const TOTAL = 6;
-  const state = { name, reasons, time, interests, email, password };
+  const TOTAL = 5;
+  const state = { name, reasons, time, email, password };
   const goStep = (n) => go('onboarding', { step: n, ...state });
 
   async function submitSignup() {
@@ -56,7 +47,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
         email: email.trim().toLowerCase(),
         password,
         name: name.trim(),
-        onboarding: { reasons, interests, dailyTime: time },
+        onboarding: { reasons, dailyTime: time },
       });
       setToken(token);
       if (typeof onAuthed === 'function') {
@@ -71,9 +62,6 @@ function OnboardingScreen({ go, payload, onAuthed }) {
 
   function toggleReason(k) {
     setReasons(rs => rs.includes(k) ? rs.filter(x => x !== k) : [...rs, k]);
-  }
-  function toggleInterest(k) {
-    setInterests(is => is.includes(k) ? is.filter(x => x !== k) : [...is, k]);
   }
 
   // step 0 — welcome
@@ -163,72 +151,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     );
   }
 
-  // step 3 — reading garden (NEW)
+  // step 3 — when to write
   if (step === 3) {
-    return (
-      <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
-        <OnboardingProgress n={3} total={TOTAL}/>
-        <Eyebrow tone="rose" style={{ marginTop: 28 }}>Step three · Reading garden</Eyebrow>
-        <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
-          What stories<br/><span style={{ fontStyle: 'italic' }}>nourish you?</span>
-        </h1>
-        <p className="body" style={{ margin: '0 0 16px' }}>
-          Pick a few. We'll bring you slow, well-sourced reading from around the world. Never more than a handful a day.
-        </p>
-        <div className="mono" style={{ fontSize: 10, letterSpacing: '0.16em', color: 'var(--paper-faint)', textTransform: 'uppercase', marginBottom: 12 }}>
-          {interests.length} of 9 chosen · pick 2–6 for variety
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {READING_GARDEN.map(g => {
-            const on = interests.includes(g.k);
-            return (
-              <button key={g.k} onClick={() => toggleInterest(g.k)}
-                className={on ? `card-${g.tone}` : 'card-soft'}
-                style={{
-                  padding: '12px 12px', textAlign: 'left', cursor: 'pointer',
-                  border: on ? undefined : '1px solid var(--paper-line)',
-                  position: 'relative', minHeight: 92,
-                }}>
-                <span style={{
-                  fontSize: 18, color: on ? `var(--${g.tone}-deep)` : 'var(--paper-faint)',
-                  display: 'block', marginBottom: 4, lineHeight: 1,
-                }}>{g.glyph}</span>
-                <div className="serif" style={{ fontSize: 14, fontStyle: 'italic', fontWeight: 380, lineHeight: 1.15, color: 'var(--paper)' }}>
-                  {g.label}
-                </div>
-                <div className="body-sm" style={{ fontSize: 11, marginTop: 4, lineHeight: 1.3 }}>
-                  {g.sub}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* tiny preview of what they'll get */}
-        {interests.length >= 2 && (
-          <div className="card-rose fade-in" style={{ marginTop: 18, padding: 14 }}>
-            <Eyebrow tone="rose">What you'll receive</Eyebrow>
-            <p className="serif" style={{ margin: '8px 0 0', fontSize: 15, fontStyle: 'italic', fontWeight: 380, lineHeight: 1.4 }}>
-              A small reading room each day, drawn from these. Essays, poems, and slow news worth stopping for, never more than a handful.
-            </p>
-          </div>
-        )}
-
-        <div style={{ display: 'flex', gap: 10, marginTop: 22 }}>
-          <button className="btn btn-ghost" onClick={() => goStep(2)}>Back</button>
-          <button className="btn btn-rose" disabled={interests.length === 0}
-            style={{ opacity: interests.length === 0 ? 0.5 : 1 }}
-            onClick={() => goStep(4)}>
-            Continue {Icon.arrow(14, 'var(--on-rose)')}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // step 4 — when to write (was step 5 before sprig was retired)
-  if (step === 4) {
     const TIMES = [
       { k: 'morning',   label: 'Mornings',   sub: 'Set the day before it sets you', tone: 'rose' },
       { k: 'evening',   label: 'Evenings',   sub: 'Close the day before sleep',     tone: 'wisteria' },
@@ -237,8 +161,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     ];
     return (
       <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
-        <OnboardingProgress n={4} total={TOTAL}/>
-        <Eyebrow tone="wisteria" style={{ marginTop: 28 }}>Step four</Eyebrow>
+        <OnboardingProgress n={3} total={TOTAL}/>
+        <Eyebrow tone="wisteria" style={{ marginTop: 28 }}>Step three</Eyebrow>
         <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
           When do you<br/><span style={{ fontStyle: 'italic' }}>tend the fire?</span>
         </h1>
@@ -258,8 +182,8 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           })}
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
-          <button className="btn btn-ghost" onClick={() => goStep(3)}>Back</button>
-          <button className="btn btn-wisteria" onClick={() => goStep(5)}>
+          <button className="btn btn-ghost" onClick={() => goStep(2)}>Back</button>
+          <button className="btn btn-wisteria" onClick={() => goStep(4)}>
             Continue {Icon.arrow(14, 'var(--on-wisteria)')}
           </button>
         </div>
@@ -267,14 +191,14 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     );
   }
 
-  // step 5 — make a hearth (email + password)
-  if (step === 5) {
+  // step 4 — make a hearth (email + password)
+  if (step === 4) {
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     const passwordOk = password.length >= 8;
     return (
       <div className="fade-in" style={{ padding: '40px 28px 32px' }}>
-        <OnboardingProgress n={5} total={TOTAL}/>
-        <Eyebrow tone="ember" style={{ marginTop: 28 }}>Step five · Make a hearth</Eyebrow>
+        <OnboardingProgress n={4} total={TOTAL}/>
+        <Eyebrow tone="ember" style={{ marginTop: 28 }}>Step four · Make a hearth</Eyebrow>
         <h1 className="h-display serif" style={{ margin: '8px 0 8px', fontWeight: 350 }}>
           Keep your<br/><span style={{ fontStyle: 'italic' }}>fire safe.</span>
         </h1>
@@ -309,10 +233,10 @@ function OnboardingScreen({ go, payload, onAuthed }) {
         </p>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
-          <button className="btn btn-ghost" onClick={() => goStep(4)}>Back</button>
+          <button className="btn btn-ghost" onClick={() => goStep(3)}>Back</button>
           <button className="btn btn-ember" disabled={!emailOk || !passwordOk}
             style={{ opacity: (!emailOk || !passwordOk) ? 0.5 : 1 }}
-            onClick={() => goStep(6)}>
+            onClick={() => goStep(5)}>
             Continue {Icon.arrow(14, 'var(--on-ember)')}
           </button>
         </div>
@@ -320,11 +244,11 @@ function OnboardingScreen({ go, payload, onAuthed }) {
     );
   }
 
-  // step 6 — light the fire (creates the account)
+  // step 5 — light the fire (creates the account)
   return (
     <div className="fade-in" style={{ padding: '60px 28px 32px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '70vh', justifyContent: 'space-between' }}>
       <div>
-        <OnboardingProgress n={6} total={TOTAL}/>
+        <OnboardingProgress n={5} total={TOTAL}/>
         <div style={{ position: 'relative', width: 110, height: 110, margin: '40px auto 0' }}>
           <div className="flicker" style={{ position: 'absolute', inset: 0, borderRadius: '50%',
             background: 'radial-gradient(circle at 35% 30%, #f3c98a, #d4a574 40%, #6e431f 90%)',
@@ -340,7 +264,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           <p className="body-sm" style={{ marginTop: 22, color: 'var(--ember-deep, var(--ember))', maxWidth: 320, marginInline: 'auto' }}>
             {submitError}
             {' '}
-            <span onClick={() => goStep(5)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Edit account</span>.
+            <span onClick={() => goStep(4)} style={{ textDecoration: 'underline', cursor: 'pointer' }}>Edit account</span>.
           </p>
         )}
       </div>
@@ -528,7 +452,6 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
 
   const onb = user.onboarding || {};
   const reasons = onb.reasons || [];
-  const interests = onb.interests || [];
   const dailyTime = onb.dailyTime || 'morning';
   const initial = (user.name || user.email || 'F')[0].toUpperCase();
 
@@ -636,31 +559,6 @@ function SettingsScreen({ go, user, refreshUser, onSignOut }) {
           </div>
         </div>
 
-        {/* Reading garden */}
-        <div style={{ marginTop: 24 }}>
-          <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', color: 'var(--paper-mute)', textTransform: 'uppercase', marginBottom: 8 }}>
-            Reading garden
-            {savingKey === 'interests' && <span style={{ marginLeft: 10, color: 'var(--paper-faint)' }}>saving</span>}
-            {savedKey === 'interests' && <span style={{ marginLeft: 10, color: 'var(--meadow-deep, var(--hh-green))' }}>saved</span>}
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {READING_GARDEN.map(g => {
-              const on = interests.includes(g.k);
-              return (
-                <button key={g.k}
-                  onClick={() => updateOnboarding({ interests: toggleInArray(interests, g.k) }, 'interests')}
-                  disabled={savingKey === 'interests'}
-                  className={`chip ${on ? `chip-${g.tone}` : ''}`}
-                  style={{ cursor: 'pointer', border: on ? undefined : '1px solid var(--paper-line)' }}>
-                  {g.label}
-                </button>
-              );
-            })}
-          </div>
-          <p className="body-sm" style={{ marginTop: 10, color: 'var(--paper-mute)' }}>
-            What we'll search for when curating tomorrow's reading room.
-          </p>
-        </div>
       </section>
 
       {/* Daily / shortcuts */}
@@ -823,9 +721,6 @@ function ProfileScreen({ go, user, refreshUser }) {
 
   const onb = user.onboarding || {};
   const reasonsText = (onb.reasons || []).join(', ') || 'Not yet set';
-  const interestsText = (onb.interests || [])
-    .map(k => READING_GARDEN.find(g => g.k === k)?.label || k)
-    .join(', ') || 'Not yet set';
   const dailyTimeLabel = ({
     morning: 'Mornings', afternoon: 'Afternoons', evening: 'Evenings',
     both: 'Mornings and evenings', flexible: 'When you can',
@@ -887,7 +782,6 @@ function ProfileScreen({ go, user, refreshUser }) {
       {tz && <ProfileField label="Time zone" value={tz}/>}
       <ProfileField label="When you tend the fire" value={dailyTimeLabel}/>
       <ProfileField label="Brought you here" value={reasonsText} tone="meadow"/>
-      <ProfileField label="Reading garden" value={interestsText} tone="rose"/>
 
       <button onClick={() => go('settings')} className="btn btn-ghost" style={{ marginTop: 18, width: '100%', justifyContent: 'center' }}>
         Edit atmosphere in Settings
@@ -1135,4 +1029,4 @@ function LandingScreen({ go }) {
   );
 }
 
-export { OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, ProfileScreen, READING_GARDEN };
+export { OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, ProfileScreen };

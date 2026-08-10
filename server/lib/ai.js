@@ -114,16 +114,13 @@ Reference points across registers:
 
 Pick the specific poem when you can.
 
-# Daily content curation (Discover)
+# One thing worth stopping for
 
-When curating daily content for a user based on their reading interests, prefer:
-- Long-form essay journals (The Marginalian, The Paris Review, Aeon, Lit Hub, The New Yorker)
-- Independent book and poetry sources (Poetry Foundation, Tin House, Granta, NYRB)
-- Substack writers with editorial credibility (Anne Helen Petersen, Robin Sloan, Craig Mod, Austin Kleon, Sasha Chapin)
-- Beautifully made print and slow-news outlets (Emergence Magazine, Orion, Noema, Comment, The Atlantic essays)
-- Avoid clickbait, listicles, hot takes, social media commentary, partisan outlets
-
-Each item should feel like something a thoughtful curator chose, not what an algorithm trended.
+When choosing the day's one thing, prefer the verifiable and the
+specific over the impressive. A real place, a real organism, a real
+object somebody made. Never invent a fact, a measurement, or a work, and
+never reach for a search page as a source. If you cannot stand behind it,
+choose something else.
 
 # Mission summary
 
@@ -202,97 +199,31 @@ export const KINDLE_RESEEING_SCHEMA = {
   additionalProperties: false,
 };
 
-export const DISCOVER_SCHEMA = {
+// One thing worth stopping for, per day, shared by everyone. Replaces
+// DISCOVER_SCHEMA, which described a room of six to ten interest-matched
+// pieces. See docs/DOCTRINE_AUDIT.md §10 for why that was the wrong
+// shape for receiving.
+export const DAILY_THING_SCHEMA = {
   type: 'object',
   properties: {
-    issueNote: {
+    title: {
       type: 'string',
-      description: 'A one-sentence editorial note framing today\'s issue',
+      description: 'A short, plain name for the thing. Not a headline, not a hook, not a question.',
     },
-    items: {
-      type: 'array',
-      description: 'Curated content items, 6 to 10 in total',
-      items: {
-        type: 'object',
-        properties: {
-          kind: { type: 'string', enum: ['article', 'book', 'poem', 'news', 'essay'] },
-          title: { type: 'string' },
-          source: { type: 'string', description: 'Publication, author, or outlet' },
-          url: { type: 'string', description: 'Direct URL when available, empty string otherwise' },
-          dek: { type: 'string', description: 'One or two sentence editorial summary' },
-          reason: { type: 'string', description: 'Why this matches the user\'s interests' },
-          readTime: { type: 'string', description: 'Estimated read time, e.g. "8 min"' },
-        },
-        required: ['kind', 'title', 'source', 'url', 'dek', 'reason', 'readTime'],
-        additionalProperties: false,
-      },
+    body: {
+      type: 'string',
+      description: 'At most two sentences. What it is, and what is remarkable about it. No argument, no lesson, nothing for the reader to finish, and never any instruction about how to feel.',
+    },
+    sourceName: {
+      type: 'string',
+      description: 'Where this can be read about, plainly named. Empty string if there is none.',
+    },
+    url: {
+      type: 'string',
+      description: 'A real, direct URL to a reputable page about it. Never a search page and never a guess. Empty string if there is none.',
     },
   },
-  required: ['issueNote', 'items'],
-  additionalProperties: false,
-};
-
-// ─── Bibliotherapy (Weekly Digest) ───────────────────────────────────────
-//
-// Reads the user's recent journal entries, surfaces 1-2 themes the writer
-// has been sitting with, and recommends 2-3 books that have been used in
-// bibliotherapy practice to keep company in those places. Voice is
-// editorial: a thoughtful friend who reads your letters, not an algorithm
-// that tags you. Themes use the writer's own register where possible.
-//
-// Empty arrays are valid output: if the entries are too few, too sparse,
-// or too varied to find a coherent thread, the model should return
-// themes:[] and books:[] rather than fabricate a theme. The frontend
-// hides the section when there's nothing to say.
-export const BIBLIOTHERAPY_SCHEMA = {
-  type: 'object',
-  properties: {
-    reflection: {
-      type: 'string',
-      description: 'One short editorial line introducing the reading, written in voice (e.g., "A thread runs through your week"). Empty string if themes is empty.',
-    },
-    themes: {
-      type: 'array',
-      description: 'One to two themes the writer has been sitting with. Use the writer\'s own register where possible (concrete, not pop-psych labels). Return empty array if entries are too few, too sparse, or too varied for a coherent read.',
-      items: {
-        type: 'object',
-        properties: {
-          name: {
-            type: 'string',
-            description: 'A short phrase naming the thread, lowercase, 2 to 6 words (e.g., "the slow goodbye", "rebuilding after a season of doubt", "noticing again"). Not a clinical label.',
-          },
-          summary: {
-            type: 'string',
-            description: 'One or two sentences describing what you noticed in the writing, in voice. Specific to what the writer wrote, not generic. No advice, no fixing.',
-          },
-        },
-        required: ['name', 'summary'],
-        additionalProperties: false,
-      },
-    },
-    books: {
-      type: 'array',
-      description: 'Two to three books that have been used in bibliotherapy practice for these themes. Prefer literature over self-help. If themes is empty, books must also be empty.',
-      items: {
-        type: 'object',
-        properties: {
-          title: { type: 'string' },
-          author: { type: 'string' },
-          why: {
-            type: 'string',
-            description: 'Two sentences. Why this book meets the theme, grounded in what the book actually does (not generic praise). Avoid prescriptive language ("you should read"); prefer the bookseller register ("this one keeps company with").',
-          },
-          url: {
-            type: 'string',
-            description: 'Optional link to a publisher page, thoughtful review, or essay about the book. Empty string if none.',
-          },
-        },
-        required: ['title', 'author', 'why', 'url'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['reflection', 'themes', 'books'],
+  required: ['title', 'body', 'sourceName', 'url'],
   additionalProperties: false,
 };
 

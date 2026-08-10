@@ -46,10 +46,14 @@ personal space). Tab icons: the Threshold symbol (Today), an open hand
   lines).
 - **Give:** a "deed of the day" plus ways to give; answers are kept to the
   Meaning Log. (Creative values / self-transcendence.)
-- **Receive:** Attune (describe a mood, get **3 songs + 1 book excerpt +
-  1 poem** matched to its texture via the iso-principle; the excerpt is
-  affective bibliotherapy) and the Reading Room (a small daily curated
-  set). (Experiential values.)
+- **Receive:** opens on **one thing worth stopping for** (shared by every
+  reader, one a day, register rotating: vast / made / true / overlooked /
+  occasionally one real read), then Attune (describe a mood, get **3
+  songs + 1 book excerpt + 1 poem** matched via the iso-principle, each
+  song deep-linking to Spotify, Apple Music or YouTube Music) and
+  **Someone you saw** (encounter: one person, looked at properly, with a
+  gallery grouped by person). Longer practices: an awe walk, three good
+  things. (Experiential values.)
 - **Carry:** Kindle, a guided logotherapy session (seeing → widening →
   companion → turning → step) plus steadying practices. (Attitudinal
   values.)
@@ -311,3 +315,66 @@ the journal archive passes the raw API record where it is a number, and
 older entries have none, so opening an entry from All entries could
 crash on `.startsWith` of undefined. Normalised, and the block hides when
 there is nothing to report. Verified across eight shapes of the field.
+
+
+---
+
+## Session log — 2026-08-10 (second)
+
+Receive rebuilt, and a large cleanup of everything that made obsolete.
+Full reasoning in `docs/DOCTRINE_AUDIT.md` §10.
+
+**Today's thing** (`server/routes/today.js`, `models/DailyThing.js`,
+`DAILY_THING_SCHEMA`). One thing worth stopping for, **shared by every
+reader**, generated once a day. Two sentences, no argument, nothing to
+finish, then the savour beat. Register rotates deterministically by date
+(vast / made / true / overlooked / read) and that rotation is where
+variety comes from now. Shared rather than per-reader because it makes
+the day an event, because beauty and scale are not topics, and because
+it takes the cost from one generation per reader to one per day.
+
+**Encounter** (`src/encounter.jsx`, `models/Encounter.js`,
+`routes/encounter.js`). One person, looked at properly. "What did you
+notice that most people would walk past?" Optional: what you can see in
+them that they might not. Gallery groups by person, not by date.
+Strangers count. Never a contact list: no cadence, no counts, nothing
+overdue. *Tell them* deliberately not built, because the letter exists.
+
+**The weighting rule.** Noticing is free and unweighted; keeping is
+deliberate and weighted. Encounters are their own record and the
+narrative never reads them; only an explicit "this one mattered" writes
+a meaning-log line. Verified: three encounters leave the meaning log
+empty, one promotion writes exactly one entry, and repeating it is
+idempotent.
+
+**Receive redesigned.** Today's thing at the top asking nothing, then
+doors grouped by what they actually cost ("Whenever you want, a few
+minutes" / "Longer, outdoors or at the end of a day"). The old page was
+four doors of wildly different cost presented identically, every one of
+which required the reader to bring something.
+
+**Removed** (replaced, orphaned, or mocks): the reading room and its
+in-app article reader, the legacy Discover screen, `/api/discover` +
+`DailyDiscover` + `DISCOVER_SCHEMA`, the reading-garden onboarding step
+and its Settings section (nothing read `interests` once the day's thing
+became shared, so onboarding is five steps now), the orphaned weekly
+digest and bibliotherapy stack, `AttuneHistoryScreen` (a mock of
+Attune's real logbook), `MiniPlayer`, `StreakBrokenScreen` and the
+streak tweak, `RitualsScreen` / `RitualBuilderScreen`, and the
+`magazine` / `attuneArchetypes` fixtures. `User.onboarding.interests`
+stays on the schema: harmless, holds real data, and dropping it would
+need a migration for no gain.
+
+**Verified before shipping:** production build; all 31 screens
+server-rendered; encounter created, grouped case-insensitively, promoted
+and de-duplicated against the live API; `/api/today` generated in 13s,
+served cached in 90ms, and confirmed identical for a second reader with
+no second generation; register rotation checked across ten days; voice
+checked on the generated body (two sentences, no em dashes, no
+exclamation marks, no instructions to the reader). Smoke accounts and
+their data removed from the production database afterwards; the day's
+shared object was kept, since it would have been generated on the first
+real request anyway.
+
+**Cost note.** The daily surface went from one GPT-5.1 web-search call
+per reader per day to one call per day in total.

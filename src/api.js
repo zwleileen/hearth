@@ -130,9 +130,22 @@ export const api = {
     remove: (id) => request(`/bookmarks/${id}`, { method: 'DELETE' }),
   },
 
-  discover: {
-    today: ({ refresh = false } = {}) =>
-      request(`/discover/today${refresh ? '?refresh=1' : ''}`),
+  // One thing worth stopping for. Shared by everyone, generated once a
+  // day, so this is the same object for every reader.
+  today: {
+    get: ({ refresh = false } = {}) => request(`/today${refresh ? '?refresh=1' : ''}`),
+  },
+
+  // One person, looked at properly. Deliberately NOT part of the meaning
+  // log: noticing is free and unweighted, keeping is deliberate, and
+  // only `keep` writes a meaning-log line.
+  encounter: {
+    create: ({ person, noticed, potential, date } = {}) =>
+      request('/encounter', { method: 'POST', body: { person, noticed, potential, date } }),
+    // The gallery, grouped by person rather than by date.
+    list: () => request('/encounter'),
+    keep: (id) => request(`/encounter/${id}/keep`, { method: 'POST' }),
+    remove: (id) => request(`/encounter/${id}`, { method: 'DELETE' }),
   },
 
   attune: {
@@ -154,8 +167,6 @@ export const api = {
   },
 
   digest: {
-    bibliotherapy: ({ refresh = false } = {}) =>
-      request(`/digest/bibliotherapy${refresh ? '?refresh=1' : ''}`),
     // Weekly reflection for the top of the Journal page. { brief, itemCount }.
     journalBrief: ({ refresh = false } = {}) =>
       request(`/digest/journal-brief${refresh ? '?refresh=1' : ''}`),

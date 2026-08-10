@@ -160,34 +160,55 @@ in positive psychology that giving lifts the giver: acts of kindness
 real and modest rather than transformative, and the wording throughout
 Hearth should say so.
 
-### 5.4 Receive (Attune + the Reading Room)
-**What it is.** *Attune*: the reader describes how they feel, and Hearth
-returns three songs and three poems chosen for the texture of the mood.
-*The Reading Room*: a small, daily-curated set of essays, poems, and slow
-news. Saved pieces go to the Nook.
+### 5.4 Receive (Today's thing + Attune + Encounter)
+**What it is.** Receive opens on **one thing worth stopping for**: an
+image, an object, a place, one astonishing fact, shared by every reader
+and the same for everybody that day. Two sentences at most, no argument,
+nothing to finish. Then the doors, grouped by what they actually cost:
+*Attune* (describe how you feel, and receive songs, a book passage and a
+poem matched to it), *Someone you saw* (one person, looked at properly),
+and the longer practices (an awe walk, three good things).
 
 **Why.** This is the avenue of **experiential values**, meaning received
-through beauty, art, and encounter (Frankl, 1946; 1969). Two research
-disciplines shape it:
-- **The iso-principle** (Altshuler, 1948): meet the listener's present
-  emotional state first, then let the music move them. Hearth matches the
-  mood before it lifts it.
-- **The sad-music paradox**: listening to sad music when sad is
-  comforting, not deepening (Vuoskoski et al., 2012; Garrido & Schubert,
-  2015), and music regulates mood in everyday life (Saarikallio &
-  Erkkilä, 2007; North & Hargreaves, 2008). Reading fiction and poetry
-  supports empathy and wellbeing (Mar et al., 2009; Billington, 2015;
-  Croom, 2015).
-- **Savouring, built rather than cited.** Bryant and Veroff (2007) are
-  the ground; Hanson (2013; 2018) is the clearest practical account of
-  the *encoding*: a good moment is far more likely to be kept when
-  attention rests on it a little longer, when it is felt in the body, and
-  when the person lets it land instead of moving straight on. Frankl says
-  where meaning is found; this says how a found moment is kept. It ships
-  as **"Stay a moment"**: name what it reached, three slow breaths with a
-  longer out-breath, where it sits in the body, then a beat where nothing
-  is asked. Never named as a technique, skippable at every step, and the
-  kept line joins the meaning log like everything else.
+through beauty, art, nature, truth, and encounter (Frankl, 1946; 1969).
+Four disciplines shape it:
+
+- **One, not a feed.** Meaning is found in the concrete situation, not in
+  volume, and savouring requires duration: you cannot stay with ten
+  things. A room with one thing in it is an event; a queue of ten accrues
+  guilt, which the doctrine refuses everywhere else.
+- **Variety of kind, not of topic.** The day's register rotates: something
+  vast, something made, something true, something overlooked, and
+  occasionally one piece of writing worth a whole reading. Topic breadth
+  is what makes a feed; four of these five map onto Frankl's own list.
+- **The iso-principle** (Altshuler, 1948) in Attune: meet the listener's
+  present state first, then let the music move them. Reinforced by the
+  sad-music paradox (Vuoskoski et al., 2012; Garrido & Schubert, 2015)
+  and everyday musical mood regulation (Saarikallio & Erkkilä, 2007;
+  North & Hargreaves, 2008).
+- **Savouring, built rather than cited** (Bryant & Veroff, 2007; Hanson,
+  2013; 2018): see §5.10.
+
+**Encounter** deserves its own note, because Frankl ranks it highest
+within this avenue: meaning received "by experiencing another human
+being in his very uniqueness, by loving him". The question is *what did
+you notice that most people would walk past* — about **them**, never
+about what they did for you, which is the letter's frame and is still
+about your own benefit. Strangers count, or it becomes friendship admin.
+An optional second question asks what you can see in them that they
+might not see in themselves, which is Frankl's potential-seeing.
+
+**Encounter is never a contact list.** No cadence, no last-seen, no
+counts, no reminders about a named person, nothing ever overdue. An app
+that keeps a ledger of your relationships has made people into tasks,
+which is the exact relation encounter exists to escape.
+
+**And the weighting rule, which generalises:** *noticing is free and
+unweighted; keeping is deliberate and weighted.* Encounters live in
+their own record and the meaning narrative never reads them, because a
+month of incidental noticing would otherwise claim that what moves this
+reader is strangers at bus stops. Only an explicit "this one mattered"
+writes a meaning-log line.
 
 ### 5.5 Carry (the meaning session + the companion)
 **What it is.** When a feeling is heavy, the reader is met in a guided
@@ -253,7 +274,12 @@ not hold.
 
 ### 5.8 The Nook
 **What it is.** A private anthology of everything the reader has saved:
-songs, poems, books, articles.
+songs, poems, books, passages, and the days they stopped for something.
+There is deliberately no second collection for the latter; a photograph
+or an astonishing fact sits beside a saved poem perfectly well, and
+fragmenting the anthology would weaken the one that works. People are
+the exception, and live in their own gallery: a person is not a work and
+should never be filed as one.
 
 **Why.** A personal collection of one's **sources of meaning**, the
 experiential-values avenue made into a keepsake; a record the meaning

@@ -394,6 +394,148 @@ primary loop.
 
 ---
 
+## 10. Receive, rebuilt
+
+The reading room was six to ten interest-matched pieces a day. It was
+the weakest surface in the app and the diagnosis turned out to be
+structural rather than a curation problem.
+
+**The asymmetry.** Attune works because it is *state-driven*: you bring
+how you are, and it meets you. The reading room was *topic-driven*: you
+ticked interests once, months ago, in a grid, and it fetched matching
+articles forever. State-driven is Hearth. Topic-driven is the mechanic
+of every content app ever built, and it was competing with products that
+do topic-matching better, faster, and with more volume. No amount of
+better curation fixes that; the prompt was already well engineered, with
+interest rotation and anti-repetition memory. It was sophistication in
+service of the wrong mechanic.
+
+**The doctrinal mismatch.** Frankl's experiential values are "goodness,
+truth and beauty… nature and culture… another human being in his very
+uniqueness". The reading room delivered *subjects*. Everything in
+Receive was also text, at one temperature, and most of what Frankl lists
+is not verbal.
+
+**And it was a queue.** Ten items accrue guilt, which the app refuses
+everywhere else, and you cannot stay with ten things, which made the
+savour beat incoherent wherever it was attached.
+
+### 10.1 What replaced it
+
+**One thing worth stopping for, shared by everyone, every day.** An
+image, an object, a place, one astonishing fact. Two sentences at most,
+no argument, nothing to finish. Then the savour beat, which finally has
+something to stay with.
+
+Shared rather than personalised, for three reasons: it makes the day an
+event ("today, everyone at Hearth stopped for this", the same reasoning
+that made the daily question shared); beauty and scale are not topics,
+so there is nothing to match; and it takes the cost of the surface from
+one generation per reader per day to one generation per day.
+
+Variety now comes from a rotating **register** rather than from topic
+breadth: something *vast* (awe, scale), something *made* (craft, art),
+something *true* (a fact stranger than it has a right to be), something
+*overlooked* (the small thing seen properly), and occasionally *read*
+(one piece of writing genuinely worth a whole reading). Four of those
+five map directly onto Frankl's list.
+
+### 10.2 A considered rejection: "one person a day"
+
+The first proposal was a daily exemplar, a portrait of someone who lived
+well. It was wrong and is recorded here because it was nearly built.
+
+Frankl's "experiencing another human being" means encounter with a real
+person in their uniqueness, by loving them. It does not mean reading
+about an admirable stranger. A daily exemplar is a **meaningful model**,
+and the function of a meaningful model is to widen your sense of what
+stance is available toward difficulty. That is *attitudinal*. That is
+Carry.
+
+It would also have duplicated Carry's mirror while being strictly worse:
+the mirror is chosen for the thing you brought today, takes whichever
+form fits (person, story, image, parable), arrives when you need it, and
+is actively diversified against your last six. A scheduled generic
+exemplar has none of that, and delivering figures who bore things well
+*unprompted* edges toward the comparative-suffering framing the Carry
+prompt explicitly forbids.
+
+The lesson: "this mechanism works well" is not the same as "this
+mechanism belongs in this avenue."
+
+### 10.3 Encounter, which was the real gap
+
+Frankl ranks encounter highest within experiential values, and Hearth
+had no surface for the people actually in a reader's life as meaning
+*received*. Give has the letter, which turns outward; this is the
+receiving half.
+
+One question does the work: **"What did you notice that most people
+would walk past?"** It asks for something about *them*, not about what
+they did for you, which is the letter's frame and is still about your
+own benefit. The constraint makes I-Thou operational without ever naming
+it, and for the length of it a reader's attention is entirely off
+themselves, which makes it the purest dereflection in the app.
+
+Strangers count on purpose. If it only worked for people you are close
+to it would become friendship admin and could only be done occasionally.
+
+An optional third question, never a field: **"What can you see in them
+that they might not see in themselves?"** Frankl held that seeing the
+potential participates in bringing it about.
+
+**The gallery groups by person, not by date.** Someone seen once shows
+one line and is complete; someone seen across a year shows the sequence,
+and reading that is the thing nothing else in Hearth holds.
+
+**What it must never become.** Not a contact list. No cadence, no
+last-seen, no counts, no reminders about a named person, nothing ever
+overdue. The moment an app keeps a ledger of your relationships it has
+made people into tasks, which is exactly the I-It relation encounter
+exists to escape. Every personal-CRM product makes this mistake and it
+is why they feel faintly shameful to use.
+
+**"Tell them" was deliberately not built.** The letter already exists
+and does that job.
+
+### 10.4 The weighting rule
+
+> **Noticing is free and unweighted. Keeping is deliberate and weighted.**
+
+Encounters live in their own record and the meaning narrative never
+reads them. If they did, a month of incidental noticing would produce a
+portrait claiming that what moves this reader is baristas and strangers
+at bus stops, which would be false and slightly absurd. Only an explicit
+"this one mattered" writes a meaning-log line, so the reader stays the
+author of what counts as their meaning. The rule generalises and should
+be applied to any future surface that captures a lot of small input.
+
+### 10.5 What that made obsolete, and was removed
+
+Nothing read `interests` once the day's thing became shared, so asking
+for them was asking a reader to do work that changed nothing. The
+reading garden step is gone and onboarding is five steps instead of six.
+
+Removed with it, all of it either replaced or never routed:
+
+| Gone | Why |
+|---|---|
+| `ReadingRoomScreen`, `DiscoverScreen`, `ArticleScreen` | the reading room and its in-app reader |
+| `/api/discover`, `DailyDiscover`, `DISCOVER_SCHEMA` | replaced by `/api/today`, `DailyThing`, `DAILY_THING_SCHEMA` |
+| Reading garden (onboarding step 3, Settings section, profile field) | nothing read `interests` any more |
+| `WeeklyDigestScreen`, `computeWeekly`, `/api/digest/bibliotherapy`, `WeeklyBibliotherapy`, `BIBLIOTHERAPY_SCHEMA` | orphaned since bibliotherapy moved into Attune as excerpts |
+| `AttuneHistoryScreen` | a mock of five hardcoded readings, duplicating Attune's real logbook |
+| `MiniPlayer` | a mock with no audio behind it, shown only by a dev toggle |
+| `StreakBrokenScreen`, the streak tweak | Hearth refuses streaks; this was the last of that vocabulary |
+| `RitualsScreen`, `RitualBuilderScreen` | never routed; a scheduler for practices is cadence, which Hearth declined |
+| `magazine`, `attuneArchetypes` fixtures | nothing rendered them |
+
+`User.onboarding.interests` stays on the schema. The field is harmless,
+holds real data readers entered, and dropping it would need a migration
+for no gain.
+
+---
+
 ## 6. What is still open
 
 Ranked. Nothing below is blocked by anything above.
