@@ -10,7 +10,7 @@ import { HEARTH_DATA } from './data.js';
 import { api, isItemBookmarked, bookmarkKindFor } from './api.js';
 import { CareBlock } from './care.jsx';
 import { SavourMoment, SavourOpener } from './savour.jsx';
-import { ShareLink } from './share.jsx';
+import { ShareLink, SHARE_MESSAGE } from './share.jsx';
 import { getListenService, setListenService, nextService, serviceLabel, listenUrl } from './listen.js';
 
 const { useState: useState2 } = React;
@@ -585,6 +585,7 @@ function AttuneScreen({ go }) {
                     <ShareLink
                       text={`${s.title} by ${s.artist}`}
                       url={listenUrl(listen, s)}
+                      message={SHARE_MESSAGE.song}
                       label="Share"
                     />
                   </div>
@@ -649,7 +650,7 @@ function AttuneScreen({ go }) {
               {ex.why && <p className="body" style={{ margin: 0, maxWidth: 540 }}>{ex.why}</p>}
               {hasText && (
                 <div style={{ marginTop: 14 }}>
-                  <ShareLink text={ex.text} attribution={ex.author} quoted label="Share this passage"/>
+                  <ShareLink text={ex.text} attribution={ex.author} quoted message={SHARE_MESSAGE.passage} label="Share this passage"/>
                 </div>
               )}
               {hasUrl && (
@@ -734,9 +735,9 @@ function AttuneScreen({ go }) {
                   )}
                   <div style={{ marginTop: 14 }}>
                     {hasText
-                      ? <ShareLink text={p.text} attribution={p.poet} quoted label="Share this poem"/>
+                      ? <ShareLink text={p.text} attribution={p.poet} quoted message={SHARE_MESSAGE.poem} label="Share this poem"/>
                       : hasUrl
-                        ? <ShareLink text={`${p.title} by ${p.poet}`} url={p.url} label="Share this poem"/>
+                        ? <ShareLink text={`${p.title} by ${p.poet}`} url={p.url} message={SHARE_MESSAGE.poem} label="Share this poem"/>
                         : null}
                   </div>
                   {!hasText && hasUrl && (

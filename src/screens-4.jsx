@@ -4,7 +4,7 @@ import React from 'react';
 import { BackRow, ColorBlock, Eyebrow, Headline, Icon, Kicker, LeafMark, Ph, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, isItemBookmarked } from './api.js';
-import { ShareLink } from './share.jsx';
+import { ShareLink, SHARE_MESSAGE } from './share.jsx';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers — format backend records for display
@@ -634,10 +634,10 @@ function BookmarksScreen({ go }) {
                             link. See docs/DOCTRINE_AUDIT.md §8. */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end', flexShrink: 0 }}>
                           {(b.excerpt && (b.kind === 'poem' || b.kind === 'book'))
-                            ? <ShareLink text={b.excerpt} attribution={b.source || ''} quoted label="Share"/>
+                            ? <ShareLink text={b.excerpt} attribution={b.source || ''} quoted message={SHARE_MESSAGE.saved} label="Share"/>
                             : b.url
-                              ? <ShareLink text={[b.title, b.source].filter(Boolean).join(' · ')} url={b.url} label="Share"/>
-                              : <ShareLink text={[b.title, b.source].filter(Boolean).join(' · ')} label="Share"/>}
+                              ? <ShareLink text={[b.title, b.source].filter(Boolean).join(' · ')} url={b.url} message={SHARE_MESSAGE.saved} label="Share"/>
+                              : <ShareLink text={[b.title, b.source].filter(Boolean).join(' · ')} message={SHARE_MESSAGE.saved} label="Share"/>}
                           <button onClick={(e) => { e.stopPropagation(); removeBookmark(b.id); }}
                             aria-label="Remove from Nook"
                             style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-faint)' }}

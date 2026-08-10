@@ -329,6 +329,29 @@ songs, passage and poem, and the Carry mirror and its line.
 All of it goes through one `ShareLink` component: a quiet mono link,
 never an icon. An icon on every object is itself the tacky thing.
 
+**What the message says.** The first version put the quote in the image
+and then the same quote in the message body, so the recipient read the
+same sentence twice and the whole thing looked automated. Two shapes now:
+
+- **Card shares** (the words are already in the image): the message is
+  what you would actually type when handing something to someone, then a
+  blank line, then `Hearth, a daily home for meaning.` and the app's own
+  address. Never the words again.
+- **Link shares** (no image): the message names the thing and carries the
+  external link only. No Hearth address; the object belongs to someone
+  else, and two links in one message is clutter.
+
+The address comes from `window.location.origin`, so a shared card always
+points back to wherever Hearth is actually running, with nothing to
+configure and nothing to keep in sync with a deploy.
+
+The lines live in `SHARE_MESSAGE` in `src/share.jsx`, one per kind of
+object. Note that "in case it resonates", the obvious phrasing, is
+unusable: `REFLECTION_VOICE` bans "resonate" along with "journey",
+"navigate", "holds space" and "speaks to". The quote line reads "in case
+it finds you too" instead, which says the same thing in Hearth's own
+register.
+
 ---
 
 ## 9. Listening

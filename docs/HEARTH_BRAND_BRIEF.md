@@ -522,6 +522,14 @@ Quiet, considered, a sentence can rest.
   and it has its own screen.
   One affordance for all of it (`ShareLink`): a quiet mono link, never an
   icon. An icon on every object is itself the tacky thing.
+  **The message never repeats the card.** When a card is shared the words
+  are already in the image, so the accompanying text says why you are
+  sending it and where it came from, never the words again. A link share
+  is the opposite case: no image, so the message names the thing, and it
+  carries no Hearth address, because the object belongs to someone else
+  and two links in one message is clutter. The signature stays small:
+  people pass on beautiful things, not apps, and a card that works as an
+  advertisement stops working as a gift.
 - **Quotation marks are for quotations.** The quote hero, and the
   display-quote treatment anywhere, belongs to the canon: books, poems,
   philosophers, scripture, the mystics. Never set a reader's own writing

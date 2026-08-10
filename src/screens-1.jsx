@@ -6,7 +6,7 @@ import React from 'react';
 import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, bookmarkKindFor, isItemBookmarked } from './api.js';
-import { ShareLink } from './share.jsx';
+import { ShareLink, SHARE_MESSAGE } from './share.jsx';
 import { CareBlock } from './care.jsx';
 
 const { useState: useState1, useEffect: useEffect1 } = React;
@@ -323,6 +323,7 @@ function HomeScreen({ go, user }) {
                 text={quote.text}
                 attribution={[quote.author, quote.source].filter(Boolean).join(' · ')}
                 quoted
+                message={SHARE_MESSAGE.quote}
                 label="Share this"
               />
             </div>
@@ -639,7 +640,7 @@ function ReadingRoomScreen({ go }) {
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
-                  {hero.url && <ShareLink text={hero.title} url={hero.url} label="Share"/>}
+                  {hero.url && <ShareLink text={hero.title} url={hero.url} message={SHARE_MESSAGE.reading} label="Share"/>}
                   <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(hero); }}
                     disabled={heroSaved} className="hearth-save-btn" data-saved={heroSaved}>
                     {Icon.bookmark(12, 'currentColor')}
@@ -724,7 +725,7 @@ function ReadingRoomScreen({ go }) {
                       )}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, alignItems: 'center', marginTop: 14 }}>
-                      {it.url && <ShareLink text={it.title} url={it.url} label="Share"/>}
+                      {it.url && <ShareLink text={it.title} url={it.url} message={SHARE_MESSAGE.reading} label="Share"/>}
                       <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(it); }}
                         disabled={itemSaved} className="hearth-save-btn" data-saved={itemSaved}>
                         {Icon.bookmark(11, 'currentColor')}
@@ -1303,7 +1304,7 @@ function MeaningLogScreen({ go }) {
                 on a phone means invisible and unreachable. They are always
                 present now, quiet enough not to compete with the line. */}
             <div style={{ marginTop: 14, display: 'flex', gap: 20, alignItems: 'center' }}>
-              <ShareLink text={e.text} attribution="A line I kept" label="Share this line"/>
+              <ShareLink text={e.text} attribution="A line I kept" message={SHARE_MESSAGE.kept} label="Share this line"/>
               <button onClick={() => confirmRemove(e.id)} style={rowLink}>
                 {pendingRemove === e.id ? 'Tap again to remove' : 'Remove'}
               </button>

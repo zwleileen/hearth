@@ -14,7 +14,7 @@ import { HEARTH_DATA } from './data.js';
 import { api } from './api.js';
 import { CareBlock } from './care.jsx';
 import { SavourOpener } from './savour.jsx';
-import { ShareLink } from './share.jsx';
+import { ShareLink, SHARE_MESSAGE } from './share.jsx';
 
 const { useState: useState5 } = React;
 
@@ -355,12 +355,14 @@ function KindleScreen({ go }) {
                   text={s.companion.line}
                   attribution={s.companion.name}
                   quoted
+                  message={SHARE_MESSAGE.mirror}
                   label="Share this line"
                 />
               : s.companion?.name
                 ? <ShareLink
                     text={`${s.companion.name}. ${s.companion.turning || s.companion.predicament || ''}`.trim()}
                     attribution={mirrorLabel}
+                    message={SHARE_MESSAGE.mirror}
                     label="Share this"
                   />
                 : null}
@@ -471,6 +473,7 @@ function KindleScreen({ go }) {
                 <ShareLink
                   text={rt.step?.keepsake || rt.turning}
                   attribution="Carry this"
+                  message={SHARE_MESSAGE.keepsake}
                   label="Keep this as a card"
                 />
               )}

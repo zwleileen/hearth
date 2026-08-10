@@ -366,6 +366,54 @@ export const SHARE_RESULT_MESSAGE = {
   failed: 'Could not share that just now.',
 };
 
+// ── What the message says ─────────────────────────────────────────────
+//
+// When a card is shared, the words are already IN the image. Repeating
+// them in the message body is noise: the recipient reads the same
+// sentence twice and the whole thing looks automated.
+//
+// So the message is not the object. It is what you would actually type
+// when handing something to someone, plus the smallest possible note of
+// where it came from.
+//
+// The address comes from the app's own origin, so a shared card always
+// points back to wherever Hearth is actually running. Nothing to
+// configure, nothing to keep in sync with a deploy, and it stays right
+// if the domain ever changes. Set HEARTH_HOME to a fixed string only if
+// the app and its front door ever stop being the same place.
+const HEARTH_HOME = '';
+
+function hearthUrl() {
+  if (HEARTH_HOME) return HEARTH_HOME;
+  try { return window.location.origin; } catch { return ''; }
+}
+
+// Said the way Hearth says things: quiet, warm, specific, no hype, no
+// em dashes, and never "resonate", "journey" or "speaks to", which the
+// voice rules ban outright.
+const SIGNATURE = 'Hearth, a daily home for meaning.';
+
+export const SHARE_MESSAGE = {
+  quote: 'Today\'s line at Hearth. Sending it on, in case it finds you too.',
+  kept: 'Something I noticed today. I wanted you to have it.',
+  keepsake: 'Something I am carrying today. Sending it on.',
+  mirror: 'This met me where I was today. Sending it on.',
+  passage: 'A passage that kept me company today.',
+  poem: 'A poem that kept me company today.',
+  saved: 'Something I have kept. Sending it on.',
+  song: 'This is what today sounded like.',
+  reading: 'Worth stopping for.',
+};
+
+// message + a blank line + where it came from. The signature is small on
+// purpose: people pass on beautiful things, not apps, and a card that
+// works as an advertisement stops working as a gift.
+function composeCardMessage(message) {
+  const url = hearthUrl();
+  const tail = url ? `${SIGNATURE}\n${url}` : SIGNATURE;
+  return message ? `${message}\n\n${tail}` : tail;
+}
+
 // ── The one share affordance ──────────────────────────────────────────
 //
 // Every surface uses this, so sharing looks and behaves identically
@@ -403,6 +451,7 @@ function ShareLink({
   attribution = '',
   quoted = false,
   url = null,
+  message = '',
   label = 'Share',
   busyLabel = 'Setting it…',
   style = {},
@@ -413,12 +462,20 @@ function ShareLink({
     if (state === 'busy') return;
     setState('busy');
     try {
-      // When the object lives somewhere else (an essay, a song), the
-      // link is the thing worth sending, not a picture of its title.
-      const shareText = url ? `${text}\n${url}` : text;
+      // Two different objects, two different messages.
+      //
+      // A card already contains the words, so the message must NOT
+      // repeat them; it says why you are sending it and where it came
+      // from. A link has no image, so the message does need to name what
+      // is at the end of it, and it carries no Hearth address, because
+      // the thing being sent belongs to someone else and two links in
+      // one message is clutter.
       const result = url
-        ? await shareUrl({ text, url })
-        : await shareCard({ text, attribution, quoted, shareText });
+        ? await shareUrl({ message, text, url })
+        : await shareCard({
+            text, attribution, quoted,
+            shareText: composeCardMessage(message),
+          });
       if (SHARE_RESULT_MESSAGE[result]) {
         setState('done');
         setTimeout(() => setState('idle'), 2200);
@@ -443,8 +500,9 @@ function ShareLink({
 
 // Sharing something that lives elsewhere. No card: a picture of a
 // headline helps nobody, and the whole value is the link.
-export async function shareUrl({ text, url }) {
-  const payload = { text, url };
+export async function shareUrl({ message = '', text, url }) {
+  const body = [message, text].filter(Boolean).join('\n');
+  const payload = { text: body, url };
   try {
     if (navigator.share) {
       await navigator.share(payload);
@@ -454,7 +512,7 @@ export async function shareUrl({ text, url }) {
     if (err && err.name === 'AbortError') return 'cancelled';
   }
   try {
-    await navigator.clipboard.writeText(`${text}\n${url}`);
+    await navigator.clipboard.writeText(`${body}\n${url}`);
     return 'copied';
   } catch {
     return 'failed';
