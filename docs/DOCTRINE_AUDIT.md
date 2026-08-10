@@ -484,6 +484,29 @@ An optional third question, never a field: **"What can you see in them
 that they might not see in themselves?"** Frankl held that seeing the
 potential participates in bringing it about.
 
+**And it is gated on knowing them, which was the weakest edge of the
+first build.** Frankl's potential-seeing presupposes love and knowledge:
+"by his love he is enabled to see... that which is potential in him."
+Asked about a stranger, the question is not seeing, it is projection, and
+offering it for the man at the bus stop made the app presumptuous on the
+reader's behalf.
+
+The gate uses the signal already in the data: **have you noticed them
+before.** Returning to a person is the evidence of knowing them, which is
+precisely what Frankl's formulation requires, and it needs no heuristic,
+no name parsing, and nothing asked of the reader. Unambiguous kinship
+terms ("dad", "my sister") count immediately, because withholding it for
+someone's own father would be silly.
+
+It also produces the behaviour rather than merely permitting it: the
+question **appears the second time** you write about someone. The app
+deepens as your attention to a person deepens, and a second visit is not
+identical to the first. Its absence is silent; nobody is ever told they
+have not earned it.
+
+Strangers still count for the noticing. They do not get the second
+question, and that asymmetry is the point.
+
 **The gallery groups by person, not by date.** Someone seen once shows
 one line and is complete; someone seen across a year shows the sequence,
 and reading that is the thing nothing else in Hearth holds.

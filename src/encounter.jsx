@@ -24,6 +24,9 @@
 // only worked for people you are close to it would become friendship
 // admin and could only be done occasionally.
 //
+// They count for the NOTICING. They do not get the second question, and
+// that asymmetry is deliberate: see knowsThem below.
+//
 // WHAT THIS IS NOT. Not a contact list. No cadence, no last-seen, no
 // counts, no reminders about a named person, nothing ever overdue. The
 // moment an app keeps a ledger of your relationships it has made people
@@ -43,6 +46,35 @@ import { api } from './api.js';
 import { SavourMoment } from './savour.jsx';
 
 function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+// ── Who has earned the second question ────────────────────────────────
+//
+// Frankl's potential-seeing presupposes love and knowledge: "by his love
+// he is enabled to see... that which is potential in him". Asked about a
+// stranger, "what can you see in them that they might not see in
+// themselves" is not seeing, it is projection, and offering it to
+// everyone made the app presumptuous on the reader's behalf.
+//
+// The gate uses the signal already in the data: HAVE YOU NOTICED THEM
+// BEFORE. Returning to a person is the evidence of knowing them, which
+// is exactly what Frankl's formulation requires, and it needs no
+// heuristics, no name parsing, and nothing asked of the reader.
+//
+// It also produces the behaviour we want rather than merely permitting
+// it: the question APPEARS the second time you write about someone. The
+// app deepens as your attention to a person deepens, and a second visit
+// is not identical to the first.
+//
+// One shortcut, because withholding it for your own father would be
+// silly: unambiguous kinship terms count immediately.
+const KIN = /^(my |our )?(dad|daddy|mum|mummy|mom|mommy|mother|father|ma|pa|sister|brother|sis|bro|wife|husband|partner|spouse|son|daughter|kid|child|grandma|grandpa|grandmother|grandfather|granny|gran|nan|nana|grandad|granddad|aunt|auntie|uncle|cousin|niece|nephew|in-law|mother-in-law|father-in-law|best friend)$/i;
+
+function knowsThem(person, knownNames) {
+  const name = (person || '').trim();
+  if (!name) return false;
+  if (KIN.test(name)) return true;
+  return knownNames.has(name.toLowerCase());
+}
 
 const quietLink = {
   background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
@@ -72,6 +104,32 @@ function EncounterScreen({ go }) {
   const [gallery, setGallery] = React.useState({ people: null, error: null });
   const [pendingRemove, setPendingRemove] = React.useState(null);
 
+  // Loaded once on arrival. It drives the gate on the second question,
+  // and means the gallery opens with no wait.
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.encounter.list();
+        if (!cancelled) setGallery({ people: data.people || [], error: null });
+      } catch (err) {
+        if (!cancelled) {
+          setGallery({
+            people: [],
+            error: err.status === 401 ? 'Sign in to see the people you have seen.' : null,
+          });
+        }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const knownNames = React.useMemo(
+    () => new Set((gallery.people || []).map((p) => p.person.trim().toLowerCase())),
+    [gallery.people],
+  );
+  const known = knowsThem(person, knownNames);
+
   const ready = person.trim().length >= 1 && noticed.trim().length >= 3 && !busy;
 
   async function keep() {
@@ -85,6 +143,15 @@ function EncounterScreen({ go }) {
         date: todayKey(),
       });
       setSaved(entry);
+      setGallery((g) => {
+        const people = g.people ? [...g.people] : [];
+        const key = entry.person.trim().toLowerCase();
+        const at = people.findIndex((p) => p.person.trim().toLowerCase() === key);
+        const note = { id: entry.id, noticed: entry.noticed, potential: entry.potential, date: entry.date, kept: entry.kept, createdAt: entry.createdAt };
+        if (at >= 0) people[at] = { ...people[at], notes: [note, ...people[at].notes] };
+        else people.unshift({ person: entry.person, notes: [note] });
+        return { ...g, people };
+      });
       setView('kept');
     } catch { /* leave the words in the box so nothing is lost */ }
     finally { setBusy(false); }
@@ -103,19 +170,7 @@ function EncounterScreen({ go }) {
     finally { setKeeping(false); }
   }
 
-  async function openGallery() {
-    setView('gallery');
-    if (gallery.people) return;
-    try {
-      const data = await api.encounter.list();
-      setGallery({ people: data.people || [], error: null });
-    } catch (err) {
-      setGallery({
-        people: [],
-        error: err.status === 401 ? 'Sign in to see the people you have seen.' : 'Could not load them just now.',
-      });
-    }
-  }
+  function openGallery() { setView('gallery'); }
 
   async function remove(id) {
     try {
@@ -369,9 +424,11 @@ function EncounterScreen({ go }) {
         </section>
       )}
 
-      {/* Never a field. A quiet offer, and most days it will rightly be
-          left alone. */}
-      {noticed.trim().length >= 3 && (
+      {/* Never a field, and only for someone this reader actually knows.
+          See knowsThem above: asked about a stranger, this question is
+          projection rather than seeing. Its absence is silent; nobody is
+          told they have not earned it. */}
+      {noticed.trim().length >= 3 && known && (
         <section className="fade-in" style={{ padding: '24px 22px 0' }}>
           {showPotential ? (
             <>

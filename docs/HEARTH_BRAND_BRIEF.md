@@ -196,7 +196,12 @@ you notice that most people would walk past* — about **them**, never
 about what they did for you, which is the letter's frame and is still
 about your own benefit. Strangers count, or it becomes friendship admin.
 An optional second question asks what you can see in them that they
-might not see in themselves, which is Frankl's potential-seeing.
+might not see in themselves, which is Frankl's potential-seeing. It is
+**gated on knowing them**: that formulation presupposes love and
+knowledge, so asked about a stranger it is projection rather than
+seeing. The gate is simply whether you have noticed them before, which
+means the question appears the second time you write about someone, and
+its absence is always silent.
 
 **Encounter is never a contact list.** No cadence, no last-seen, no
 counts, no reminders about a named person, nothing ever overdue. An app

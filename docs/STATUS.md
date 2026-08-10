@@ -340,6 +340,14 @@ them that they might not. Gallery groups by person, not by date.
 Strangers count. Never a contact list: no cadence, no counts, nothing
 overdue. *Tell them* deliberately not built, because the letter exists.
 
+**The second question is gated on knowing them.** Frankl's
+potential-seeing presupposes love and knowledge, so "what can you see in
+them that they might not see in themselves" is projection when asked
+about a stranger. It now appears only once you have noticed that person
+before (kinship terms count immediately), which means it surfaces on the
+second visit to someone and is silent otherwise. The gallery is loaded
+on arrival to drive this, which also makes opening it instant.
+
 **The weighting rule.** Noticing is free and unweighted; keeping is
 deliberate and weighted. Encounters are their own record and the
 narrative never reads them; only an explicit "this one mattered" writes
