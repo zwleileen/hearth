@@ -4,7 +4,7 @@ import React from 'react';
 import { BackRow, ColorBlock, Eyebrow, Headline, Icon, Kicker, LeafMark, Ph, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, isItemBookmarked } from './api.js';
-import { shareCard, SHARE_RESULT_MESSAGE } from './share.jsx';
+import { ShareLink } from './share.jsx';
 
 // ─────────────────────────────────────────────────────────────
 // Helpers — format backend records for display
@@ -203,6 +203,23 @@ function EntryDetailScreen({ go, payload }) {
   const e = payload?.entry || SAMPLE_ENTRIES[0];
   const [showShare, setShowShare] = React.useState(false);
 
+  // shift arrives as a number from the API and as a signed string from
+  // Home. Accept both, and treat missing as "not recorded" rather than
+  // crashing or inventing a zero.
+  const shiftValue = (() => {
+    const raw = e?.shift;
+    if (raw === null || raw === undefined || raw === '') return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  })();
+  const shiftLabel = shiftValue === null
+    ? ''
+    : shiftValue === 0
+      ? 'unchanged'
+      : shiftValue > 0
+        ? `${shiftValue} lighter`
+        : `${Math.abs(shiftValue)} heavier`;
+
   return (
     <div className="fade-in" style={{ padding: '4px 22px 40px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -238,19 +255,30 @@ function EntryDetailScreen({ go, payload }) {
 
         <hr className="divider" style={{ margin: '24px 0' }}/>
 
-        <Eyebrow tone={e.tone}>How writing it sat</Eyebrow>
-        <div className="card-soft" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 36, height: 36, borderRadius: '50%', background: `var(--${e.tone})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--night)', fontFamily: 'var(--serif)', fontSize: 16, fontStyle: 'italic', flexShrink: 0 }}>
-            {e.shift}
-          </div>
-          <p className="serif" style={{ margin: 0, fontSize: 15, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)', lineHeight: 1.4 }}>
-            Felt {e.mood}. Writing made it {e.shift === '0' ? 'unchanged' : (e.shift.startsWith('+') ? `${e.shift.slice(1)} lighter` : `${e.shift.replace('-', '')} heavier`)}.
-          </p>
-        </div>
+        {/* This block used to assume `shift` was always a signed STRING
+            ("+2", "-1"). Home builds it that way, but the journal archive
+            hands over the raw API record where shift is a NUMBER, and may
+            be null on entries saved before the field existed. So opening
+            an entry from All entries could crash on `.startsWith` of
+            undefined. Normalised here, and the whole block hides when
+            there is nothing to report. */}
+        {shiftLabel && (
+          <>
+            <Eyebrow tone={e.tone}>How writing it sat</Eyebrow>
+            <div className="card-soft" style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 14 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: `var(--${e.tone})`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--night)', fontFamily: 'var(--serif)', fontSize: 16, fontStyle: 'italic', flexShrink: 0 }}>
+                {shiftValue > 0 ? `+${shiftValue}` : String(shiftValue)}
+              </div>
+              <p className="serif" style={{ margin: 0, fontSize: 15, fontStyle: 'italic', fontWeight: 380, color: 'var(--paper-2)', lineHeight: 1.4 }}>
+                {e.mood ? `Felt ${e.mood}. ` : ''}Writing made it {shiftLabel}.
+              </p>
+            </div>
+          </>
+        )}
 
         <div style={{ display: 'flex', gap: 8, marginTop: 22 }}>
           <button className="btn btn-ghost" onClick={() => go('journal')}>Write again</button>
-          <button className="btn btn-ghost" onClick={() => setShowShare(true)}>Share quietly</button>
+          <button className="btn btn-ghost" onClick={() => setShowShare(true)}>Keep it</button>
         </div>
       </div>
 
@@ -261,30 +289,24 @@ function EntryDetailScreen({ go, payload }) {
 
 // Keep an entry.
 //
-// This used to be four buttons with no onClick handlers at all: "Export
-// as PDF", "Email to yourself", "Copy as text", "Read-only link", none
-// of which did anything. It also carried a blur backdrop and 24px radii,
-// both forbidden (BRAND_BRIEF §8.5, §8.9).
+// This is deliberately NOT a share sheet any more, and that is the
+// point. A journal entry is the confessional surface: written to work
+// something out, unfinished, and usually about other people who did not
+// agree to appear in it. Expressive writing also works partly because it
+// is unwitnessed, so making it shareable quietly makes the writing
+// worse: people begin composing for an audience.
 //
-// Now it does one thing properly. A journal entry is confessional and is
-// not the thing to broadcast, so what leaves here is a single line set
-// on Old Lace, drawn on the reader's own device, handed to their own
-// share sheet. Plus a plain copy, for wherever else it belongs.
+// The previous version was worse than merely misplaced. It shared
+// `body.split(/\n+/)[0]`, the FIRST line of the entry, on a page whose
+// own placeholder says "Begin anywhere. Don't edit." The first line of
+// an unedited entry is reliably its least considered sentence. So it
+// took the most private writing in Hearth and published its worst
+// sentence.
+//
+// What is left is copying, which is moving something you already own
+// into somewhere else you own. See docs/DOCTRINE_AUDIT.md §8.
 function ShareSheet({ entry, onClose }) {
   const [note, setNote] = React.useState('');
-  const [busy, setBusy] = React.useState(false);
-
-  const line = (entry?.body || '').trim().split(/\n+/)[0] || entry?.title || '';
-
-  async function asCard() {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const result = await shareCard({ text: line, attribution: 'From my journal', shareText: line });
-      setNote(SHARE_RESULT_MESSAGE[result] || '');
-    } catch { setNote('Could not share that just now.'); }
-    setBusy(false);
-  }
 
   async function asText() {
     const body = [entry?.title, '', entry?.body].filter(Boolean).join('\n');
@@ -305,33 +327,18 @@ function ShareSheet({ entry, onClose }) {
       }}>
         <Eyebrow>Keep it</Eyebrow>
         <h3 className="h-section serif" style={{ margin: '8px 0 6px', fontStyle: 'italic', fontWeight: 380 }}>
-          One line, set properly.
+          Take it with you.
         </h3>
         <p className="body-sm" style={{ margin: '0 0 18px', maxWidth: 420 }}>
-          The entry stays yours. What leaves is a single line, typeset, made here on your own device.
+          Your entries stay yours. Copy this one wherever else it belongs. If a line in it is worth sending to someone, keep that line on its own and share it from the meaning log.
         </p>
 
-        {line && (
-          <p className="serif" style={{
-            margin: '0 0 18px', padding: '18px 20px', background: 'var(--hh-isabel)',
-            fontSize: 17, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--hh-green)',
-          }}>{line}</p>
-        )}
-
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-          <button onClick={asCard} disabled={busy || !line} style={{
-            background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0,
-            padding: '13px 22px', cursor: line ? 'pointer' : 'default',
-            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-            letterSpacing: '0.22em', textTransform: 'uppercase', opacity: busy ? 0.6 : 1,
-          }}>{busy ? 'Setting it…' : 'Share the line'}</button>
-          <button onClick={asText} style={{
-            background: 'transparent', border: '1px solid rgba(31, 64, 69, 0.25)',
-            padding: '13px 22px', cursor: 'pointer', color: 'var(--hh-green)',
-            fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
-            letterSpacing: '0.22em', textTransform: 'uppercase',
-          }}>Copy the entry</button>
-        </div>
+        <button onClick={asText} style={{
+          background: 'var(--hh-green)', color: 'var(--hh-lace)', border: 0,
+          padding: '13px 22px', cursor: 'pointer',
+          fontFamily: 'var(--sans)', fontSize: 11, fontWeight: 500,
+          letterSpacing: '0.22em', textTransform: 'uppercase',
+        }}>Copy the entry</button>
 
         {note && <p className="body-sm" style={{ margin: '14px 0 0', color: 'var(--paper-mute)' }}>{note}</p>}
 
@@ -616,13 +623,29 @@ function BookmarksScreen({ go }) {
                             </p>
                           )}
                         </div>
-                        <button onClick={(e) => { e.stopPropagation(); removeBookmark(b.id); }}
-                          aria-label="Remove from Nook"
-                          style={{ background: 'transparent', border: 0, padding: 4, cursor: 'pointer', color: 'var(--paper-faint)', flexShrink: 0 }}
-                          onMouseOver={(e) => { e.currentTarget.style.color = 'var(--paper-mute)'; }}
-                          onMouseOut={(e) => { e.currentTarget.style.color = 'var(--paper-faint)'; }}>
-                          <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Remove</span>
-                        </button>
+                        {/* The Nook is the most naturally shareable place
+                            in Hearth and had nothing. What is saved here
+                            is someone else's already-public work, so there
+                            is no exposure in passing it on, and a saved
+                            poem or passage is a real quotation, which is
+                            the only kind of text allowed the quote marks.
+                            Where we hold the words we send the words;
+                            where the object lives elsewhere we send the
+                            link. See docs/DOCTRINE_AUDIT.md §8. */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end', flexShrink: 0 }}>
+                          {(b.excerpt && (b.kind === 'poem' || b.kind === 'book'))
+                            ? <ShareLink text={b.excerpt} attribution={b.source || ''} quoted label="Share"/>
+                            : b.url
+                              ? <ShareLink text={[b.title, b.source].filter(Boolean).join(' · ')} url={b.url} label="Share"/>
+                              : <ShareLink text={[b.title, b.source].filter(Boolean).join(' · ')} label="Share"/>}
+                          <button onClick={(e) => { e.stopPropagation(); removeBookmark(b.id); }}
+                            aria-label="Remove from Nook"
+                            style={{ background: 'transparent', border: 0, padding: 0, cursor: 'pointer', color: 'var(--paper-faint)' }}
+                            onMouseOver={(e) => { e.currentTarget.style.color = 'var(--paper-mute)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.color = 'var(--paper-faint)'; }}>
+                            <span style={{ fontFamily: 'var(--mono)', fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' }}>Remove</span>
+                          </button>
+                        </div>
                       </div>
                     );
                   })}

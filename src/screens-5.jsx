@@ -14,7 +14,7 @@ import { HEARTH_DATA } from './data.js';
 import { api } from './api.js';
 import { CareBlock } from './care.jsx';
 import { SavourOpener } from './savour.jsx';
-import { shareCard, SHARE_RESULT_MESSAGE } from './share.jsx';
+import { ShareLink } from './share.jsx';
 
 const { useState: useState5 } = React;
 
@@ -349,6 +349,22 @@ function KindleScreen({ go }) {
               {s.companion.line}
             </blockquote>
           )}
+          <div style={{ marginTop: 20 }}>
+            {s.companion?.line
+              ? <ShareLink
+                  text={s.companion.line}
+                  attribution={s.companion.name}
+                  quoted
+                  label="Share this line"
+                />
+              : s.companion?.name
+                ? <ShareLink
+                    text={`${s.companion.name}. ${s.companion.turning || s.companion.predicament || ''}`.trim()}
+                    attribution={mirrorLabel}
+                    label="Share this"
+                  />
+                : null}
+          </div>
         </Movement>
 
         {/* 4. The turning (avenue) */}
@@ -452,7 +468,11 @@ function KindleScreen({ go }) {
                 Take this to the journal
               </button>
               {(rt.step?.keepsake || rt.turning) && (
-                <KeepsakeShare line={rt.step?.keepsake || rt.turning}/>
+                <ShareLink
+                  text={rt.step?.keepsake || rt.turning}
+                  attribution="Carry this"
+                  label="Keep this as a card"
+                />
               )}
             </section>
           </>
@@ -683,29 +703,6 @@ function KindleScreen({ go }) {
         </div>
       </section>
     </div>
-  );
-}
-
-// The line worth carrying, made into something you can send.
-// This is the object people actually screenshot: a single typeset line
-// on Old Lace, no app chrome, drawn on the reader's own device.
-function KeepsakeShare({ line }) {
-  const [state, setState] = useState5('idle');
-  async function onShare() {
-    if (state === 'busy') return;
-    setState('busy');
-    try {
-      const result = await shareCard({ text: line, attribution: 'Carry this', shareText: line });
-      if (SHARE_RESULT_MESSAGE[result]) {
-        setState('done');
-        setTimeout(() => setState('idle'), 2200);
-      } else setState('idle');
-    } catch { setState('idle'); }
-  }
-  return (
-    <button onClick={onShare} style={quietLink}>
-      {state === 'busy' ? 'Setting it…' : state === 'done' ? 'Done' : 'Keep this as a card'}
-    </button>
   );
 }
 

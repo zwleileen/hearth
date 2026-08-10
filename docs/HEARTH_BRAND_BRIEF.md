@@ -505,6 +505,23 @@ Quiet, considered, a sentence can rest.
 
 ### 8.9 Anti-patterns (never do these)
 - **No em dashes** in any copy. Use commas, periods, or restructure.
+- **Share what gives; never broadcast what needs explaining.** Three
+  kinds of text may carry a share affordance, and no others:
+  *conclusions* (a kept line, the keepsake from a turning), *quotations*
+  (the daily quote, a saved poem or passage, the line a mirror is
+  remembered for), and *things that live elsewhere* (a reading-room
+  piece, a saved article, a song — where the link is the object, not a
+  picture of its title).
+  **Drafts and confessions never can.** A journal entry, the feeling
+  brought to a Carry session, the mood typed into Attune: written to work
+  something out, unfinished, and usually about other people who did not
+  agree to appear in them. Expressive writing also works partly because
+  it is unwitnessed, so a shareable journal makes the writing worse.
+  Those surfaces get *copy*, which moves something you own to somewhere
+  else you own. A letter is neither sharing nor copying; it is giving,
+  and it has its own screen.
+  One affordance for all of it (`ShareLink`): a quiet mono link, never an
+  icon. An icon on every object is itself the tacky thing.
 - **Quotation marks are for quotations.** The quote hero, and the
   display-quote treatment anywhere, belongs to the canon: books, poems,
   philosophers, scripture, the mystics. Never set a reader's own writing

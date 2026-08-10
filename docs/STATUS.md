@@ -258,3 +258,48 @@ done Hearth's way (outward-turning by default), password reset, draft
 autosave and an offline shell, the seasonal question, a finite "season"
 covering the meaning already made, account deletion and export, play
 links in Attune, and real URLs.
+
+
+---
+
+## Session log — 2026-08-10
+
+Two corrections and one long-missing feature.
+
+**Quotation marks are for quotations** (`f2aa31f`). The home hero briefly
+held the reader's own kept line, in display Fraunces inside curly quotes.
+A private line set as an epigraph reads as self-important, and it spends
+the quote marks, which only work while they mean "someone wrote this, in
+a book, and it lasted". The hero is the canon again. Cards take `quoted`,
+off by default. Recorded in `DOCTRINE_AUDIT.md` §7.
+
+**A principle for sharing, and the surfaces to match it** (§8). Sharing
+had landed on the meaning log on purpose and on journal entries by
+accident, because a dead ShareSheet was sitting in that file and got
+repaired rather than deleted. The rule now: share what gives, do not
+broadcast what needs explaining.
+
+- Removed from the journal. It was sharing `body.split(/\n+/)[0]`, the
+  first line of an entry, on a page that tells you not to edit; that is
+  reliably its least considered sentence. Copy remains.
+- Added to the Nook, which had none despite holding only other people's
+  already-public work.
+- Added to the daily quote, reading-room pieces, Attune's songs, passage
+  and poem, and the Carry mirror and its line.
+- One `ShareLink` component for all of it, replacing two near-duplicates.
+  A quiet mono link, never an icon.
+
+**Listening** (§9). Attune recommended three songs and gave no way to
+hear them. Each song now deep-links to a search on Spotify, Apple Music
+or YouTube Music, switchable in one tap and remembered per device.
+Universal https links, not URI schemes, so a missing app falls back to
+the web player instead of a tap that does nothing. Resolving the exact
+track needs a Spotify developer app and a client secret, which only the
+account owner can create; scoped in `DOCTRINE_AUDIT.md` §9.
+
+**Also fixed: a crash from the initial commit.** `EntryDetailScreen`
+assumed `shift` was always a signed string. Home builds it that way, but
+the journal archive passes the raw API record where it is a number, and
+older entries have none, so opening an entry from All entries could
+crash on `.startsWith` of undefined. Normalised, and the block hides when
+there is nothing to report. Verified across eight shapes of the field.

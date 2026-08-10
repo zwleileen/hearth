@@ -283,6 +283,80 @@ answer is a different form, not a bigger font.
 
 ---
 
+## 8. What may be shared, and what may not
+
+The first pass put sharing on the meaning log and on journal entries.
+Asked what the principle was, there turned out not to be a clean one:
+the meaning log was right on purpose and the journal was right by
+accident, because a dead `ShareSheet` component was already sitting in
+that file and got repaired rather than deleted. Archaeology, not design.
+
+**The principle, stated properly.** Hearth only offers to share
+something where the sharing is itself a meaning act (`MEANING.md` §6:
+self-transcendence is the loop, so sharing must be giving and never
+broadcasting). That sorts everything a reader writes or receives into
+three kinds:
+
+| Kind | Examples | Shareable |
+|---|---|---|
+| Conclusions | a kept line, the keepsake from a turning | **Yes.** Short, arrived-at, and able to stand outside your life because they do not need your life explained first |
+| Quotations | the daily quote, a saved poem or passage, the line a mirror is remembered for | **Yes**, and these are the only things allowed the quote marks (§7) |
+| Elsewhere | a reading-room piece, a saved article, a song | **Yes**, as a link. The object is the thing, not a picture of its title |
+| Drafts and confessions | a journal entry, the feeling brought to Carry, the mood typed into Attune | **No** |
+
+The short form: **share what gives, do not broadcast what needs
+explaining.** A letter is neither; it is giving, and it has its own
+screen.
+
+**Why the journal is a hard no**, beyond being confessional: it was
+sharing `body.split(/\n+/)[0]`, the *first* line of the entry, on a page
+whose own placeholder reads "Begin anywhere. Don't edit." The first line
+of unedited writing is reliably its least considered sentence, so the
+feature took the most private text in Hearth and published its worst
+one. There is also a mechanism argument: expressive writing works partly
+because it is unwitnessed, and a shareable journal quietly turns people
+into writers-for-an-audience, which makes the entries worse. The journal
+keeps *copy*, which moves something you own somewhere else you own.
+
+**Where sharing was missing.** The Nook had none, which is the same
+error in reverse: everything in it is someone else's already-public
+work, so there is no exposure at all, and a saved poem or passage is a
+genuine quotation. Under the principle it should have had sharing before
+the journal ever did. Also added: the daily quote (the single most
+obviously shareable object in the app), reading-room pieces, Attune's
+songs, passage and poem, and the Carry mirror and its line.
+
+All of it goes through one `ShareLink` component: a quiet mono link,
+never an icon. An icon on every object is itself the tacky thing.
+
+---
+
+## 9. Listening
+
+Attune recommended three songs, with a real reason each, and gave the
+reader no way to hear any of them. The next move was to retype the title
+into another app, at the exact moment their intent was highest.
+
+**Shipped:** a search deep link per song, plus a one-tap switch between
+Spotify, Apple Music and YouTube Music, remembered per device. Universal
+`https` links rather than `spotify:` URI schemes, because a URI scheme
+fails silently on a device without the app, and a tap that does nothing
+is the worst outcome available.
+
+**Not shipped, and what it would take.** Resolving the *exact* track
+instead of a search needs the Spotify Web API: a developer app, a client
+ID and secret in Render's environment, a client-credentials token cache,
+and a resolver that runs once per reading and stores the resulting URL
+on the `AttuneEntry`. Roughly half a day, and it is blocked on
+credentials only the account owner can create. It buys a direct link and
+album art. Note that Spotify restricted `preview_url` for new API
+clients in late 2024, so in-app 30-second previews should not be
+promised. A full per-user OAuth connection ("save this reading as a
+playlist") is a multi-day piece and only worth it if Attune becomes the
+primary loop.
+
+---
+
 ## 6. What is still open
 
 Ranked. Nothing below is blocked by anything above.

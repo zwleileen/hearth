@@ -365,3 +365,100 @@ export const SHARE_RESULT_MESSAGE = {
   cancelled: '',
   failed: 'Could not share that just now.',
 };
+
+// ── The one share affordance ──────────────────────────────────────────
+//
+// Every surface uses this, so sharing looks and behaves identically
+// everywhere and there is exactly one place to change its manners. It is
+// a quiet mono link, never an icon button: an icon row on every object
+// is itself the tacky thing, and restraint is the brand.
+//
+// WHAT MAY CARRY IT (docs/HEARTH_BRAND_BRIEF.md §8.9):
+//
+//   Conclusions   a kept line, a keepsake from a turning. Short,
+//                 arrived-at, and able to stand outside your life
+//                 because they do not need your life explained first.
+//   Quotations    the daily quote, a saved poem or passage, the line a
+//                 mirror is remembered for. Real quotations, so they are
+//                 the only things that may wear quotation marks.
+//   Elsewhere     a reading-room piece, a saved article. Someone else's
+//                 public work; the link is the object.
+//
+// WHAT MAY NOT:
+//
+//   Drafts and confessions. A journal entry, the feeling brought to a
+//   Carry session, the mood typed into Attune. These are written to work
+//   something out. They are unfinished, they are usually about other
+//   people who did not agree to appear in them, and expressive writing
+//   works partly because it is unwitnessed. Make it shareable and people
+//   begin writing for an audience, which makes the writing worse.
+//
+// The short form: share what gives, do not broadcast what needs
+// explaining. A letter is neither; it is giving, and it has its own
+// screen.
+import React from 'react';
+
+function ShareLink({
+  text,
+  attribution = '',
+  quoted = false,
+  url = null,
+  label = 'Share',
+  busyLabel = 'Setting it…',
+  style = {},
+}) {
+  const [state, setState] = React.useState('idle');
+
+  async function onShare() {
+    if (state === 'busy') return;
+    setState('busy');
+    try {
+      // When the object lives somewhere else (an essay, a song), the
+      // link is the thing worth sending, not a picture of its title.
+      const shareText = url ? `${text}\n${url}` : text;
+      const result = url
+        ? await shareUrl({ text, url })
+        : await shareCard({ text, attribution, quoted, shareText });
+      if (SHARE_RESULT_MESSAGE[result]) {
+        setState('done');
+        setTimeout(() => setState('idle'), 2200);
+      } else {
+        setState('idle');
+      }
+    } catch {
+      setState('idle');
+    }
+  }
+
+  return (
+    <button onClick={onShare} style={{
+      background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+      color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5,
+      letterSpacing: '0.16em', textTransform: 'uppercase', ...style,
+    }}>
+      {state === 'busy' ? busyLabel : state === 'done' ? 'Done' : label}
+    </button>
+  );
+}
+
+// Sharing something that lives elsewhere. No card: a picture of a
+// headline helps nobody, and the whole value is the link.
+export async function shareUrl({ text, url }) {
+  const payload = { text, url };
+  try {
+    if (navigator.share) {
+      await navigator.share(payload);
+      return 'shared';
+    }
+  } catch (err) {
+    if (err && err.name === 'AbortError') return 'cancelled';
+  }
+  try {
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    return 'copied';
+  } catch {
+    return 'failed';
+  }
+}
+
+export { ShareLink };

@@ -6,7 +6,7 @@ import React from 'react';
 import { ColorBlock, Headline, Icon, Kicker, Photo, Rule } from './atoms.jsx';
 import { HEARTH_DATA } from './data.js';
 import { api, bookmarkKindFor, isItemBookmarked } from './api.js';
-import { shareCard, SHARE_RESULT_MESSAGE } from './share.jsx';
+import { ShareLink } from './share.jsx';
 import { CareBlock } from './care.jsx';
 
 const { useState: useState1, useEffect: useEffect1 } = React;
@@ -318,6 +318,14 @@ function HomeScreen({ go, user }) {
             }}>
               {quote.author}{quote.source ? ` · ${quote.source}` : ''}{quote.year ? ` · ${quote.year}` : ''}
             </p>
+            <div style={{ marginTop: 18 }}>
+              <ShareLink
+                text={quote.text}
+                attribution={[quote.author, quote.source].filter(Boolean).join(' · ')}
+                quoted
+                label="Share this"
+              />
+            </div>
           </>
         ) : (
           <Headline size="display" style={{ marginTop: 18 }}>Welcome back.</Headline>
@@ -630,11 +638,14 @@ function ReadingRoomScreen({ go }) {
                     <span className="mono" style={{ fontSize: 9.5, letterSpacing: '0.18em', color: 'var(--paper-mute)' }}>· {hero.readTime}</span>
                   )}
                 </div>
-                <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(hero); }}
-                  disabled={heroSaved} className="hearth-save-btn" data-saved={heroSaved}>
-                  {Icon.bookmark(12, 'currentColor')}
-                  <span>{heroSaved ? 'Saved' : 'Save'}</span>
-                </button>
+                <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+                  {hero.url && <ShareLink text={hero.title} url={hero.url} label="Share"/>}
+                  <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(hero); }}
+                    disabled={heroSaved} className="hearth-save-btn" data-saved={heroSaved}>
+                    {Icon.bookmark(12, 'currentColor')}
+                    <span>{heroSaved ? 'Saved' : 'Save'}</span>
+                  </button>
+                </div>
               </div>
               <div onClick={() => hero.url && window.open(hero.url, '_blank', 'noopener,noreferrer')}
                 style={{ cursor: hero.url ? 'pointer' : 'default' }}>
@@ -712,7 +723,8 @@ function ReadingRoomScreen({ go }) {
                         </div>
                       )}
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginTop: 14 }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 16, alignItems: 'center', marginTop: 14 }}>
+                      {it.url && <ShareLink text={it.title} url={it.url} label="Share"/>}
                       <button onClick={(e) => { e.stopPropagation(); saveDiscoverItem(it); }}
                         disabled={itemSaved} className="hearth-save-btn" data-saved={itemSaved}>
                         {Icon.bookmark(11, 'currentColor')}
@@ -1204,38 +1216,9 @@ function MeaningScreen({ go }) {
 // ─────────────────────────────────────────────────────────────
 const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
 
-// One line, made into an object worth sending.
-//
-// The shareable atom is deliberately the LINE, not the entry. A journal
-// entry is confessional and unshareable; a single noticed line is a
-// haiku, and Hearth's typography is what makes it worth a screenshot.
-// The image is drawn on the reader's own device, so nothing about their
-// inner life leaves Hearth to make this work. See src/share.jsx.
-function ShareLineButton({ text, attribution }) {
-  const [state, setState] = useState1('idle');
-  async function onShare() {
-    if (state === 'busy') return;
-    setState('busy');
-    try {
-      const result = await shareCard({
-        text,
-        attribution: attribution ? 'A line I kept' : '',
-        shareText: text,
-      });
-      setState(SHARE_RESULT_MESSAGE[result] ? 'done' : 'idle');
-      if (SHARE_RESULT_MESSAGE[result]) {
-        setTimeout(() => setState('idle'), 2200);
-      }
-    } catch {
-      setState('idle');
-    }
-  }
-  return (
-    <button onClick={onShare} style={rowLink}>
-      {state === 'busy' ? 'Setting it…' : state === 'done' ? 'Done' : 'Share this line'}
-    </button>
-  );
-}
+// The meaning log's share affordance now comes from src/share.jsx, so
+// every surface in Hearth shares identically and there is one place
+// where its manners live.
 
 function MeaningLogScreen({ go }) {
   const [entries, setEntries] = useState1(null);
@@ -1320,7 +1303,7 @@ function MeaningLogScreen({ go }) {
                 on a phone means invisible and unreachable. They are always
                 present now, quiet enough not to compete with the line. */}
             <div style={{ marginTop: 14, display: 'flex', gap: 20, alignItems: 'center' }}>
-              <ShareLineButton text={e.text} attribution={e.prompt}/>
+              <ShareLink text={e.text} attribution="A line I kept" label="Share this line"/>
               <button onClick={() => confirmRemove(e.id)} style={rowLink}>
                 {pendingRemove === e.id ? 'Tap again to remove' : 'Remove'}
               </button>

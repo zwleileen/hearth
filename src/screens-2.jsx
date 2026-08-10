@@ -10,6 +10,8 @@ import { HEARTH_DATA } from './data.js';
 import { api, isItemBookmarked, bookmarkKindFor } from './api.js';
 import { CareBlock } from './care.jsx';
 import { SavourMoment, SavourOpener } from './savour.jsx';
+import { ShareLink } from './share.jsx';
+import { getListenService, setListenService, nextService, serviceLabel, listenUrl } from './listen.js';
 
 const { useState: useState2 } = React;
 
@@ -305,6 +307,8 @@ function AttuneScreen({ go }) {
   // view. The entries are reverse-chronological; moodSummary is what
   // the reader wanted preserved.
   const [logbook, setLogbook] = React.useState({ entries: [], hasMore: false, loading: false, error: null });
+  // Where this reader listens. Held per device, never asked for twice.
+  const [listen, setListen] = React.useState(() => getListenService());
 
   React.useEffect(() => {
     let cancelled = false;
@@ -555,10 +559,41 @@ function AttuneScreen({ go }) {
                     color: 'var(--hh-green-3)', fontWeight: 380,
                   }}>{s.artist}</p>
                   <p className="body" style={{ margin: 0, maxWidth: 540 }}>{s.why}</p>
+                  {/* The reader's intent to hear this is never higher
+                      than right here. It used to dead-end. */}
+                  <div style={{ marginTop: 14, display: 'flex', gap: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                    {listenUrl(listen, s) && (
+                      <a href={listenUrl(listen, s)} target="_blank" rel="noopener noreferrer"
+                        style={{
+                          color: 'var(--hh-green)', fontFamily: 'var(--mono)', fontSize: 9.5,
+                          letterSpacing: '0.16em', textTransform: 'uppercase', textDecoration: 'none',
+                          borderBottom: '1px solid currentColor', paddingBottom: 2,
+                        }}>
+                        Listen on {serviceLabel(listen)} →
+                      </a>
+                    )}
+                    <ShareLink
+                      text={`${s.title} by ${s.artist}`}
+                      url={listenUrl(listen, s)}
+                      label="Share"
+                    />
+                  </div>
                 </div>
               );
             })}
           </div>
+
+          {/* One tap to switch, so nobody is told which service Hearth
+              assumes they use. */}
+          <button
+            onClick={() => { const n = nextService(listen); setListen(n); setListenService(n); }}
+            style={{
+              marginTop: 20, background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
+              color: 'var(--hh-green)', opacity: 0.6, fontFamily: 'var(--mono)', fontSize: 9,
+              letterSpacing: '0.16em', textTransform: 'uppercase',
+            }}>
+            Listening on {serviceLabel(listen)} · change
+          </button>
         </ColorBlock>
 
         {/* Book excerpt · affective bibliotherapy. A short passage that
@@ -602,6 +637,11 @@ function AttuneScreen({ go }) {
                 color: 'var(--hh-green-3)', fontWeight: 380,
               }}>{ex.author}</p>
               {ex.why && <p className="body" style={{ margin: 0, maxWidth: 540 }}>{ex.why}</p>}
+              {hasText && (
+                <div style={{ marginTop: 14 }}>
+                  <ShareLink text={ex.text} attribution={ex.author} quoted label="Share this passage"/>
+                </div>
+              )}
               {hasUrl && (
                 <a href={ex.url} target="_blank" rel="noopener noreferrer"
                   style={{
@@ -682,6 +722,13 @@ function AttuneScreen({ go }) {
                       )}
                     </>
                   )}
+                  <div style={{ marginTop: 14 }}>
+                    {hasText
+                      ? <ShareLink text={p.text} attribution={p.poet} quoted label="Share this poem"/>
+                      : hasUrl
+                        ? <ShareLink text={`${p.title} by ${p.poet}`} url={p.url} label="Share this poem"/>
+                        : null}
+                  </div>
                   {!hasText && hasUrl && (
                     <a href={p.url} target="_blank" rel="noopener noreferrer"
                       style={{
