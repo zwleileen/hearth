@@ -17,13 +17,41 @@ journal.get('/:id', async (req, res) => {
   res.json({ entry: entry.toClient() });
 });
 
+// The client's greeting buckets include a fifth part of the day, 'night',
+// which the schema's enum does not carry — and a bundle already in a
+// reader's browser will keep sending it long after the source is fixed.
+// An unrecognised mode files the entry rather than refusing it: night is
+// evening's half of the day (pickJournalInvite draws from the same pool),
+// and anything else is simply a free page.
+const JOURNAL_MODES = new Set(['morning', 'afternoon', 'evening', 'free']);
+function normaliseMode(mode) {
+  if (!mode) return 'free';
+  if (mode === 'night') return 'evening';
+  return JOURNAL_MODES.has(mode) ? mode : 'free';
+}
+
 journal.post('/', async (req, res) => {
   const { mode, title, body, mood, shift, tags, promptTitle, promptLineage } = req.body || {};
   if (!body || !body.trim()) return res.status(400).json({ error: 'Body is required' });
-  const entry = await JournalEntry.create({
-    userId: req.userId,
-    mode, title, body, mood, shift, tags, promptTitle, promptLineage,
-  });
+
+  let entry;
+  try {
+    entry = await JournalEntry.create({
+      userId: req.userId,
+      mode: normaliseMode(mode), title, body, mood, shift, tags, promptTitle, promptLineage,
+    });
+  } catch (err) {
+    // Express 4 does not hand a rejected async handler to the error
+    // middleware in index.js: the rejection goes unhandled and Node 24
+    // exits the process, so one bad field takes the whole server down
+    // and Render restarts it in a loop. Caught here, a failure to save
+    // stays the failure of one page.
+    console.error('[journal] create failed', err);
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({ error: 'That entry could not be saved.' });
+    }
+    return res.status(500).json({ error: 'Internal server error' });
+  }
 
   // The care backstop runs here too, not only in a Carry session. The
   // journal is the longest free-text field in Hearth and it is written

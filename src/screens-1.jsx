@@ -32,6 +32,14 @@ function timeOfDay() {
   return 'night';
 }
 
+// The journal stores the part of day it was written in, and the server
+// keeps a fixed set of values for it that has no 'night'. The greeting
+// buckets above do. Night files as evening — the same side of the day
+// the evening prompts are drawn from.
+function journalMode(part) {
+  return part === 'night' ? 'evening' : part;
+}
+
 function formatTodayKicker() {
   const now = new Date();
   const weekday = now.toLocaleDateString(undefined, { weekday: 'long' });
@@ -481,7 +489,7 @@ function HomeScreen({ go, user }) {
           {journalInvite && (
             <DoorRow word="Today's page"
               meaning={`${journalInvite.title}. A few minutes of writing, for when a line is not enough.`}
-              onClick={() => go('journal-write', { prompt: journalInvite, mode: part })} />
+              onClick={() => go('journal-write', { prompt: journalInvite, mode: journalMode(part) })} />
           )}
         </div>
       </section>
