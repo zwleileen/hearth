@@ -258,7 +258,7 @@ function OnboardingScreen({ go, payload, onAuthed }) {
           Welcome, {name || 'friend'}.
         </h1>
         <p className="body" style={{ maxWidth: 320, margin: '0 auto' }}>
-          Your hearth is ready. The reading room is being curated, and your first prompt is waiting on the home screen.
+          Your hearth is ready. Today's thing is waiting in Receive, and your first prompt is on the home screen.
         </p>
         {submitError && (
           <p className="body-sm" style={{ marginTop: 22, color: 'var(--ember-deep, var(--ember))', maxWidth: 320, marginInline: 'auto' }}>
@@ -888,7 +888,9 @@ function LandingScreen({ go }) {
           <p className="serif hearth-landing-feature-body">
             Meaning grows when we reach beyond ourselves. Each day Hearth offers one
             small act of giving, the deed only you can do, the turn toward someone who
-            needs you, and keeps a quiet record of it.
+            needs you, and keeps a quiet record of it. And when it matters most, a
+            letter: what someone did for you and what it gave you, written here and
+            actually sent.
           </p>
           <div className="hearth-landing-prompt-card">
             <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>
@@ -901,7 +903,7 @@ function LandingScreen({ go }) {
         </div>
       </section>
 
-      {/* Feature 2 · Reading room — Carolina Blue block */}
+      {/* Feature 2 · Receive — Carolina Blue block */}
       <section className="hearth-landing-feature" style={{ background: 'var(--hh-blue)' }}>
         <div className="hearth-landing-feature-inner">
           <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
@@ -911,14 +913,17 @@ function LandingScreen({ go }) {
             Through what<br/><span style={{ fontStyle: 'italic' }}>moves you.</span>
           </h2>
           <p className="serif hearth-landing-feature-body">
-            Beauty, music, ideas, another person. Hearth gathers a small daily reading
-            room, and meets your mood with songs, a passage from a book, and a poem chosen
-            for its texture, so the world can reach you. Keep what moves you on your own quiet shelf.
+            Beauty, other people, and the world turning out to be larger than your day.
+            Each day Hearth sets down one thing worth stopping for, the same for everyone,
+            two sentences, nothing to finish. Then Attune, which meets how you feel with
+            songs, a passage from a book, and a poem. And one person you saw, looked at
+            properly: what you noticed that most people would walk past. Keep what moves
+            you on your own quiet shelf.
           </p>
         </div>
       </section>
 
-      {/* Feature 3 · Attune — Pale Dogwood block */}
+      {/* Feature 3 · Carry — Pale Dogwood block */}
       <section className="hearth-landing-feature" style={{ background: 'var(--hh-dogwood)' }}>
         <div className="hearth-landing-feature-inner">
           <p className="mono hearth-landing-feature-kicker" style={{ color: 'var(--hh-green)' }}>
