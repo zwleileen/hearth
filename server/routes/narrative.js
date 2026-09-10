@@ -24,13 +24,26 @@ import { requireAuth } from '../middleware/auth.js';
 import { getOpenAI, MODEL, HEARTH_VOICE, REFLECTION_VOICE, MEANING_NARRATIVE_SCHEMA } from '../lib/ai.js';
 import { MeaningLog } from '../models/MeaningLog.js';
 import { KindleSession } from '../models/KindleSession.js';
+import { AttuneEntry } from '../models/AttuneEntry.js';
 import { MeaningNarrative } from '../models/MeaningNarrative.js';
 
 export const narrative = Router();
 narrative.use(requireAuth);
 
-const MIN_SOURCES = 3;
 const REGEN_DAYS = 7;
+// A row of the glance is a flat declarative sentence about someone's own
+// life, printed on their home screen, and it needs its own evidence.
+// Asking the model for that does not work: given seven Receive lines and
+// nothing else, it invented a Give row in four runs out of four and a
+// Carry row in four out of four, honesty instruction and all. So the
+// floor is enforced in code below, after the model answers. Two lines is
+// enough to be a pattern and few enough to see yourself early.
+//
+// This replaced a single global MIN_SOURCES, which was the wrong shape
+// twice over: it made a reader with six Receive lines and no Give lines
+// wait for nothing, and then handed them an invented Give row the moment
+// they crossed it.
+const ROW_MIN = 2;
 // Bump when the prompt or voice changes so every reader re-weaves once
 // into the new voice rather than waiting out their cache.
 const PROMPT_VERSION = 2;
@@ -38,6 +51,7 @@ const PROMPT_VERSION = 2;
 // size no matter how long someone has used Hearth — recency over volume.
 const RECENT_LOGS = 40;
 const RECENT_SESSIONS = 8;
+const RECENT_MOODS = 12;
 const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
 // The three rows of the glance. One list, used by both the weave (to
 // decide which affirmations still stand) and the PATCH handler.
@@ -76,12 +90,24 @@ narrative.get('/', async (req, res) => {
   // only survivor was the seven-day age check. It failed silently, and it
   // failed the most committed readers first: the people keeping the most
   // were the people whose narrative stopped answering them.
-  let logs = [], sessions = [], total = 0;
+  let logs = [], sessions = [], moods = [], total = 0;
   try {
     let logCount = 0, sessionCount = 0;
-    [logs, sessions, logCount, sessionCount] = await Promise.all([
+    [logs, sessions, moods, logCount, sessionCount] = await Promise.all([
       MeaningLog.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_LOGS).lean(),
       KindleSession.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_SESSIONS).lean(),
+      // Attune was the one surface a reader could use constantly and
+      // never once appear in their own narrative: seventeen sessions,
+      // every one of them invisible here. `mood` is what they typed
+      // about their own state, in the first person, and it is the same
+      // kind of material as the feeling brought to a Carry session,
+      // which this weave has always read. Reading one and not the other
+      // was an oversight, not a doctrine.
+      //
+      // Only `mood`. Never `moodSummary`, the songs or the poems: those
+      // are Hearth's words about them, and the same exclusion applies
+      // here as to a session's mirror.
+      AttuneEntry.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_MOODS).select('mood').lean(),
       MeaningLog.countDocuments({ userId }),
       KindleSession.countDocuments({ userId }),
     ]);
@@ -112,8 +138,23 @@ narrative.get('/', async (req, res) => {
     }, cached));
   }
 
-  // Cold start: too little to read honestly. Cache the empty result.
-  if (total < MIN_SOURCES) {
+  // What each row is allowed to be said on. A row is grounded in the
+  // reader's own lines for that avenue, and Carry additionally in the
+  // sessions they brought, which is material they wrote about what they
+  // hold. Attune moods deliberately ground nothing: they enrich the
+  // reading but they are states someone arrived in, not evidence of how
+  // they give, what moves them, or how they carry it.
+  const evidence = {
+    give: logs.filter((l) => l.avenue === 'give').length,
+    receive: logs.filter((l) => l.avenue === 'receive').length,
+    carry: logs.filter((l) => l.avenue === 'carry').length + sessions.length,
+  };
+  const grounded = ROWS.filter((r) => evidence[r] >= ROW_MIN);
+
+  // Cold start: nothing can be said honestly about any row yet. An empty
+  // narrative is not a failure state here, it is the truthful one, and
+  // the screen turns it into an invitation naming what is still missing.
+  if (grounded.length === 0) {
     await MeaningNarrative.findOneAndUpdate(
       { userId },
       { $set: { userId, narrative: '', give: '', receive: '', carry: '', threads: [], sourceCount: total, generatedAt: new Date() } },
@@ -133,7 +174,20 @@ narrative.get('/', async (req, res) => {
   const parts = [];
   if (logs.length) {
     parts.push('Lines they have kept in answer to the meaning of the moment (newest first):\n' +
-      logs.map((l) => `  - [${AVENUE_WORD[l.avenue] || 'note'}] ${l.text}`).join('\n'));
+      // The question each line answers, because stripped of it the act
+      // and its subject are indistinguishable. "Yong, for always being
+      // the open hearted, generous optimist" answers a gratitude-letter
+      // prompt: the giving is the writing, the description is of Yong.
+      // Read bare it says she gives open-hearted optimism, and that
+      // leaked into her Give row in two runs out of six. Shown with the
+      // question, none out of six.
+      logs.map((l) => {
+        const asked = (l.prompt || '').trim();
+        const who = (l.forWhom || '').trim();
+        const about = who ? ` (about ${who})` : '';
+        const head = `  - [${AVENUE_WORD[l.avenue] || 'note'}]${about}`;
+        return asked ? `${head} in answer to "${asked}": ${l.text}` : `${head} ${l.text}`;
+      }).join('\n'));
   }
   if (sessions.length) {
     // From a Carry session we read ONLY the reader's own words: the feeling
@@ -152,6 +206,13 @@ narrative.get('/', async (req, res) => {
       return rows.join('\n');
     }).filter(Boolean);
     if (blocks.length) parts.push('Heavier things they brought to a Carry session, in their own words. These are burdens they came to sit with, what they hold, not necessarily what gives them meaning:\n' + blocks.join('\n'));
+  }
+  if (moods.length) {
+    const lines = moods.map((m) => clip(m.mood)).filter(Boolean);
+    if (lines.length) {
+      parts.push('How they have described their own state when they came for music and words, in their own words. Like the burdens above, this is what they were carrying at the time, NOT what gives them meaning:\n' +
+        lines.map((l) => `  - ${l}`).join('\n'));
+    }
   }
   const corpus = parts.join('\n\n');
 
@@ -175,6 +236,20 @@ narrative.get('/', async (req, res) => {
   // that still fit. Only Hearth's own previous rows: the reader's own
   // wording is theirs and must never come back as Hearth's reading of
   // them.
+  // Which rows this reader has actually earned. Said in the prompt so
+  // the prose does not claim what the rows cannot, and enforced in code
+  // once the answer is back, because the prompt alone does not hold:
+  // with no Give material at all it wrote a Give row four times in four.
+  const ungrounded = ROWS.filter((r) => !grounded.includes(r));
+  const rowRule = ungrounded.length === 0 ? '' : [
+    '',
+    'This reader has not yet kept enough about ' + ungrounded.join(' or ').toUpperCase() + ' for that to be said about them.',
+    'Return those fields as an empty string, and never reach into the other avenues to fill them.',
+    'Keep the narrative itself to what can honestly be said about ' + grounded.join(' and ').toUpperCase() + '.',
+    'An empty row is the honest answer, and they will see an invitation in its place.',
+    '',
+  ].join('\n');
+
   const prior = [
     (cachedRows.give || '') && `  how they give: ${cachedRows.give}`,
     (cachedRows.receive || '') && `  what they receive: ${cachedRows.receive}`,
@@ -203,7 +278,8 @@ Reflect back only what THEY brought and said. If a person, character, metaphor, 
 
 ${REFLECTION_VOICE}
 
-Then distil three short phrases (three to ten words each, lowercase, no full stop) for the glance: how they GIVE, what they RECEIVE, what they CARRY. These are the short form a reader sees first; the narrative is the longer read behind it.
+Then distil short phrases (three to ten words each, lowercase, no full stop) for the glance: how they GIVE, what they RECEIVE, what they CARRY. These are the short form a reader sees first; the narrative is the longer read behind it.
+${rowRule}
 
 Then name up to three threads: short phrases (two to four words) for the through-lines of their meaning, in their register.
 
@@ -232,9 +308,15 @@ Return JSON matching the schema.`;
     if (!text) return res.status(502).json({ error: 'Empty response from AI service' });
     const data = JSON.parse(text);
     const narrativeText = (data.narrative || '').trim();
-    const give = (data.give || '').trim();
-    const receive = (data.receive || '').trim();
-    const carry = (data.carry || '').trim();
+    // The floor, enforced here rather than trusted to the prompt above.
+    // A row without its own evidence is blanked whatever came back, so
+    // the worst case is a reader seeing an invitation instead of a
+    // sentence, rather than a confident claim about a part of their life
+    // they have told Hearth nothing about.
+    const keepRow = (name, value) => (grounded.includes(name) ? (value || '').trim() : '');
+    const give = keepRow('give', data.give);
+    const receive = keepRow('receive', data.receive);
+    const carry = keepRow('carry', data.carry);
     const threads = Array.isArray(data.threads) ? data.threads.filter(Boolean).slice(0, 3) : [];
     const generatedAt = new Date();
 

@@ -573,14 +573,16 @@ function AttuneScreen({ go }) {
             through beauty is an avenue in its own right, and a moment
             that is noticed and stayed with is far more likely to be
             kept. See src/savour.jsx. */}
-        {!fromLog && (
-          <SavourOpener
-            label="Stay a moment with what that reached"
-            question="What did that reach in you?"
-            avenue="receive"
-            prompt="What the listening reached in me"
-          />
-        )}
+        {/* This used to be hidden on a reading opened from the logbook,
+            which had it backwards: coming back to something days later
+            is exactly when a reader knows what it reached in them. It
+            offered nothing at the one moment reflection was likeliest. */}
+        <SavourOpener
+          label="Stay a moment with what that reached"
+          question="What did that reach in you?"
+          avenue="receive"
+          prompt="What the listening reached in me"
+        />
 
         {/* Closing */}
         <section style={{ padding: '40px 22px 0', textAlign: 'left' }}>

@@ -1071,11 +1071,20 @@ function MeaningScreen({ go }) {
       .catch(() => { if (!cancelled) setNarr({ narrative: '' }); });
     return () => { cancelled = true; };
   }, []);
+  // An empty row used to be filtered out, which meant a reader with
+  // nothing kept under Give simply never learned that Give was a place
+  // Hearth was listening. The row stays, and says what would fill it.
+  // The empty state is the only honest thing to print there, and it is
+  // also the one that teaches the loop.
   const rows = narr ? [
-    { key: 'give', label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)' },
-    { key: 'receive', label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)' },
-    { key: 'carry', label: 'Carry', phrase: narr.carry, ink: 'var(--hh-dogwood-deep)' },
-  ].filter((r) => r.phrase) : [];
+    { key: 'give', label: 'Give', phrase: narr.give, ink: 'var(--hh-ecru-deep)',
+      waiting: 'Nothing yet about what you offer. Keep a line in Give, or write someone a letter, and it will take shape here.', route: 'give' },
+    { key: 'receive', label: 'Receive', phrase: narr.receive, ink: 'var(--hh-blue-deep)',
+      waiting: 'Nothing yet about what moves you. Stay a moment with something in Receive and it will take shape here.', route: 'receive' },
+    { key: 'carry', label: 'Carry', phrase: narr.carry, ink: 'var(--hh-dogwood-deep)',
+      waiting: 'Nothing yet about what you hold. Sit with something heavy in Carry and it will take shape here.', route: 'kindle' },
+  ] : [];
+  const anyPhrase = rows.some((r) => r.phrase);
   return (
     <div className="fade-in" style={{ paddingBottom: 48 }}>
       <section style={{ padding: '4px 22px 0' }}>
@@ -1100,12 +1109,12 @@ function MeaningScreen({ go }) {
         </section>
       ) : narr.narrative ? (
         <>
-          {rows.length > 0 && (
+          {anyPhrase && (
             <section style={{ padding: '32px 22px 0' }}>
               <p className="body-sm" style={{ margin: '0 0 6px', color: 'var(--paper-mute)', maxWidth: 460 }}>
                 This is Hearth's reading of you, not a verdict. Where it is wrong, say so, and your words will stand instead.
               </p>
-              {rows.map((r) => (
+              {rows.map((r) => (r.phrase ? (
                 <MeaningRow
                   key={r.key}
                   label={r.label}
@@ -1116,7 +1125,19 @@ function MeaningScreen({ go }) {
                   affirmed={!!narr.affirmed?.[r.key]}
                   onSaved={(next) => setNarr((prev) => ({ ...prev, ...next }))}
                 />
-              ))}
+              ) : (
+                <div key={r.key} style={{ padding: '18px 0', borderBottom: '1px solid rgba(31, 64, 69, 0.10)' }}>
+                  <div className="mono" style={{ fontSize: 9.5, letterSpacing: '0.2em', textTransform: 'uppercase', color: r.ink, marginBottom: 8, opacity: 0.7 }}>
+                    {r.label}
+                  </div>
+                  <p className="serif" style={{ margin: 0, fontSize: 17, lineHeight: 1.45, fontStyle: 'italic', color: 'var(--paper-mute)' }}>
+                    {r.waiting}
+                  </p>
+                  <div style={{ marginTop: 10 }}>
+                    <button onClick={() => go(r.route)} style={rowLink}>Go to {r.label}</button>
+                  </div>
+                </div>
+              )))}
             </section>
           )}
           <section style={{ padding: '34px 22px 0' }}>

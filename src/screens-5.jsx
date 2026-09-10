@@ -449,17 +449,6 @@ function KindleScreen({ go }) {
                 </p>
               )}
             </Movement>
-            {/* A turning that lands is exactly the kind of moment that
-                used to go straight through the reader. Hold it open. */}
-            {!fromLog && (
-              <SavourOpener
-                label="Stay a moment with this"
-                question="What did that reach in you?"
-                avenue="carry"
-                prompt="What the turning reached in me"
-              />
-            )}
-
             <section style={{ padding: '40px 22px 0', display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
               <button onClick={() => go('journal')} style={{
                 background: 'transparent', border: '1px solid rgba(31, 64, 69, 0.18)',
@@ -516,6 +505,26 @@ function KindleScreen({ go }) {
             )}
           </section>
         )}
+
+        {/* A session that lands is exactly the kind of moment that used
+            to go straight through the reader, and this is what holds it
+            open. It used to sit INSIDE the answered branch, so it was
+            offered only to someone who had already written a reply:
+            three readers in eighteen sessions did, which capped this at
+            a sixth of the people it was built for and, in practice,
+            reached none of them. It was hidden on a session reopened
+            from the logbook too, which is backwards, because coming back
+            to something days later is when a reader most knows what it
+            reached in them.
+
+            Whether or not they answered, they sat with something heavy
+            and got to the end of it. That is the moment. */}
+        <SavourOpener
+          label="Stay a moment with this"
+          question="What did that reach in you?"
+          avenue="carry"
+          prompt="What this session reached in me"
+        />
       </div>
     );
   }
