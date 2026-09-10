@@ -92,7 +92,7 @@ const AVENUES = [
   {
     key: 'give', word: 'Give', accent: 'var(--hh-ecru)', ink: 'var(--hh-ecru-deep)',
     meaning: 'Meaning through what you offer. The deed, the work, the thing only you can do.',
-    route: 'rituals', cta: 'Begin a small act',
+    route: 'give', cta: 'Begin a small act',
     prompts: [
       'Who could use something only you can give today?',
       'What small thing are you uniquely placed to do for someone?',

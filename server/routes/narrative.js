@@ -61,22 +61,37 @@ narrative.get('/', async (req, res) => {
   const userId = req.userId;
   const refresh = !!req.query.refresh;
 
-  let logs = [], sessions = [];
+  // Two different quantities, and conflating them was a bug.
+  //
+  // `logs` and `sessions` are the WINDOW that actually gets read: bounded,
+  // so the prompt stays a constant size however long someone has used
+  // Hearth. `total` is the cache key, and it must count EVERYTHING they
+  // have kept. These used to be the same number, which meant that once a
+  // reader passed RECENT_LOGS + RECENT_SESSIONS the total pinned at its
+  // ceiling of 48, `cached.sourceCount === total` was true forever, and
+  // the "there is something new to weave" trigger never fired again. The
+  // only survivor was the seven-day age check. It failed silently, and it
+  // failed the most committed readers first: the people keeping the most
+  // were the people whose narrative stopped answering them.
+  let logs = [], sessions = [], total = 0;
   try {
-    [logs, sessions] = await Promise.all([
+    let logCount = 0, sessionCount = 0;
+    [logs, sessions, logCount, sessionCount] = await Promise.all([
       MeaningLog.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_LOGS).lean(),
       KindleSession.find({ userId }).sort({ createdAt: -1 }).limit(RECENT_SESSIONS).lean(),
+      MeaningLog.countDocuments({ userId }),
+      KindleSession.countDocuments({ userId }),
     ]);
+    total = logCount + sessionCount;
   } catch (err) {
     console.error('[narrative] load failed:', err);
     return res.status(500).json({ error: 'Failed to read your records' });
   }
 
-  const total = logs.length + sessions.length;
-
-  // Cache: return as-is unless the inputs have grown (something new to
-  // weave), it has aged past a week, the voice changed, or a refresh was
-  // asked for.
+  // Cache: return as-is unless they have kept something new since the
+  // last weave, it has aged past a week, the voice changed, or a refresh
+  // was asked for. `total` counts everything, so keeping one more line
+  // always re-weaves, however long the reader's history is.
   const cached = await MeaningNarrative.findOne({ userId });
   const ageOk = cached?.generatedAt && (Date.now() - new Date(cached.generatedAt).getTime()) < REGEN_DAYS * 86400000;
   // A non-empty cache from before the give/receive/carry distillation

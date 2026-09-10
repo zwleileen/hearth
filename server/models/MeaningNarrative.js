@@ -7,8 +7,12 @@
 // inputs grow (so they see the impact of what they add), when it ages past
 // a week, or when the voice/prompt version changes.
 //
-//   sourceCount   — how many inputs (recent meaning logs + Carry sessions)
-//                   it was woven from; a change means there's something new.
+//   sourceCount   — how many meaning-log lines and Carry sessions the
+//                   reader has kept IN TOTAL, not the bounded window that
+//                   was read. It is a cache key, not a description of the
+//                   corpus: a change means there is something new to weave.
+//                   Counting the window instead pins this at its ceiling
+//                   and the re-weave-on-new-material trigger dies.
 //   promptVersion — the voice/prompt it was written under; a bump re-weaves
 //                   everyone once into the new voice.
 
