@@ -914,11 +914,11 @@ function LandingScreen({ go }) {
           </h2>
           <p className="serif hearth-landing-feature-body">
             Beauty, other people, and the world turning out to be larger than your day.
-            Each day Hearth sets down one thing worth stopping for, the same for everyone,
-            two sentences, nothing to finish. Then Attune, which meets how you feel with
-            songs, a passage from a book, and a poem. And one person you saw, looked at
-            properly: what you noticed that most people would walk past. Keep what moves
-            you on your own quiet shelf.
+            Each day there is one thing worth stopping for, the same for everyone. It takes
+            a moment to read. Nothing stacks up behind it, and there is nothing to catch up
+            on. Then Attune, which meets how you feel with songs, a passage from a book, and
+            a poem. And one person you saw, looked at properly: what you noticed that most
+            people would walk past. Keep what moves you on your own quiet shelf.
           </p>
         </div>
       </section>
