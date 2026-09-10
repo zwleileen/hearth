@@ -39,6 +39,9 @@ const PROMPT_VERSION = 2;
 const RECENT_LOGS = 40;
 const RECENT_SESSIONS = 8;
 const AVENUE_WORD = { give: 'Give', receive: 'Receive', carry: 'Carry' };
+// The three rows of the glance. One list, used by both the weave (to
+// decide which affirmations still stand) and the PATCH handler.
+const ROWS = ['give', 'receive', 'carry'];
 
 // The reader's own wording always wins on render, and a row they have
 // written themselves is never re-generated over. Everything downstream
@@ -93,6 +96,10 @@ narrative.get('/', async (req, res) => {
   // was asked for. `total` counts everything, so keeping one more line
   // always re-weaves, however long the reader's history is.
   const cached = await MeaningNarrative.findOne({ userId });
+  const cachedRows = {
+    give: cached?.give || '', receive: cached?.receive || '',
+    carry: cached?.carry || '', threads: cached?.threads || [],
+  };
   const ageOk = cached?.generatedAt && (Date.now() - new Date(cached.generatedAt).getTime()) < REGEN_DAYS * 86400000;
   // A non-empty cache from before the give/receive/carry distillation
   // lacks those fields; treat it as stale so it re-weaves once.
@@ -148,6 +155,42 @@ narrative.get('/', async (req, res) => {
   }
   const corpus = parts.join('\n\n');
 
+  // CONTINUITY. A self-portrait that is re-worded every week is not a
+  // clearer sense of anything, and the weave used to start from scratch
+  // every time. Six runs over the same reader's records agreed on the
+  // reading every time and on the wording almost never: the same person
+  // came back as "financial weight, doubt, and a faint flame", then
+  // "money fears, failure worries, a faint but stubborn hope", then
+  // "heavy hopes about work, worth, and money". Nothing about her had
+  // changed. Only the sentence had.
+  //
+  // That churn is not cosmetic. It is the difference between a reader
+  // recognising themselves and being introduced to a stranger with their
+  // biography, and it quietly costs them their affirmations too: a row
+  // whose words change is a row they have to be asked about again, so
+  // constant rewording means never being able to say "yes, that's it"
+  // and have it stay said.
+  //
+  // So the previous reading goes in, with instructions to keep the words
+  // that still fit. Only Hearth's own previous rows: the reader's own
+  // wording is theirs and must never come back as Hearth's reading of
+  // them.
+  const prior = [
+    (cachedRows.give || '') && `  how they give: ${cachedRows.give}`,
+    (cachedRows.receive || '') && `  what they receive: ${cachedRows.receive}`,
+    (cachedRows.carry || '') && `  what they carry: ${cachedRows.carry}`,
+    (cachedRows.threads || []).length ? `  threads: ${cachedRows.threads.join(', ')}` : '',
+  ].filter(Boolean).join('\n');
+  const continuity = prior ? `
+This reader has been read before. Last time it came out as:
+
+${prior}
+
+Take each line above and test it against what they actually brought, before you decide anything. If their own material does not support a line, replace it: a line that no longer fits, or never fitted, must go, and the fact that it is the previous wording is never a reason to keep it. Accuracy comes first, always.
+
+Only then, for each line the material DOES still support: keep that wording exactly as it stands, word for word, rather than saying the same thing in fresh words. Re-wording a reading that has not changed costs this reader the sense of being recognised rather than re-guessed.
+` : '';
+
   const userPrompt = `A Hearth reader has been noticing, writing, and keeping what moves them. Read across everything below and reflect back, gently, the shape of THEIR unique sense of meaning as it stands this season.
 
 """
@@ -165,7 +208,7 @@ Then distil three short phrases (three to ten words each, lowercase, no full sto
 Then name up to three threads: short phrases (two to four words) for the through-lines of their meaning, in their register.
 
 If there is genuinely too little to read honestly, return everything empty rather than inventing.
-
+${continuity}
 Return JSON matching the schema.`;
 
   let client;
@@ -194,12 +237,35 @@ Return JSON matching the schema.`;
     const carry = (data.carry || '').trim();
     const threads = Array.isArray(data.threads) ? data.threads.filter(Boolean).slice(0, 3) : [];
     const generatedAt = new Date();
-    // Note the $set list: it never touches `own` or `affirmed`. A
-    // re-weave may replace Hearth's reading; it must never replace what
-    // the reader wrote about their own life.
+
+    // Note the $set list: it never touches `own`. A re-weave may replace
+    // Hearth's reading; it must never replace what the reader wrote
+    // about their own life.
+    //
+    // `affirmed` is different, and leaving it alone was wrong. "Yes,
+    // that's it" is said about a PARTICULAR sentence, not about the row
+    // forever. When a re-weave changes a row the reader has not written
+    // themselves, the old affirmation does not transfer: carrying it
+    // over prints "You said this is right" under a sentence they have
+    // never read, which is Hearth asserting the reader endorsed a claim
+    // about their own life that they were never shown. That is the exact
+    // authority inversion the narrative exists to avoid
+    // (BRAND_BRIEF 5.6, 6.3), and it is worse than a stale flag: it
+    // launders a generated line as the reader's own judgement.
+    //
+    // So an unchanged row keeps its affirmation, and a row the reader
+    // owns keeps it too, because the sentence on screen is still theirs.
+    // A row that changed underneath them goes back to asking.
+    const fields = { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, promptVersion: PROMPT_VERSION };
+    const nextRows = { give, receive, carry };
+    for (const key of ROWS) {
+      const ownsIt = ((cached?.own?.[key] || '').trim()).length > 0;
+      const changed = (cached?.[key] || '') !== nextRows[key];
+      if (!ownsIt && changed) fields[`affirmed.${key}`] = false;
+    }
     const saved = await MeaningNarrative.findOneAndUpdate(
       { userId },
-      { $set: { userId, narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, promptVersion: PROMPT_VERSION } },
+      { $set: fields },
       { upsert: true, new: true },
     );
     res.json(withAuthorship({ narrative: narrativeText, give, receive, carry, threads, sourceCount: total, generatedAt, cached: false }, saved));
@@ -220,12 +286,11 @@ Return JSON matching the schema.`;
 //
 // No model call: this is the reader's own sentence, and running it
 // through a model to be improved would defeat the entire point.
-const ROWS = new Set(['give', 'receive', 'carry']);
 const OWN_MAX = 140;
 
 narrative.patch('/', async (req, res) => {
   const { row, text, affirmed } = req.body || {};
-  if (!ROWS.has(row)) {
+  if (!ROWS.includes(row)) {
     return res.status(400).json({ error: 'row must be give, receive, or carry' });
   }
 
