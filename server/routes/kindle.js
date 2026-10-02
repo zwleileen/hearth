@@ -8,6 +8,8 @@
 //   POST   /api/kindle              generate the opening session
 //   POST   /api/kindle/:id/reply    answer the question, get the turning
 //   POST   /api/kindle/:id/reseen   say the seeing missed, get seen again
+//   POST   /api/kindle/:id/image    make the picture of the mirror
+//   GET    /api/kindle/:id/image    read the picture back
 //   GET    /api/kindle/log          past sessions, reverse-chronological
 //   DELETE /api/kindle/log/:id      remove a session from the logbook
 
@@ -20,7 +22,9 @@ import {
   generateKindleReseeing,
 } from '../lib/kindleRunner.js';
 import { detectDistress, careBlockFor, regionFromTimeZone } from '../lib/care.js';
+import { generateKindleImage } from '../lib/kindleImage.js';
 import { KindleSession } from '../models/KindleSession.js';
+import { KindleImage } from '../models/KindleImage.js';
 import { MeaningNarrative } from '../models/MeaningNarrative.js';
 
 export const kindle = Router();
@@ -280,6 +284,77 @@ kindle.post('/:id/reseen', async (req, res) => {
   });
 });
 
+// ── POST /api/kindle/:id/image ────────────────────────────────────────
+// Make the picture that accompanies this session: its mirror, painted.
+// One per session. Asking again returns the one already made, so a
+// second tap, or a request that outlived the reader's patience, never
+// pays for a second picture.
+//
+// A picture takes most of a minute, which is long enough for a proxy to
+// give up on the request while the work carries on here. So the work in
+// flight is remembered by session, a repeat request joins it, and the
+// picture is saved whether or not anyone is still waiting for it.
+const drawing = new Map();
+
+kindle.post('/:id/image', async (req, res) => {
+  const userId = req.userId;
+  const { id } = req.params;
+
+  const record = await KindleSession.findOne({ _id: id, userId });
+  if (!record) return res.status(404).json({ error: 'Session not found' });
+
+  const existing = await KindleImage.findOne({ sessionId: record._id, userId });
+  if (existing) return res.json(existing.toClient());
+
+  let client;
+  try {
+    client = getOpenAI();
+  } catch (err) {
+    return res.status(503).json({ error: 'AI service not configured', detail: err.message });
+  }
+
+  const key = record._id.toString();
+  let work = drawing.get(key);
+  if (!work) {
+    work = (async () => {
+      const made = await generateKindleImage(client, {
+        session: record.session,
+        replyTurning: record.replyTurning,
+      });
+      const saved = await KindleImage.findOneAndUpdate(
+        { sessionId: record._id },
+        { $setOnInsert: { sessionId: record._id, userId, ...made } },
+        { upsert: true, new: true },
+      );
+      await KindleSession.updateOne({ _id: record._id }, { $set: { hasImage: true } });
+      return saved;
+    })().finally(() => drawing.delete(key));
+    drawing.set(key, work);
+  }
+
+  try {
+    const saved = await work;
+    res.json(saved.toClient());
+  } catch (err) {
+    console.error('[kindle/image]', err);
+    res.status(500).json({ error: 'Failed to make the picture', detail: err.message });
+  }
+});
+
+// ── GET /api/kindle/:id/image ─────────────────────────────────────────
+kindle.get('/:id/image', async (req, res) => {
+  const userId = req.userId;
+  const { id } = req.params;
+  try {
+    const found = await KindleImage.findOne({ sessionId: id, userId });
+    if (!found) return res.status(404).json({ error: 'No picture for this session' });
+    res.json(found.toClient());
+  } catch (err) {
+    console.error('[kindle/image] read failed:', err);
+    res.status(500).json({ error: 'Failed to load the picture' });
+  }
+});
+
 // ── GET /api/kindle/log ───────────────────────────────────────────────
 kindle.get('/log', async (req, res) => {
   const userId = req.userId;
@@ -307,6 +382,7 @@ kindle.get('/log', async (req, res) => {
       replyTurning: e.replyTurning || null,
       correction: e.correction || '',
       careFlagged: !!e.careFlagged,
+      hasImage: !!e.hasImage,
       createdAt: e.createdAt,
     }));
     res.json({ entries: page, hasMore });
@@ -323,6 +399,10 @@ kindle.delete('/log/:id', async (req, res) => {
   try {
     const r = await KindleSession.deleteOne({ _id: id, userId });
     if (r.deletedCount === 0) return res.status(404).json({ error: 'Session not found' });
+    // The picture goes with the session it was made for.
+    await KindleImage.deleteOne({ sessionId: id, userId }).catch((err) => {
+      console.warn('[kindle] failed to delete picture:', err.message);
+    });
     res.json({ ok: true });
   } catch (err) {
     console.error('[kindle] log delete failed:', err);

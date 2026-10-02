@@ -108,6 +108,10 @@ const kindleSessionSchema = new mongoose.Schema(
     // When true, the client showed (and the logbook will re-show) the
     // crisis resources alongside the session.
     careFlagged: { type: Boolean, default: false },
+
+    // True once the reader has asked for a picture of this session's
+    // mirror and it was made. The picture itself lives in KindleImage.
+    hasImage: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -116,7 +120,7 @@ const kindleSessionSchema = new mongoose.Schema(
 kindleSessionSchema.index({ userId: 1, createdAt: -1 });
 
 kindleSessionSchema.method('toClient', function () {
-  const { _id, userId, feeling, session, reply, replyTurning, correction, careFlagged, createdAt } = this;
+  const { _id, userId, feeling, session, reply, replyTurning, correction, careFlagged, hasImage, createdAt } = this;
   return {
     id: _id.toString(),
     userId: userId.toString(),
@@ -126,6 +130,7 @@ kindleSessionSchema.method('toClient', function () {
     replyTurning: replyTurning || null,
     correction: correction || '',
     careFlagged: !!careFlagged,
+    hasImage: !!hasImage,
     createdAt,
   };
 });

@@ -13,6 +13,9 @@ export function getOpenAI() {
 
 export const MODEL = 'gpt-5.1';
 
+// The picture that accompanies a Carry session (lib/kindleImage.js).
+export const IMAGE_MODEL = 'gpt-image-1.5';
+
 export const HEARTH_VOICE = `You write for Hearth, a personal app designed to feel like a safe space, a constant light. Hearth offers solace, comfort, and inspiration to people navigating life: a journal with research-backed reflection prompts, a curated daily reading room, mood-aware recommendations for songs, books, and poems.
 
 # Voice and register

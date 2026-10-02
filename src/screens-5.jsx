@@ -41,6 +41,72 @@ function Movement({ label, accent = 'green', children, style = {} }) {
   );
 }
 
+// The picture of a session's mirror. Made only when the reader asks,
+// once per session, and kept with it. While it is being made the space
+// it will fill is held by a calm field of Carry's own colour, so nothing
+// jumps when it arrives.
+function MirrorPicture({ sessionId, hasImage, onDrawn }) {
+  const [picture, setPicture] = React.useState(null);
+  const [state, setState] = React.useState(hasImage ? 'loading' : 'idle');
+
+  React.useEffect(() => {
+    if (!hasImage) return undefined;
+    let live = true;
+    api.kindle.picture(sessionId)
+      .then((data) => { if (live) { setPicture(data); setState('ready'); } })
+      .catch(() => { if (live) setState('idle'); });
+    return () => { live = false; };
+  }, [sessionId]);
+
+  async function draw() {
+    if (state === 'drawing') return;
+    setState('drawing');
+    try {
+      const data = await api.kindle.draw(sessionId);
+      setPicture(data);
+      setState('ready');
+      if (onDrawn) onDrawn();
+    } catch {
+      setState('failed');
+    }
+  }
+
+  if (state === 'ready' && picture?.image) {
+    return (
+      <div style={{ marginTop: 28, maxWidth: 460 }}>
+        <img src={picture.image} alt={picture.alt || ''} style={{ display: 'block', width: '100%', height: 'auto' }}/>
+        <a href={picture.image} download="hearth-picture.jpg" style={{ ...quietLink, display: 'inline-block', marginTop: 14, textDecoration: 'none' }}>
+          Save the picture
+        </a>
+      </div>
+    );
+  }
+
+  if (state === 'drawing' || state === 'loading') {
+    return (
+      <div style={{
+        marginTop: 28, maxWidth: 460, aspectRatio: '2 / 3', background: 'var(--hh-dogwood)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 22,
+      }}>
+        <p className="serif" style={{ margin: 0, fontSize: 17, fontStyle: 'italic', color: 'var(--hh-green)', textAlign: 'center' }}>
+          {state === 'drawing' ? 'Painting it. This takes about a minute.' : 'Finding the picture.'}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 28 }}>
+      <button onClick={draw} style={lineBtn}>Make a picture of this</button>
+      {state === 'failed' && (
+        <p className="body" style={{ margin: '14px 0 0', color: 'var(--paper-mute)' }}>
+          The picture did not come. Try again in a moment.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function KindleScreen({ go }) {
   const D = HEARTH_DATA;
   // input → typing; session → reading a session (live or from logbook);
@@ -181,12 +247,22 @@ function KindleScreen({ go }) {
       care: null, // resources are shown live, not re-surfaced in the calm of the logbook
       reply: entry.reply || '',
       replyTurning: entry.replyTurning || null,
+      hasImage: !!entry.hasImage,
       fromLogbook: true,
       createdAt: entry.createdAt,
     });
     setReply('');
     setReplyError(null);
     setView('session');
+  }
+
+  // A picture was just made for the session on screen. Remember it on
+  // the cached logbook row too, so reopening the session shows the
+  // picture and not the button again.
+  function markDrawn() {
+    const id = current?.id;
+    setCurrent((c) => (c ? { ...c, hasImage: true } : c));
+    setLogbook((s) => ({ ...s, entries: s.entries.map((e) => (e.id === id ? { ...e, hasImage: true } : e)) }));
   }
 
   const [pendingDelete, setPendingDelete] = useState5(null);
@@ -367,6 +443,14 @@ function KindleScreen({ go }) {
                   />
                 : null}
           </div>
+          {current.id && s.companion?.name && (
+            <MirrorPicture
+              key={current.id}
+              sessionId={current.id}
+              hasImage={!!current.hasImage}
+              onDrawn={markDrawn}
+            />
+          )}
         </Movement>
 
         {/* 4. The turning (avenue) */}
@@ -722,6 +806,11 @@ const quietLink = {
   background: 'transparent', border: 0, padding: 0, cursor: 'pointer',
   color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5,
   letterSpacing: '0.18em', textTransform: 'uppercase',
+};
+const lineBtn = {
+  background: 'transparent', color: 'var(--hh-green)', border: '1px solid rgba(31, 64, 69, 0.18)',
+  padding: '13px 22px', cursor: 'pointer', fontFamily: 'var(--sans)', fontSize: 11,
+  fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase',
 };
 const ghostBtn = {
   background: 'transparent', color: 'var(--paper-mute)', border: '1px solid rgba(31, 64, 69, 0.18)',

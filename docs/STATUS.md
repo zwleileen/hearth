@@ -222,6 +222,13 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
 - `POST /api/kindle/:id/reseen` — the reader says the seeing missed them
   and says how; only the naming and the seeing regenerate, the rest of
   the session stands. The prompt forbids apologising or explaining.
+- `POST` / `GET /api/kindle/:id/image` — a picture of the session's
+  mirror, made only when the reader asks, one per session
+  (`lib/kindleImage.js`, model `KindleImage`). Two calls: the text model
+  writes one scene from the mirror alone (never the reader's feeling,
+  never a likeness of a real person), then `gpt-image-1.5` paints it
+  inside a fixed style built from the design system. Not yet looked at
+  in a browser.
 - **Continuity** — `buildKnowingBlock` passes the meaning narrative plus
   the reader's own recent words into a session. Never the mirrors or
   turnings Hearth itself offered them, and never to be performed back.

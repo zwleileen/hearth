@@ -189,6 +189,11 @@ export const api = {
     // session stands. This is the dialogue working, not an apology.
     reseen: (id, { correction } = {}) =>
       request(`/kindle/${id}/reseen`, { method: 'POST', body: { correction } }),
+    // The picture of a session's mirror. draw makes it (or returns the
+    // one already made); picture reads it back. Both return
+    // { image, alt }, where image is a data URL.
+    draw: (id) => request(`/kindle/${id}/image`, { method: 'POST' }),
+    picture: (id) => request(`/kindle/${id}/image`),
     // Logbook: past sessions, reverse-chronological.
     log: ({ limit = 30, before = null } = {}) => {
       const qs = new URLSearchParams();
