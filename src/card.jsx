@@ -1,8 +1,12 @@
 // Hearth — a card from a Carry session.
 //
-// The picture of the mirror on the front. On the back, the mirror's own
-// words, which the reader can change in place, and a note of their own.
-// Then it is posted to someone.
+// The picture of the mirror on the front. On the back, laid out as a
+// postcard back, the mirror's own words, which the reader can change in
+// place, and a note of their own. Then it is shared: as a postcard PDF,
+// or the picture alone, to keep, print or pass on.
+//
+// Posting a printed card (Mail it) is built but switched off while
+// printing is worked out; see MAIL_ENABLED.
 //
 // The preview is drawn to the print file's numbers (server/lib/
 // cardPdf.js): a 4 x 6 inch card, type sized in points against the
@@ -22,7 +26,24 @@ import { api } from './api.js';
 // Card geometry in points, matching cardPdf.js.
 const TRIM_W = 288;
 const SAFE = 18;
-const ROOM = 432 - 2 * SAFE - 9 - 18; // above the wordmark
+const TEXT_W = TRIM_W - 2 * SAFE;
+// The postcard furniture, matching POSTCARD in cardPdf.js.
+const POSTCARD = { stampW: 50, stampH: 60, stampGap: 14, lineGap: 17, lines: 3, lineShare: 0.62 };
+const BOTTOM = 432 - SAFE - 9 - 18; // where the wordmark's room begins
+const FIRST_LINE = BOTTOM - (POSTCARD.lines - 1) * POSTCARD.lineGap;
+// How tall the words may run, from the top safe margin: above the
+// address lines, or, when the words need it, above the wordmark.
+const ROOM = { withAddress: FIRST_LINE - 24 - SAFE, without: BOTTOM - SAFE };
+
+// Posting a printed card. Off for now: readers share the postcard
+// themselves. Turn it back on once the print room is connected and
+// printing is settled; the whole flow, its server route and its email
+// are kept as they were.
+const MAIL_ENABLED = false;
+
+// What a shared postcard says alongside it. Plain and first person, the
+// one place Hearth is not literary (BRAND_BRIEF §5.12).
+const SHARE_TEXT = 'I made this for you.';
 const TYPE = { kicker: 6.5, title: 17, body: 9, bodyFloor: 7.5, note: 9.5 };
 // Ceilings against abuse, as on the server. Fit is what really limits
 // the words, and the preview measures it.
@@ -174,7 +195,7 @@ function CardScreen({ go, payload, user }) {
 
   const original = React.useMemo(() => originalWords(session), [sessionId]);
   const [words, setWords] = React.useState(() => ({ ...original, ...(sessionId ? readDraft(sessionId) : null) }));
-  const [fit, setFit] = React.useState({ fits: true, bodyPt: TYPE.body });
+  const [fit, setFit] = React.useState({ fits: true, bodyPt: TYPE.body, withAddress: true });
 
   const [mailOpen, setMailOpen] = React.useState(false);
   // Who the card is for. Someone else is a giving; the reader themself is
@@ -202,19 +223,27 @@ function CardScreen({ go, payload, user }) {
     const body = bodyRef.current;
     if (!back || !content || !body) return;
     const k = back.clientWidth / TRIM_W; // px per point
-    const room = (ROOM + SAFE) * k; // the content box starts at the top safe margin
+    // As the PDF does: first try to fit above the address lines, then,
+    // if the words need it, give the lines up and use the room.
     let pt = TYPE.body;
-    for (;;) {
-      body.style.fontSize = `${pt * k}px`;
-      for (const ta of content.querySelectorAll('textarea')) {
-        ta.style.height = 'auto';
-        ta.style.height = `${ta.scrollHeight}px`;
+    let fits = false;
+    let withAddress = true;
+    for (withAddress of [true, false]) {
+      const room = ((withAddress ? ROOM.withAddress : ROOM.without) + SAFE) * k; // the content box starts at the top safe margin
+      pt = TYPE.body;
+      for (;;) {
+        body.style.fontSize = `${pt * k}px`;
+        for (const ta of content.querySelectorAll('textarea')) {
+          ta.style.height = 'auto';
+          ta.style.height = `${ta.scrollHeight}px`;
+        }
+        fits = content.scrollHeight <= room + 0.5;
+        if (fits || pt <= TYPE.bodyFloor) break;
+        pt = Math.max(TYPE.bodyFloor, pt - 0.25);
       }
-      if (content.scrollHeight <= room + 0.5 || pt <= TYPE.bodyFloor) break;
-      pt = Math.max(TYPE.bodyFloor, pt - 0.25);
+      if (fits) break;
     }
-    const fits = content.scrollHeight <= room + 0.5;
-    setFit((f) => (f.fits === fits && f.bodyPt === pt ? f : { fits, bodyPt: pt }));
+    setFit((f) => (f.fits === fits && f.bodyPt === pt && f.withAddress === withAddress ? f : { fits, bodyPt: pt, withAddress }));
   }, []);
 
   React.useLayoutEffect(() => { fitBack(); }, [words, fitBack]);
@@ -236,14 +265,80 @@ function CardScreen({ go, payload, user }) {
     if (!self && address.name === (user?.name || '')) setField('name', '');
   }
 
+  // The postcard PDF for the words as they are now, made once and kept
+  // until the words change, so sharing it can be instant.
+  const wordsKey = JSON.stringify([words.title, words.body, words.note]);
+  const postcard = React.useRef({ key: '', file: null });
+  async function postcardFile() {
+    if (postcard.current.key === wordsKey && postcard.current.file) return postcard.current.file;
+    const blob = await api.cards.printFile({ sessionId, title: words.title, body: words.body, note: words.note });
+    const file = new File([blob], 'hearth-postcard.pdf', { type: 'application/pdf' });
+    postcard.current = { key: wordsKey, file };
+    return file;
+  }
+
+  // The share sheet takes files on phones and on some desktop browsers.
+  // Where it cannot, there is no Share button at all rather than one that
+  // quietly downloads instead: the downloads sit right beside it.
+  const canShareFiles = React.useMemo(() => {
+    try {
+      return !!navigator.canShare && navigator.canShare({ files: [new File([''], 'x.pdf', { type: 'application/pdf' })] });
+    } catch { return false; }
+  }, []);
+
+  // A share sheet only opens straight after a tap, and making the PDF
+  // takes a moment, so it is made ahead, quietly, once the words settle.
+  React.useEffect(() => {
+    if (!canShareFiles || !sessionId || !fit.fits || !words.title.trim() || !words.body.trim()) return undefined;
+    const t = setTimeout(() => { postcardFile().catch(() => {}); }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wordsKey, fit.fits, canShareFiles, sessionId]);
+
+  // idle | making | ready | failed, or a message to show
+  const [shareState, setShareState] = React.useState('idle');
+
+  function readyToMake() {
+    const e = {};
+    if (!words.title.trim()) e.title = 'The card needs a title.';
+    if (!words.body.trim()) e.body = 'The card needs some words on the back.';
+    if (!fit.fits) e.body = 'The words run past the edge of the card. Shorten them a little.';
+    setErrors((prev) => ({ ...prev, ...e }));
+    return !Object.keys(e).length;
+  }
+
+  async function sharePostcard() {
+    if (shareState === 'making' || !readyToMake()) return;
+    const cached = postcard.current.key === wordsKey ? postcard.current.file : null;
+    let file = cached;
+    if (!file) {
+      setShareState('making');
+      try { file = await postcardFile(); } catch (err) {
+        setShareState(err.data?.error || 'Could not make the postcard.');
+        return;
+      }
+    }
+    try {
+      await navigator.share({ files: [file], text: SHARE_TEXT });
+      setShareState('idle');
+    } catch (err) {
+      if (err?.name === 'AbortError') { setShareState('idle'); return; }
+      // Making the file took long enough that the browser no longer
+      // counts this as the reader's tap. It is ready now; one more tap.
+      if (!cached && err?.name === 'NotAllowedError') { setShareState('ready'); return; }
+      setShareState('failed');
+    }
+  }
+
   async function downloadFile(kind) {
     if (download === 'pdf' || download === 'image') return;
+    if (kind === 'pdf' && !readyToMake()) return;
     setDownload(kind);
     try {
       if (kind === 'pdf') {
-        saveBlob(await api.cards.printFile({ sessionId, title: words.title, body: words.body, note: words.note }), 'hearth-card.pdf');
+        saveBlob(await postcardFile(), 'hearth-postcard.pdf');
       } else {
-        saveBlob(await api.cards.printImage(sessionId), 'hearth-card-front.jpg');
+        saveBlob(await api.cards.printImage(sessionId), 'hearth-postcard-picture.jpg');
       }
       setDownload(null);
     } catch (err) {
@@ -357,7 +452,7 @@ function CardScreen({ go, payload, user }) {
       <section style={{ padding: '24px 22px 0' }}>
         <Kicker>Carry</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
-          Make it<br/><span style={{ fontStyle: 'italic' }}>a card.</span>
+          Make it<br/><span style={{ fontStyle: 'italic' }}>a postcard.</span>
         </Headline>
         <p className="body" style={{ margin: '18px 0 0', maxWidth: 440 }}>
           The picture on the front. On the back, the words that came with it, yours to change, and room for a note of your own.
@@ -379,7 +474,17 @@ function CardScreen({ go, payload, user }) {
                 every cqw below is a fraction of the card's full width, as
                 every point in the print file is. */}
             <div ref={backRef} className="card-face card-back">
+              {/* The stamp box: a hairline frame, Hearth's mark where a
+                  stamp would go. */}
+              <div aria-hidden="true" className="card-stamp" style={{
+                top: k(SAFE), right: k(SAFE), width: k(POSTCARD.stampW), height: k(POSTCARD.stampH),
+              }}>
+                <img src="/brand/symbol-paper.svg" alt="" style={{ height: k(POSTCARD.stampH * 0.4), width: 'auto', opacity: 0.4 }}/>
+              </div>
               <div ref={contentRef} style={{ padding: `${k(SAFE)} ${k(SAFE)} 0` }}>
+                {/* The kicker and title sit beside the stamp; the words
+                    start under whichever is taller. */}
+                <div style={{ minHeight: k(POSTCARD.stampH), paddingRight: k(POSTCARD.stampW + POSTCARD.stampGap) }}>
                 <div style={{
                   fontFamily: 'var(--sans)', fontWeight: 500, fontSize: k(TYPE.kicker), letterSpacing: '0.22em',
                   textTransform: 'uppercase', color: 'var(--hh-ecru-deep)', lineHeight: 1.4,
@@ -395,6 +500,7 @@ function CardScreen({ go, payload, user }) {
                     fontVariationSettings: "'opsz' 72", fontSize: k(TYPE.title), lineHeight: 1.25, color: 'var(--hh-green)',
                   }}
                 />
+                </div>
                 <textarea
                   id="card-body" ref={bodyRef} className="card-edit" rows={4} value={words.body} maxLength={LIMIT.body}
                   onChange={(e) => setWord('body', e.target.value)}
@@ -418,6 +524,18 @@ function CardScreen({ go, payload, user }) {
                   }}
                 />
               </div>
+              {fit.withAddress && (
+                <div aria-hidden="true">
+                  {Array.from({ length: POSTCARD.lines }, (_, i) => (
+                    <div key={i} className="card-line" style={{
+                      top: k(FIRST_LINE + i * POSTCARD.lineGap), right: k(SAFE), width: k(TEXT_W * POSTCARD.lineShare),
+                    }}/>
+                  ))}
+                  <span className="card-to" style={{
+                    top: k(FIRST_LINE - 9), right: k(SAFE + TEXT_W * POSTCARD.lineShare + 4), fontSize: k(8),
+                  }}>To</span>
+                </div>
+              )}
               <img src="/brand/wordmark-paper.svg" alt="" aria-hidden="true" className="card-mark"
                 style={{ height: k(9), bottom: k(SAFE) }}/>
             </div>
@@ -431,20 +549,6 @@ function CardScreen({ go, payload, user }) {
             <button onClick={() => setWords({ ...original })} style={quietLink}>Put the original words back</button>
           )}
         </div>
-        {user?.printRoom && (
-          <div style={{ marginTop: 14, display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'baseline' }}>
-            <span className="mono" style={monoNote}>Print room</span>
-            <button onClick={() => downloadFile('pdf')} style={quietLink}>
-              {download === 'pdf' ? 'Making it…' : 'Download the print file'}
-            </button>
-            <button onClick={() => downloadFile('image')} style={quietLink}>
-              {download === 'image' ? 'Making it…' : 'Download the front, full size'}
-            </button>
-            {download && download !== 'pdf' && download !== 'image' && (
-              <span className="body" style={{ fontSize: 12.5, color: 'var(--hh-dogwood-deep)' }}>{download}</span>
-            )}
-          </div>
-        )}
         {(errors.title || errors.body || errors.note || !fit.fits) && (
           <p role="alert" className="body" style={{ margin: '12px 0 0', color: 'var(--hh-dogwood-deep)' }}>
             {errors.title || errors.body || errors.note || 'The words run past the edge of the card. Shorten them a little.'}
@@ -452,7 +556,44 @@ function CardScreen({ go, payload, user }) {
         )}
       </section>
 
-      {/* Mail it */}
+      {/* Share it */}
+      <section style={{ padding: '40px 22px 0' }}>
+        <Rule/>
+        <Kicker accent="dogwood" style={{ marginTop: 28 }}>Share it</Kicker>
+        <p className="body" style={{ margin: '12px 0 22px', maxWidth: 440 }}>
+          Both sides as a postcard, to keep, to print, or to pass on to someone it might meet too.
+        </p>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+          {canShareFiles && (
+            <button onClick={sharePostcard} disabled={shareState === 'making'}
+              style={shareState === 'making' ? ghostBtn : solidBtn}>
+              <span>{shareState === 'making' ? 'Making it…' : shareState === 'ready' ? 'Ready. Tap to share' : 'Share the postcard'}</span>
+              {shareState !== 'making' && <span style={{ width: 28, height: 1, background: 'currentColor' }}/>}
+            </button>
+          )}
+          <button onClick={() => downloadFile('pdf')} disabled={download === 'pdf'}
+            style={canShareFiles ? lineBtn : (download === 'pdf' ? ghostBtn : solidBtn)}>
+            {download === 'pdf' ? 'Making it…' : 'Download the postcard'}
+          </button>
+          <button onClick={() => downloadFile('image')} disabled={download === 'image'} style={{ ...quietLink, padding: '8px 0' }}>
+            {download === 'image' ? 'Making it…' : 'Download the picture, full size'}
+          </button>
+        </div>
+        {(shareState === 'failed' || (shareState && !['idle', 'making', 'ready', 'failed'].includes(shareState))) && (
+          <p role="alert" className="body" style={{ margin: '14px 0 0', color: 'var(--hh-dogwood-deep)' }}>
+            {shareState === 'failed' ? 'Could not open sharing. Download the postcard and send it from there.' : shareState}
+          </p>
+        )}
+        {download && download !== 'pdf' && download !== 'image' && (
+          <p role="alert" className="body" style={{ margin: '14px 0 0', color: 'var(--hh-dogwood-deep)' }}>{download}</p>
+        )}
+        <p className="mono" style={{ ...monoNote, margin: '18px 0 0' }}>
+          PDF, 4 × 6 in, both sides
+        </p>
+      </section>
+
+      {/* Mail it (off for now, see MAIL_ENABLED) */}
+      {MAIL_ENABLED && (
       <section style={{ padding: '40px 22px 0' }}>
         <Rule/>
         <div style={{ marginTop: 28 }}>
@@ -534,6 +675,7 @@ function CardScreen({ go, payload, user }) {
           </form>
         )}
       </section>
+      )}
     </div>
   );
 }

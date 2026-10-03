@@ -7,8 +7,8 @@
 //   POST   /api/cards                     build the print files and send them to print
 //   GET    /api/cards                     the reader's cards, newest first
 //                                         (?sessionId= for one session's)
-//   POST   /api/cards/print-file          the print PDF, for the print room's own accounts
-//   GET    /api/cards/print-image/:sid    the front at full resolution, likewise
+//   POST   /api/cards/print-file          the postcard PDF, to download and share
+//   GET    /api/cards/print-image/:sid    the front at full resolution
 //
 // While printing is being tested, the print room is an inbox: every card
 // goes to CARD_PRINT_TO by email, with the print PDF, the front as a
@@ -30,16 +30,6 @@ export const cards = Router();
 cards.use(requireAuth);
 
 const PRINT_TO = () => process.env.CARD_PRINT_TO || 'zwleileen@gmail.com';
-
-// The accounts that run the print room, and so may download a card's
-// print files straight from the card page instead of waiting for mail.
-// The files are only ever of the reader's own card, so this is a
-// convenience, not a privilege.
-const PRINT_ROOM = () => (process.env.CARD_PRINT_ROOM || 'zwleileen@gmail.com,getpurposeful@gmail.com')
-  .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
-export function isPrintRoom(email) {
-  return !!email && PRINT_ROOM().includes(String(email).toLowerCase());
-}
 
 // A generous ceiling while cards are free, so a stuck button or a
 // curious reader cannot fill the print room's inbox.
@@ -310,16 +300,13 @@ cards.get('/', async (req, res) => {
   }
 });
 
-// ── The print room's own downloads ────────────────────────────────────
-async function requirePrintRoom(req, res, next) {
-  const user = await User.findById(req.userId).select('email').lean().catch(() => null);
-  if (!isPrintRoom(user?.email)) return res.status(403).json({ error: 'Not available on this account' });
-  next();
-}
+// ── The postcard, to download and share ───────────────────────────────
+// Open to every reader, for their own sessions only: the postcard is
+// theirs to keep, print or pass on.
 
-// POST /api/cards/print-file: the PDF exactly as it would be printed,
-// from the words on the card page now.
-cards.post('/print-file', requirePrintRoom, async (req, res) => {
+// POST /api/cards/print-file: the postcard PDF, from the words on the
+// card page now. The same file a printer prints.
+cards.post('/print-file', async (req, res) => {
   const b = req.body || {};
   const { card, fields } = readWords(b);
   if (Object.keys(fields).length) return res.status(400).json({ error: 'Some details need another look.', fields });
@@ -329,7 +316,7 @@ cards.post('/print-file', requirePrintRoom, async (req, res) => {
   try {
     const pdf = await buildCardPdf({ image: bestPicture(image), kicker: kickerFor(session), ...card });
     res.set('Content-Type', 'application/pdf');
-    res.set('Content-Disposition', 'attachment; filename="hearth-card.pdf"');
+    res.set('Content-Disposition', 'attachment; filename="hearth-postcard.pdf"');
     res.send(pdf);
   } catch (err) {
     if (err instanceof CardFitError) return res.status(422).json({ error: err.message, fields: { body: err.message } });
@@ -340,13 +327,13 @@ cards.post('/print-file', requirePrintRoom, async (req, res) => {
 
 // GET /api/cards/print-image/:sessionId: the front at full resolution,
 // cropped to the card with its bleed.
-cards.get('/print-image/:sessionId', requirePrintRoom, async (req, res) => {
+cards.get('/print-image/:sessionId', async (req, res) => {
   const { session, image } = await sessionAndPicture(req.params.sessionId, req.userId);
   if (!session || !image) return res.status(404).json({ error: 'No picture for this session' });
   try {
     const front = await frontImage(image);
     res.set('Content-Type', 'image/jpeg');
-    res.set('Content-Disposition', 'attachment; filename="hearth-card-front.jpg"');
+    res.set('Content-Disposition', 'attachment; filename="hearth-postcard-picture.jpg"');
     res.send(front.buffer);
   } catch (err) {
     console.error('[cards] print-image failed:', err);

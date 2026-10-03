@@ -246,6 +246,15 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
   at full resolution, the words and the address. Accounts listed in
   `CARD_PRINT_ROOM` (default zwleileen@ and getpurposeful@gmail.com) can
   download both files from the card page without waiting for mail.
+- **Share it, not Mail it** (2026-10-03). Posting is switched off
+  (`MAIL_ENABLED` in `src/card.jsx`; the route and email are kept). Every
+  reader can share the postcard (the phone share sheet, where it takes
+  files), download it as a PDF, or download the picture at full size,
+  for their own sessions only. The card's back is now a postcard back:
+  a hairline stamp box holding Hearth's mark, the words, ruled lines with
+  an italic To, and the wordmark; long words give up the address lines
+  before they are refused. The print-room gate (`CARD_PRINT_ROOM`) is
+  gone. The Carry to Give screens below apply again once mail is on.
 - **Carry to Give.** The mail form asks who the card is for: someone
   else, or the reader. After sending, a card to someone turns to Give's
   colour and offers one tap to keep it in the meaning log with their

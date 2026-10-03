@@ -547,7 +547,7 @@ function GiveScreen({ go, user }) {
   // reaches the other person. See src/letter.jsx.
   const ways = [
     { word: 'A letter', route: 'letter', meaning: 'Tell someone what they did for you and what it gave you. Written here, and actually sent.' },
-    { word: 'A card', route: 'kindle', payload: { view: 'logbook' }, meaning: 'Something that met you in Carry, painted, printed and posted to someone it might meet too.' },
+    { word: 'A card', route: 'kindle', payload: { view: 'logbook' }, meaning: 'Something that met you in Carry, painted and set as a postcard, to share with someone it might meet too.' },
     { word: 'An act of kindness', prompt: 'One kindness you could do today, and who it is for.', meaning: 'A small kindness, done on purpose. The lift it gives the giver is one of the steadier findings in the field.' },
     { word: 'Share what you know', prompt: 'One thing only you can pass on, and who needs it.', meaning: 'Teach or hand on something only you carry. Meaning grows by being given away.' },
     { word: 'Give your attention', prompt: 'Who will have your whole, undivided attention today.', meaning: 'Be wholly present to one person. Attention is the rarest thing we have to offer.' },
