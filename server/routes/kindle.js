@@ -25,6 +25,7 @@ import { detectDistress, careBlockFor, regionFromTimeZone } from '../lib/care.js
 import { generateKindleImage } from '../lib/kindleImage.js';
 import { KindleSession } from '../models/KindleSession.js';
 import { KindleImage } from '../models/KindleImage.js';
+import { CardOrder } from '../models/CardOrder.js';
 import { MeaningNarrative } from '../models/MeaningNarrative.js';
 
 export const kindle = Router();
@@ -346,7 +347,8 @@ kindle.get('/:id/image', async (req, res) => {
   const userId = req.userId;
   const { id } = req.params;
   try {
-    const found = await KindleImage.findOne({ sessionId: id, userId });
+    // The screen copy only: the print master stays in the database.
+    const found = await KindleImage.findOne({ sessionId: id, userId }).select('data contentType alt');
     if (!found) return res.status(404).json({ error: 'No picture for this session' });
     res.json(found.toClient());
   } catch (err) {
@@ -373,7 +375,23 @@ kindle.get('/log', async (req, res) => {
       .limit(limit + 1)
       .lean();
     const hasMore = rows.length > limit;
-    const page = (hasMore ? rows.slice(0, limit) : rows).map((e) => ({
+    const pageRows = hasMore ? rows.slice(0, limit) : rows;
+    // The cards each session has become, so the logbook can show which
+    // ones went out into the world and to whom.
+    const sent = new Map();
+    try {
+      const orders = await CardOrder.find({
+        userId, status: 'sent_to_print', sessionId: { $in: pageRows.map((e) => e._id) },
+      }).select('sessionId recipient.name forSelf createdAt').sort({ createdAt: 1 }).lean();
+      for (const o of orders) {
+        const k = o.sessionId.toString();
+        if (!sent.has(k)) sent.set(k, []);
+        sent.get(k).push({ to: o.recipient?.name || '', forSelf: !!o.forSelf, createdAt: o.createdAt });
+      }
+    } catch (err) {
+      console.warn('[kindle] failed to load cards for the logbook:', err.message);
+    }
+    const page = pageRows.map((e) => ({
       id: e._id.toString(),
       userId: e.userId.toString(),
       feeling: e.feeling,
@@ -383,6 +401,7 @@ kindle.get('/log', async (req, res) => {
       correction: e.correction || '',
       careFlagged: !!e.careFlagged,
       hasImage: !!e.hasImage,
+      cards: sent.get(e._id.toString()) || [],
       createdAt: e.createdAt,
     }));
     res.json({ entries: page, hasMore });

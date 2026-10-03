@@ -79,6 +79,25 @@ function localTimeZone() {
   catch { return ''; }
 }
 
+// For the few calls that answer with a file rather than JSON. Resolves
+// to a Blob; errors carry the server's JSON message like request().
+async function requestFile(path, { method = 'GET', body } = {}) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`/api${path}`, {
+    method, headers, body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    const err = new Error(data.error || `Request failed: ${res.status}`);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+  return res.blob();
+}
+
 async function request(path, { method = 'GET', body, auth = true } = {}) {
   const headers = { 'Content-Type': 'application/json' };
   const tz = localTimeZone();
@@ -209,8 +228,20 @@ export const api = {
   // Returns { id, ref, status }. A 400 carries `fields`, keyed by the
   // field each message belongs beside.
   cards: {
-    send: ({ sessionId, title, body, note, recipient } = {}) =>
-      request('/cards', { method: 'POST', body: { sessionId, title, body, note, recipient } }),
+    send: ({ sessionId, title, body, note, recipient, forSelf = false } = {}) =>
+      request('/cards', { method: 'POST', body: { sessionId, title, body, note, recipient, forSelf } }),
+    // The reader's cards that reached the print room, newest first, each
+    // with a small copy of its picture. Pass sessionId for one session's.
+    list: ({ sessionId = null, limit = 10 } = {}) => {
+      const qs = new URLSearchParams({ limit: String(limit) });
+      if (sessionId) qs.set('sessionId', sessionId);
+      return request(`/cards?${qs.toString()}`);
+    },
+    // Print room accounts only (user.printRoom): the files a card is
+    // printed from, as Blobs.
+    printFile: ({ sessionId, title, body, note } = {}) =>
+      requestFile('/cards/print-file', { method: 'POST', body: { sessionId, title, body, note } }),
+    printImage: (sessionId) => requestFile(`/cards/print-image/${sessionId}`),
   },
 
   meaning: {

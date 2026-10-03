@@ -48,6 +48,18 @@ function Movement({ label, accent = 'green', children, style = {} }) {
 function MirrorPicture({ sessionId, hasImage, onDrawn, onCard }) {
   const [picture, setPicture] = React.useState(null);
   const [state, setState] = React.useState(hasImage ? 'loading' : 'idle');
+  // The cards this session has become. Shown under the picture, so the
+  // session that started it all says where it went.
+  const [sentCards, setSentCards] = React.useState([]);
+
+  React.useEffect(() => {
+    if (!hasImage) return undefined;
+    let live = true;
+    api.cards.list({ sessionId })
+      .then((data) => { if (live) setSentCards(data.cards || []); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, [sessionId]);
 
   React.useEffect(() => {
     if (!hasImage) return undefined;
@@ -75,7 +87,18 @@ function MirrorPicture({ sessionId, hasImage, onDrawn, onCard }) {
     return (
       <div style={{ marginTop: 28, maxWidth: 460 }}>
         <img src={picture.image} alt={picture.alt || ''} style={{ display: 'block', width: '100%', height: 'auto' }}/>
-        <button onClick={() => onCard(picture)} style={{ ...lineBtn, marginTop: 18 }}>Create a card</button>
+        {sentCards.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            {sentCards.map((c) => (
+              <div key={c.id} className="mono" style={{ fontSize: 9.5, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)', padding: '4px 0' }}>
+                {c.forSelf ? 'Sent to yourself' : `Sent to ${c.to}`} · {new Date(c.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+              </div>
+            ))}
+          </div>
+        )}
+        <button onClick={() => onCard(picture)} style={{ ...lineBtn, marginTop: 18 }}>
+          {sentCards.length ? 'Create another card' : 'Create a card'}
+        </button>
       </div>
     );
   }
@@ -112,6 +135,11 @@ function KindleScreen({ go, payload }) {
   // input → typing; session → reading a session (live or from logbook);
   // logbook → browsing past sessions.
   const [view, setView] = useState5(reopen ? 'session' : 'input');
+  // Give's "A card" door lands here, on the sessions, to choose one.
+  React.useEffect(() => {
+    if (payload?.view === 'logbook') openLogbook();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [text, setText] = useState5('');
   const [busy, setBusy] = useState5(false);
   const [error, setError] = useState5(null);
@@ -661,6 +689,11 @@ function KindleScreen({ go, payload }) {
                     </span>
                   )}
                 </div>
+                {entry.cards?.length > 0 && (
+                  <div className="mono" style={{ marginTop: 10, fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--hh-ecru-deep)' }}>
+                    {entry.cards.map((c) => (c.forSelf ? 'A card to yourself' : `A card to ${c.to}`)).join(' · ')}
+                  </div>
+                )}
                 {entry.session?.feelingName && (
                   <p className="serif" style={{ margin: '12px 0 0', fontSize: 17, lineHeight: 1.5, fontWeight: 400, fontStyle: 'italic', color: 'var(--hh-green)' }}>
                     {entry.session.feelingName}

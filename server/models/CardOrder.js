@@ -44,6 +44,8 @@ const cardOrderSchema = new mongoose.Schema(
     },
     format: { type: String, default: 'flat-4x6' },
     recipient: { type: recipientSchema, required: true },
+    // A card the reader posted to themselves, to receive later.
+    forSelf: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ['awaiting_payment', 'submitted', 'sent_to_print', 'failed'],

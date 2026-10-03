@@ -70,7 +70,104 @@ function clearDraft(id) {
   try { localStorage.removeItem(draftKey(id)); } catch { /* private mode */ }
 }
 
-function CardScreen({ go, payload }) {
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+// The moment after sending. A card to someone else is a giving, so this
+// is where Carry hands over to Give: the colour turns to Give's, and the
+// reader can keep the giving in their meaning log, where Give and their
+// meaning narrative will find it. A card to themselves stays in Carry.
+// Keeping is one tap and never automatic: noticing is free, keeping is
+// deliberate (BRAND_BRIEF §5.2).
+function SentCard({ go, sent, picture, onBack }) {
+  const self = sent.forSelf;
+  const first = (sent.name || '').split(/\s+/)[0] || sent.name;
+  const [line, setLine] = React.useState(self ? `A card to myself: ${sent.title}` : `A card for ${first}: ${sent.title}`);
+  const [state, setState] = React.useState('idle'); // idle | keeping | kept | failed
+
+  async function keep() {
+    const text = line.trim();
+    if (text.length < 2 || state === 'keeping') return;
+    setState('keeping');
+    try {
+      await api.meaning.create({
+        text,
+        prompt: 'A card from Carry',
+        avenue: self ? 'carry' : 'give',
+        forWhom: self ? '' : sent.name,
+        date: todayKey(),
+      });
+      setState('kept');
+    } catch {
+      setState('failed');
+    }
+  }
+
+  return (
+    <div className="fade-in" style={{ paddingBottom: 56 }}>
+      <section style={{ padding: '14px 22px 0' }}>
+        <Kicker accent={self ? 'dogwood' : 'ecru'}>{self ? 'Carry' : 'Give'}</Kicker>
+        <Headline size="display" style={{ marginTop: 14 }}>
+          A card for<br/><span style={{ fontStyle: 'italic' }}>{self ? 'you, later.' : `${first}.`}</span>
+        </Headline>
+        <p className="body" style={{ margin: '18px 0 0', maxWidth: 440 }}>
+          Card {sent.ref}. It will be printed and posted to {self ? 'you' : sent.name} in {sent.city}.
+        </p>
+        <img src={picture.image} alt={picture.alt || ''} style={{ display: 'block', width: 168, marginTop: 28 }}/>
+      </section>
+
+      <section style={{ padding: '36px 22px 0' }}>
+        <div className="hh-moment" style={{ background: self ? 'var(--hh-dogwood)' : 'var(--hh-ecru)' }}>
+          <span className="hh-moment-eyebrow">{self ? 'Keep it in Carry' : 'Keep it in what you gave'}</span>
+          {state === 'kept' ? (
+            <>
+              <p className="hh-moment-prompt">{self ? 'Kept, for when it arrives.' : `Kept, with what you have given.`}</p>
+              <div style={{ marginTop: 14 }}>
+                {self
+                  ? <button onClick={onBack} style={solidBtn}>Back to the session</button>
+                  : <button onClick={() => go('give')} style={solidBtn}><span>See it in Give</span>{Icon.arrow(14, 'currentColor')}</button>}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="hh-moment-prompt">{self ? 'A line for your meaning log, in your own words if you like.' : `A line for your meaning log. It will sit in Give, with ${first}'s name.`}</p>
+              <textarea
+                className="hearth-input"
+                value={line}
+                onChange={(e) => setLine(e.target.value)}
+                aria-label="The line to keep"
+                style={{ minHeight: 64, background: 'var(--hh-lace)', borderBottom: '1px solid rgba(31, 64, 69, 0.18)', padding: '14px 16px' }}
+              />
+              <div style={{ marginTop: 14, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button onClick={keep} disabled={state === 'keeping' || line.trim().length < 2}
+                  style={state === 'keeping' ? ghostBtn : solidBtn}>
+                  {state === 'keeping' ? 'Keeping…' : 'Keep it'}
+                </button>
+                <button onClick={onBack} style={{ ...quietLink, textDecoration: 'none' }}>Not now</button>
+              </div>
+              {state === 'failed' && (
+                <p className="body" style={{ margin: '12px 0 0' }}>That did not keep. Try again in a moment.</p>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+// Hand a Blob to the browser as a download.
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+function CardScreen({ go, payload, user }) {
   const picture = payload?.picture;
   const session = payload?.session;
   const sessionId = session?.id;
@@ -80,7 +177,11 @@ function CardScreen({ go, payload }) {
   const [fit, setFit] = React.useState({ fits: true, bodyPt: TYPE.body });
 
   const [mailOpen, setMailOpen] = React.useState(false);
+  // Who the card is for. Someone else is a giving; the reader themself is
+  // a keepsake to receive later. Both are posted the same way.
+  const [forSelf, setForSelf] = React.useState(false);
   const [address, setAddress] = React.useState(EMPTY_ADDRESS);
+  const [download, setDownload] = React.useState(null); // null | 'pdf' | 'image' | error string
   const [errors, setErrors] = React.useState({});
   const [sendError, setSendError] = React.useState(null);
   const [sending, setSending] = React.useState(false);
@@ -127,6 +228,28 @@ function CardScreen({ go, payload }) {
   }, [fitBack]);
 
   React.useEffect(() => { if (mailOpen) firstFieldRef.current?.focus(); }, [mailOpen]);
+
+  function chooseFor(self) {
+    setForSelf(self);
+    // Their own name is the one field Hearth already knows.
+    if (self && !address.name.trim() && user?.name) setField('name', user.name);
+    if (!self && address.name === (user?.name || '')) setField('name', '');
+  }
+
+  async function downloadFile(kind) {
+    if (download === 'pdf' || download === 'image') return;
+    setDownload(kind);
+    try {
+      if (kind === 'pdf') {
+        saveBlob(await api.cards.printFile({ sessionId, title: words.title, body: words.body, note: words.note }), 'hearth-card.pdf');
+      } else {
+        saveBlob(await api.cards.printImage(sessionId), 'hearth-card-front.jpg');
+      }
+      setDownload(null);
+    } catch (err) {
+      setDownload(err.data?.error || 'Could not make the file.');
+    }
+  }
 
   function backToSession() {
     go('kindle', session ? { reopen: session } : null);
@@ -194,10 +317,13 @@ function CardScreen({ go, payload }) {
         body: words.body,
         note: words.note,
         recipient: address,
+        forSelf,
       });
       clearDraft(sessionId);
-      setSent({ ...data, name: address.name.trim(), city: address.city.trim() });
+      setSent({ ...data, forSelf, title: words.title.trim(), name: address.name.trim(), city: address.city.trim() });
+      // On a phone the page itself scrolls, on a wide screen the panel.
       document.getElementById('hearth-scroll')?.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top: 0, behavior: 'instant' });
     } catch (err) {
       if (err.data?.fields) {
         setErrors(err.data.fields);
@@ -215,23 +341,7 @@ function CardScreen({ go, payload }) {
 
   // ── Sent ──
   if (sent) {
-    return (
-      <div className="fade-in" style={{ paddingBottom: 48 }}>
-        <section style={{ padding: '14px 22px 0' }}>
-          <Kicker accent="dogwood">Sent</Kicker>
-          <Headline size="display" style={{ marginTop: 14 }}>
-            On its way<br/><span style={{ fontStyle: 'italic' }}>to be printed.</span>
-          </Headline>
-          <p className="body" style={{ margin: '18px 0 0', maxWidth: 440 }}>
-            Card {sent.ref}, for {sent.name} in {sent.city}. It will be printed and posted from here.
-          </p>
-          <img src={picture.image} alt={picture.alt || ''} style={{ display: 'block', width: 160, marginTop: 28 }}/>
-          <div style={{ marginTop: 32 }}>
-            <button onClick={backToSession} style={lineBtn}>Back to the session</button>
-          </div>
-        </section>
-      </div>
-    );
+    return <SentCard go={go} sent={sent} picture={picture} onBack={backToSession}/>;
   }
 
   const k = (pt) => `${(pt / TRIM_W) * 100}cqw`;
@@ -321,6 +431,20 @@ function CardScreen({ go, payload }) {
             <button onClick={() => setWords({ ...original })} style={quietLink}>Put the original words back</button>
           )}
         </div>
+        {user?.printRoom && (
+          <div style={{ marginTop: 14, display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'baseline' }}>
+            <span className="mono" style={monoNote}>Print room</span>
+            <button onClick={() => downloadFile('pdf')} style={quietLink}>
+              {download === 'pdf' ? 'Making it…' : 'Download the print file'}
+            </button>
+            <button onClick={() => downloadFile('image')} style={quietLink}>
+              {download === 'image' ? 'Making it…' : 'Download the front, full size'}
+            </button>
+            {download && download !== 'pdf' && download !== 'image' && (
+              <span className="body" style={{ fontSize: 12.5, color: 'var(--hh-dogwood-deep)' }}>{download}</span>
+            )}
+          </div>
+        )}
         {(errors.title || errors.body || errors.note || !fit.fits) && (
           <p role="alert" className="body" style={{ margin: '12px 0 0', color: 'var(--hh-dogwood-deep)' }}>
             {errors.title || errors.body || errors.note || 'The words run past the edge of the card. Shorten them a little.'}
@@ -347,16 +471,29 @@ function CardScreen({ go, payload }) {
 
         {mailOpen && (
           <form id="card-mail" className="fade-in" onSubmit={send} noValidate style={{ marginTop: 28, maxWidth: 560 }}>
-            <Kicker accent="dogwood">Where it goes</Kicker>
-            <p className="body" style={{ margin: '12px 0 22px', maxWidth: 440 }}>
-              Printed on a 4 by 6 inch card and posted to the address below.
+            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend style={{ padding: 0 }}><Kicker accent="dogwood">Who is it for</Kicker></legend>
+              <div role="radiogroup" style={{ display: 'flex', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+                {[[false, 'Someone else'], [true, 'Me']].map(([self, label]) => (
+                  <button key={label} type="button" role="radio" aria-checked={forSelf === self}
+                    onClick={() => chooseFor(self)}
+                    style={forSelf === self ? { ...solidBtn, padding: '11px 18px' } : { ...lineBtn, padding: '11px 18px' }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <p className="body" style={{ margin: '18px 0 22px', maxWidth: 440 }}>
+              {forSelf
+                ? 'Printed on a 4 by 6 inch card and posted to you, to find in your letterbox some days from now.'
+                : 'Printed on a 4 by 6 inch card and posted to them at the address below.'}
             </p>
 
             <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 16, rowGap: 18 }}>
               {ADDRESS_FIELDS.map((f, i) => (
                 <div key={f.key} style={{ flex: f.half ? '1 1 200px' : '1 1 100%', minWidth: 0 }}>
                   <label htmlFor={`card-${f.key}`} className="mono" style={fieldLabel}>
-                    {f.label}{f.hint && <span style={{ color: 'var(--paper-faint)' }}> · {f.hint}</span>}
+                    {f.key === 'name' ? (forSelf ? 'Your name' : 'Their name') : f.label}{f.hint && <span style={{ color: 'var(--paper-faint)' }}> · {f.hint}</span>}
                   </label>
                   <input
                     id={`card-${f.key}`}

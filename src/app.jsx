@@ -204,7 +204,7 @@ function App() {
       {route === 'bookmarks' && <BookmarksScreen go={go}/>}
       {route === 'attune' && <AttuneScreen go={go}/>}
       {route === 'kindle' && <KindleScreen go={go} payload={payload}/>}
-      {route === 'card' && <CardScreen go={go} payload={payload}/>}
+      {route === 'card' && <CardScreen go={go} payload={payload} user={user}/>}
       {route === 'letter' && <LetterScreen go={go} user={user}/>}
       {route === 'encounter' && <EncounterScreen go={go}/>}
       {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}

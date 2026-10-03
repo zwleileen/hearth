@@ -237,7 +237,22 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
   (`lib/cardPdf.js`, 0.125 in bleed) and emails it with the address to
   `CARD_PRINT_TO` (default zwleileen@gmail.com) through SMTP
   (`lib/mailer.js`). Free while printing is tested, ten a day per
-  reader; `models/CardOrder.js` notes where Stripe goes. Needs
+  reader; `models/CardOrder.js` notes where Stripe goes.
+- **Print quality** (2026-10-03). Pictures are made by
+  `gpt-image-2.5-flare` at 1280 x 1888, high quality (about 25 s), which
+  is 300 dpi for the card with its bleed. Each picture keeps a print
+  master (JPEG 95, no chroma subsampling, ~1.3 MB), a screen copy and a
+  thumbnail. The print-room email carries the PDF, the front on its own
+  at full resolution, the words and the address. Accounts listed in
+  `CARD_PRINT_ROOM` (default zwleileen@ and getpurposeful@gmail.com) can
+  download both files from the card page without waiting for mail.
+- **Carry to Give.** The mail form asks who the card is for: someone
+  else, or the reader. After sending, a card to someone turns to Give's
+  colour and offers one tap to keep it in the meaning log with their
+  name (avenue give); a card to oneself stays in Carry (avenue carry).
+  The session shows "Sent to ..." under its picture, the logbook row
+  says which cards it became, and Give lists "Cards you sent" and has a
+  door, A card, into the Carry sessions. Needs
   `SMTP_URL` (or `SMTP_HOST`/`PORT`/`USER`/`PASS`) and `MAIL_FROM` on
   Render, or Send answers that the print room is not connected.
 - **Continuity** — `buildKnowingBlock` passes the meaning narrative plus

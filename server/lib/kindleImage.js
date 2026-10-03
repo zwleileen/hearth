@@ -17,16 +17,38 @@
 // §5.12): it is something that can leave the app, because it does not
 // need the reader's life explained first.
 
+import sharp from 'sharp';
 import { MODEL, IMAGE_MODEL } from './ai.js';
 
 // Bump when the scene brief or the style changes, so a picture can be
 // traced to the prompt that made it.
-export const KINDLE_IMAGE_PROMPT_VERSION = 1;
+export const KINDLE_IMAGE_PROMPT_VERSION = 2;
 
-// Portrait, 2:3. It sits in the reading column on a phone, and it is
-// the shape of a card.
-const IMAGE_SIZE = '1024x1536';
-const IMAGE_QUALITY = 'medium';
+// Made at print size. A 4 x 6 inch card with 0.125 in of bleed on every
+// side is 4.25 x 6.25 in, which at 300 dpi is 1275 x 1875 pixels. The
+// model wants both edges in multiples of 16, so 1280 x 1888, and the
+// print file trims the few spare pixels. High quality is slower (about
+// 25 seconds) and visibly richer in the brushwork, which is what a
+// printed card is looked at for.
+const IMAGE_SIZE = '1280x1888';
+const IMAGE_QUALITY = 'high';
+
+// Three copies from the one the model paints:
+//   print    the full picture as a maximum-quality JPEG with no colour
+//            subsampling, tagged 300 dpi. Indistinguishable from the PNG
+//            in print, at a quarter of the size. This is what a printer
+//            gets.
+//   data     a lighter copy for the screen.
+//   thumb    a small one for lists.
+async function threeCopies(png) {
+  const meta = await sharp(png).metadata();
+  const [print, data, thumb] = await Promise.all([
+    sharp(png).withMetadata({ density: 300 }).jpeg({ quality: 95, chromaSubsampling: '4:4:4' }).toBuffer(),
+    sharp(png).resize({ width: 832 }).jpeg({ quality: 82 }).toBuffer(),
+    sharp(png).resize({ width: 240 }).jpeg({ quality: 78 }).toBuffer(),
+  ]);
+  return { print, data, thumb, printWidth: meta.width, printHeight: meta.height };
+}
 
 const SCENE_TEMPERATURE = 0.8;
 
@@ -113,7 +135,8 @@ function buildScenePrompt({ companion = {}, keepsake = '' } = {}) {
   return `Here is the mirror from one session.\n\n${lines.join('\n')}\n\nChoose the one picture that belongs beside it. Return JSON matching the schema.`;
 }
 
-// Returns { data: Buffer, contentType, scene, alt, imageModel, promptVersion }.
+// Returns { print, data, thumb, printWidth, printHeight, contentType,
+// scene, alt, imageModel, promptVersion }.
 export async function generateKindleImage(client, { session, replyTurning } = {}) {
   const companion = session?.companion || {};
   // The later keepsake is the one the reader arrived at, so it wins.
@@ -141,15 +164,14 @@ export async function generateKindleImage(client, { session, replyTurning } = {}
     prompt: buildImagePrompt(scene.trim()),
     size: IMAGE_SIZE,
     quality: IMAGE_QUALITY,
-    output_format: 'jpeg',
-    output_compression: 90,
+    output_format: 'png',
     n: 1,
   });
   const b64 = result.data?.[0]?.b64_json;
   if (!b64) throw new Error('Empty image from AI service');
 
   return {
-    data: Buffer.from(b64, 'base64'),
+    ...(await threeCopies(Buffer.from(b64, 'base64'))),
     contentType: 'image/jpeg',
     scene: scene.trim(),
     alt: (alt || '').trim(),

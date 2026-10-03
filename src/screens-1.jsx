@@ -547,6 +547,7 @@ function GiveScreen({ go, user }) {
   // reaches the other person. See src/letter.jsx.
   const ways = [
     { word: 'A letter', route: 'letter', meaning: 'Tell someone what they did for you and what it gave you. Written here, and actually sent.' },
+    { word: 'A card', route: 'kindle', payload: { view: 'logbook' }, meaning: 'Something that met you in Carry, painted, printed and posted to someone it might meet too.' },
     { word: 'An act of kindness', prompt: 'One kindness you could do today, and who it is for.', meaning: 'A small kindness, done on purpose. The lift it gives the giver is one of the steadier findings in the field.' },
     { word: 'Share what you know', prompt: 'One thing only you can pass on, and who needs it.', meaning: 'Teach or hand on something only you carry. Meaning grows by being given away.' },
     { word: 'Give your attention', prompt: 'Who will have your whole, undivided attention today.', meaning: 'Be wholly present to one person. Attention is the rarest thing we have to offer.' },
@@ -563,6 +564,16 @@ function GiveScreen({ go, user }) {
   const [forWhom, setForWhom] = useState1('');
   const [log, setLog] = useState1([]);
   const [keeping, setKeeping] = useState1(false);
+  // Cards sent from Carry to someone else. A card to oneself is not a
+  // giving, so it stays in Carry and is not listed here.
+  const [cards, setCards] = useState1([]);
+  useEffect1(() => {
+    let cancelled = false;
+    api.cards.list({ limit: 6 })
+      .then((data) => { if (!cancelled) setCards((data.cards || []).filter((c) => !c.forSelf)); })
+      .catch(() => { /* unauthed or transient */ });
+    return () => { cancelled = true; };
+  }, []);
   useEffect1(() => {
     let cancelled = false;
     (async () => {
@@ -646,7 +657,7 @@ function GiveScreen({ go, user }) {
             const on = chosen?.word === w.word;
             return (
               <button key={w.word} className="hh-door" onClick={() => {
-                  if (w.route) { go(w.route); return; }
+                  if (w.route) { go(w.route, w.payload || null); return; }
                   const next = on ? null : w;
                   setChosen(next);
                   setAnswer('');
@@ -668,6 +679,30 @@ function GiveScreen({ go, user }) {
           })}
         </div>
       </section>
+
+      {/* Cards that left Carry for someone */}
+      {cards.length > 0 && (
+        <section style={{ padding: '40px 22px 0' }}>
+          <div className="hearth-dept-head">
+            <span className="hearth-dept-head-title">Cards you sent</span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            {cards.slice(0, 3).map((c) => (
+              <div key={c.id} style={{ display: 'flex', gap: 16, alignItems: 'center', borderBottom: '1px solid rgba(31, 64, 69, 0.10)', padding: '14px 0' }}>
+                {c.thumb && <img src={c.thumb} alt="" style={{ width: 44, height: 66, objectFit: 'cover', display: 'block', flex: '0 0 auto' }}/>}
+                <div style={{ minWidth: 0 }}>
+                  <div className="mono" style={{ fontSize: 9, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--paper-mute)', marginBottom: 6 }}>
+                    {new Date(c.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} · for {c.to}
+                  </div>
+                  <p className="serif" style={{ margin: 0, fontSize: 16, lineHeight: 1.4, fontStyle: 'italic', color: 'var(--hh-green)' }}>
+                    {c.title}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* What you've given lately */}
       {recent.length > 0 && (

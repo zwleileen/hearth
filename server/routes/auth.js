@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { User } from '../models/User.js';
 import { signToken } from '../lib/jwt.js';
 import { requireAuth } from '../middleware/auth.js';
+import { isPrintRoom } from './cards.js';
 
 export const auth = Router();
 
@@ -43,5 +44,7 @@ auth.post('/signin', async (req, res) => {
 auth.get('/me', requireAuth, async (req, res) => {
   const user = await User.findById(req.userId);
   if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json({ user: user.toClient() });
+  // printRoom: this account runs the print room, so the card page offers
+  // it the print files directly (routes/cards.js).
+  res.json({ user: { ...user.toClient(), printRoom: isPrintRoom(user.email) } });
 });
