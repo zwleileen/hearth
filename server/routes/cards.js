@@ -39,9 +39,14 @@ const MIRROR_LABEL = {
   image: 'An image that meets you',
 };
 
+// Ceilings against abuse, not the measure of a card. Whether the words
+// fit is decided by the print file itself (lib/cardPdf.js), which holds
+// about 1,500 characters on the back once the type steps down. A mirror's
+// own words often run past 900, so a lower ceiling here refused cards
+// that would have printed perfectly well.
 const LIMITS = {
   title: 90,
-  body: 900,
+  body: 2000,
   note: 320,
   name: 100,
   line1: 120,

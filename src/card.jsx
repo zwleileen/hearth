@@ -24,7 +24,9 @@ const TRIM_W = 288;
 const SAFE = 18;
 const ROOM = 432 - 2 * SAFE - 9 - 18; // above the wordmark
 const TYPE = { kicker: 6.5, title: 17, body: 9, bodyFloor: 7.5, note: 9.5 };
-const LIMIT = { title: 90, body: 900, note: 320 };
+// Ceilings against abuse, as on the server. Fit is what really limits
+// the words, and the preview measures it.
+const LIMIT = { title: 90, body: 2000, note: 320 };
 
 const MIRROR_LABEL = {
   person: 'Someone who stood here',
@@ -160,6 +162,9 @@ function CardScreen({ go, payload }) {
     const e = {};
     if (!words.title.trim()) e.title = 'The card needs a title.';
     if (!words.body.trim()) e.body = 'The card needs some words on the back.';
+    for (const key of ['title', 'body', 'note']) {
+      if (words[key].length > LIMIT[key]) e[key] = `Keep this under ${LIMIT[key]} characters.`;
+    }
     if (!fit.fits) e.body = 'The words run past the edge of the card. Shorten them a little.';
     for (const f of ADDRESS_FIELDS) {
       if (f.required && !address[f.key].trim()) e[f.key] = 'Required.';
