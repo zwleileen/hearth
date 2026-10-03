@@ -14,6 +14,7 @@ import { meaning } from './routes/meaning.js';
 import { encounter } from './routes/encounter.js';
 import { narrative } from './routes/narrative.js';
 import { cards } from './routes/cards.js';
+import { mailStatus } from './lib/mailer.js';
 
 const app = express();
 
@@ -73,6 +74,7 @@ connectDB()
   .then(() => {
     app.listen(PORT, () => {
       console.log(`[server] listening on http://localhost:${PORT}`);
+      console.log(`[mail] ${mailStatus()}`);
     });
   })
   .catch((err) => {

@@ -253,8 +253,9 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
   The session shows "Sent to ..." under its picture, the logbook row
   says which cards it became, and Give lists "Cards you sent" and has a
   door, A card, into the Carry sessions. Needs
-  `SMTP_URL` (or `SMTP_HOST`/`PORT`/`USER`/`PASS`) and `MAIL_FROM` on
-  Render, or Send answers that the print room is not connected.
+  `SMTP_URL` (or `SMTP_HOST`/`PORT`/`USER`/`PASS`) on Render, or Send
+  answers that the print room is not connected. `MAIL_FROM` is optional.
+  The server log says at startup whether mail is ready (`[mail] ...`).
 - **Continuity** — `buildKnowingBlock` passes the meaning narrative plus
   the reader's own recent words into a session. Never the mirrors or
   turnings Hearth itself offered them, and never to be performed back.
