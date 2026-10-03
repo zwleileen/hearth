@@ -22,6 +22,7 @@
 import React from 'react';
 import { Headline, Kicker, Rule, Icon } from './atoms.jsx';
 import { api } from './api.js';
+import { prefersShareSheet } from './share.jsx';
 
 // Card geometry in points, matching cardPdf.js.
 const TRIM_W = 288;
@@ -267,12 +268,14 @@ function CardScreen({ go, payload, user }) {
     return file;
   }
 
-  // The share sheet takes files on phones and on some desktop browsers.
-  // Where it cannot, there is no Share button at all rather than one that
-  // quietly downloads instead: the downloads sit right beside it.
+  // The Share button is for phones and tablets, where the share sheet
+  // takes files. On a computer there is no Share button, only the two
+  // downloads, which is how a file leaves a computer anyway (see
+  // prefersShareSheet in share.jsx for what Chrome on a Mac did).
   const canShareFiles = React.useMemo(() => {
     try {
-      return !!navigator.canShare && navigator.canShare({ files: [new File([''], 'x.pdf', { type: 'application/pdf' })] });
+      return prefersShareSheet() && !!navigator.canShare
+        && navigator.canShare({ files: [new File([''], 'x.pdf', { type: 'application/pdf' })] });
     } catch { return false; }
   }, []);
 

@@ -297,9 +297,25 @@ export async function shareLetter({ to, body, from, plain }) {
   }
 }
 
-// Hand the card to the reader's own share sheet. Where there is no share
-// sheet, falls back to downloading the image and then to copying the
-// text, so this always does something useful on every browser.
+// Whether this device shares through a share sheet: phones and tablets,
+// where it is how everything leaves an app. A computer has none worth
+// the name. Chrome on a Mac answers navigator.share with a small menu,
+// and on at least one reader's Mac a tap on Share left two copies in
+// Downloads and no menu at all. So on a computer, sharing a card saves
+// it once, plainly, and the reader sends it on however they send things.
+export function prefersShareSheet() {
+  try {
+    if (navigator.userAgentData && typeof navigator.userAgentData.mobile === 'boolean' && navigator.userAgentData.mobile) return true;
+    return window.matchMedia('(pointer: coarse)').matches;
+  } catch {
+    return false;
+  }
+}
+
+// Hand the card to the reader's own share sheet on a phone or tablet.
+// On a computer, or where there is no share sheet, it saves the image
+// once, and failing that copies the text, so this always does something
+// useful on every browser.
 //
 // Returns a short status string so the caller can say what happened.
 export async function shareCard({ text, attribution, footer, shareText, quoted = false }) {
@@ -322,7 +338,9 @@ export async function shareCard({ text, attribution, footer, shareText, quoted =
   // one tap left two copies. Only a TypeError, the browser refusing the
   // data before showing anything, may fall through to the next way.
   const payloads = [];
-  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+  if (!prefersShareSheet()) {
+    // A computer: straight to saving the image, below.
+  } else if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
     payloads.push({ files: [file], text: shareText || undefined });
   } else if (navigator.share) {
     payloads.push({ text: shareText || text });
@@ -469,6 +487,9 @@ function ShareLink({
   style = {},
 }) {
   const [state, setState] = React.useState('idle');
+  // What happened, so the label can say it: on a computer the card is
+  // saved rather than sent, and the reader should know where it went.
+  const [result, setResult] = React.useState('');
 
   async function onShare() {
     if (state === 'busy') return;
@@ -488,6 +509,7 @@ function ShareLink({
             text, attribution, quoted,
             shareText: composeCardMessage(message),
           });
+      setResult(result);
       if (result === 'failed') {
         setState('failed');
         setTimeout(() => setState('idle'), 2200);
@@ -508,7 +530,7 @@ function ShareLink({
       color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5,
       letterSpacing: '0.16em', textTransform: 'uppercase', ...style,
     }}>
-      {state === 'busy' ? busyLabel : state === 'done' ? 'Done' : state === 'failed' ? 'Could not share' : label}
+      {state === 'busy' ? busyLabel : state === 'done' ? (result === 'saved' ? 'Saved to Downloads' : 'Done') : state === 'failed' ? 'Could not share' : label}
     </button>
   );
 }
