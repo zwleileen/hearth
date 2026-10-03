@@ -27,13 +27,11 @@ import { api } from './api.js';
 const TRIM_W = 288;
 const SAFE = 18;
 const TEXT_W = TRIM_W - 2 * SAFE;
-// The postcard furniture, matching POSTCARD in cardPdf.js.
-const POSTCARD = { stampW: 50, stampH: 60, stampGap: 14, lineGap: 17, lines: 3, lineShare: 0.62 };
-const BOTTOM = 432 - SAFE - 9 - 18; // where the wordmark's room begins
-const FIRST_LINE = BOTTOM - (POSTCARD.lines - 1) * POSTCARD.lineGap;
-// How tall the words may run, from the top safe margin: above the
-// address lines, or, when the words need it, above the wordmark.
-const ROOM = { withAddress: FIRST_LINE - 24 - SAFE, without: BOTTOM - SAFE };
+// The stamp box, matching POSTCARD in cardPdf.js.
+const POSTCARD = { stampW: 50, stampH: 60, stampGap: 14 };
+// How tall the words may run, from the top safe margin to the
+// wordmark's breathing room.
+const ROOM = 432 - 2 * SAFE - 9 - 18;
 
 // Posting a printed card. Off for now: readers share the postcard
 // themselves. Turn it back on once the print room is connected and
@@ -195,7 +193,7 @@ function CardScreen({ go, payload, user }) {
 
   const original = React.useMemo(() => originalWords(session), [sessionId]);
   const [words, setWords] = React.useState(() => ({ ...original, ...(sessionId ? readDraft(sessionId) : null) }));
-  const [fit, setFit] = React.useState({ fits: true, bodyPt: TYPE.body, withAddress: true });
+  const [fit, setFit] = React.useState({ fits: true, bodyPt: TYPE.body });
 
   const [mailOpen, setMailOpen] = React.useState(false);
   // Who the card is for. Someone else is a giving; the reader themself is
@@ -223,27 +221,19 @@ function CardScreen({ go, payload, user }) {
     const body = bodyRef.current;
     if (!back || !content || !body) return;
     const k = back.clientWidth / TRIM_W; // px per point
-    // As the PDF does: first try to fit above the address lines, then,
-    // if the words need it, give the lines up and use the room.
+    const room = (ROOM + SAFE) * k; // the content box starts at the top safe margin
     let pt = TYPE.body;
-    let fits = false;
-    let withAddress = true;
-    for (withAddress of [true, false]) {
-      const room = ((withAddress ? ROOM.withAddress : ROOM.without) + SAFE) * k; // the content box starts at the top safe margin
-      pt = TYPE.body;
-      for (;;) {
-        body.style.fontSize = `${pt * k}px`;
-        for (const ta of content.querySelectorAll('textarea')) {
-          ta.style.height = 'auto';
-          ta.style.height = `${ta.scrollHeight}px`;
-        }
-        fits = content.scrollHeight <= room + 0.5;
-        if (fits || pt <= TYPE.bodyFloor) break;
-        pt = Math.max(TYPE.bodyFloor, pt - 0.25);
+    for (;;) {
+      body.style.fontSize = `${pt * k}px`;
+      for (const ta of content.querySelectorAll('textarea')) {
+        ta.style.height = 'auto';
+        ta.style.height = `${ta.scrollHeight}px`;
       }
-      if (fits) break;
+      if (content.scrollHeight <= room + 0.5 || pt <= TYPE.bodyFloor) break;
+      pt = Math.max(TYPE.bodyFloor, pt - 0.25);
     }
-    setFit((f) => (f.fits === fits && f.bodyPt === pt && f.withAddress === withAddress ? f : { fits, bodyPt: pt, withAddress }));
+    const fits = content.scrollHeight <= room + 0.5;
+    setFit((f) => (f.fits === fits && f.bodyPt === pt ? f : { fits, bodyPt: pt }));
   }, []);
 
   React.useLayoutEffect(() => { fitBack(); }, [words, fitBack]);
@@ -474,13 +464,11 @@ function CardScreen({ go, payload, user }) {
                 every cqw below is a fraction of the card's full width, as
                 every point in the print file is. */}
             <div ref={backRef} className="card-face card-back">
-              {/* The stamp box: a hairline frame, Hearth's mark where a
+              {/* The stamp box: an empty frame of soft dashes, where a
                   stamp would go. */}
               <div aria-hidden="true" className="card-stamp" style={{
                 top: k(SAFE), right: k(SAFE), width: k(POSTCARD.stampW), height: k(POSTCARD.stampH),
-              }}>
-                <img src="/brand/symbol-paper.svg" alt="" style={{ height: k(POSTCARD.stampH * 0.4), width: 'auto', opacity: 0.4 }}/>
-              </div>
+              }}/>
               <div ref={contentRef} style={{ padding: `${k(SAFE)} ${k(SAFE)} 0` }}>
                 {/* The kicker and title sit beside the stamp; the words
                     start under whichever is taller. */}
@@ -524,18 +512,6 @@ function CardScreen({ go, payload, user }) {
                   }}
                 />
               </div>
-              {fit.withAddress && (
-                <div aria-hidden="true">
-                  {Array.from({ length: POSTCARD.lines }, (_, i) => (
-                    <div key={i} className="card-line" style={{
-                      top: k(FIRST_LINE + i * POSTCARD.lineGap), right: k(SAFE), width: k(TEXT_W * POSTCARD.lineShare),
-                    }}/>
-                  ))}
-                  <span className="card-to" style={{
-                    top: k(FIRST_LINE - 9), right: k(SAFE + TEXT_W * POSTCARD.lineShare + 4), fontSize: k(8),
-                  }}>To</span>
-                </div>
-              )}
               <img src="/brand/wordmark-paper.svg" alt="" aria-hidden="true" className="card-mark"
                 style={{ height: k(9), bottom: k(SAFE) }}/>
             </div>

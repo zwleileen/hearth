@@ -1263,14 +1263,8 @@ html, body {
 .card-edit:focus { outline-color: rgba(31, 64, 69, 0.4); background: rgba(242, 234, 232, 0.7); }
 .card-edit::placeholder { color: var(--paper-faint); font-style: italic; }
 .card-edit[aria-invalid="true"] { outline-color: var(--hh-dogwood-deep); }
-/* The postcard furniture on the back: the stamp box, the address lines,
-   and their small italic To. Positioned in card points (src/card.jsx). */
+/* The stamp box on the back: an empty frame of soft dashes, positioned
+   in card points (src/card.jsx), matching the PDF. */
 .card-stamp {
-  position: absolute; box-sizing: border-box; border: 1px solid rgba(31, 64, 69, 0.3);
-  display: flex; align-items: center; justify-content: center;
-}
-.card-line { position: absolute; height: 0; border-top: 1px solid rgba(31, 64, 69, 0.24); }
-.card-to {
-  position: absolute; font-family: var(--serif); font-style: italic; line-height: 1;
-  color: rgba(31, 64, 69, 0.6);
+  position: absolute; box-sizing: border-box; border: 1px dashed rgba(31, 64, 69, 0.26);
 }

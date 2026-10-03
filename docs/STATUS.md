@@ -251,9 +251,8 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
   reader can share the postcard (the phone share sheet, where it takes
   files), download it as a PDF, or download the picture at full size,
   for their own sessions only. The card's back is now a postcard back:
-  a hairline stamp box holding Hearth's mark, the words, ruled lines with
-  an italic To, and the wordmark; long words give up the address lines
-  before they are refused. The print-room gate (`CARD_PRINT_ROOM`) is
+  an empty stamp box of soft dashes, the words, and the wordmark. No
+  address lines: the reader's note is where a name goes. The print-room gate (`CARD_PRINT_ROOM`) is
   gone. The Carry to Give screens below apply again once mail is on.
 - **Carry to Give.** The mail form asks who the card is for: someone
   else, or the reader. After sending, a card to someone turns to Give's

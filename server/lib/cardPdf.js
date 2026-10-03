@@ -5,11 +5,10 @@
 // printer prints, so it is one design for both.
 //   Page 1, the front: the picture of the mirror, full bleed.
 //   Page 2, the back: laid out as a postcard back has been for a century.
-//   A stamp box in the top corner (a hairline frame holding Hearth's mark
-//   where the stamp would go), the mirror's words and the reader's note
-//   in Hearth's own type, ruled lines for an address, and a small
-//   wordmark. Quiet enough to be timeless, and a real postcard if it is
-//   ever printed and posted.
+//   A gentle dashed stamp box in the top corner, the mirror's words and
+//   the reader's note in Hearth's own type, and a small wordmark. Quiet
+//   enough to be timeless. No address lines: the reader's own note is
+//   where a name goes.
 //
 // Print conventions: each page carries 0.125 in of bleed on every side
 // (so the page is 4.25 x 6.25 in, trimmed to 4 x 6), and all type sits
@@ -35,7 +34,6 @@ const FONT = {
   kicker: path.join(ASSETS, 'fonts', 'Inter-500.woff'),
 };
 const WORDMARK = path.join(ASSETS, 'hearth-wordmark-ink.png');
-const SYMBOL = path.join(ASSETS, 'hearth-symbol-ink.png');
 
 const PT = 72; // points per inch
 export const CARD = {
@@ -64,24 +62,16 @@ const TYPE = {
 };
 const WORDMARK_H = 9;
 
-// The postcard furniture, in points. The preview (src/card.jsx) uses the
-// same numbers.
+// The stamp box, in points. The preview (src/card.jsx) uses the same
+// numbers.
 export const POSTCARD = {
   stampW: 50,
   stampH: 60,
   stampGap: 14, // between the title and the stamp box
-  lineGap: 17, // between the address lines
-  lines: 3,
-  lineShare: 0.62, // address lines run across the right 62% of the text
 };
 const TITLE_W = TEXT_W - POSTCARD.stampW - POSTCARD.stampGap;
-// Where the wordmark's breathing room begins, and the address lines
-// above it. The words must end above the first line, with room to
-// write a name on it.
-const BOTTOM = PAGE_H - INSET - WORDMARK_H - 18;
-const FIRST_LINE = BOTTOM - (POSTCARD.lines - 1) * POSTCARD.lineGap;
-const ROOM_WITH_ADDRESS = FIRST_LINE - 24 - INSET;
-const ROOM_WITHOUT = BOTTOM - INSET;
+// The words run from the top safe margin to the wordmark's breathing room.
+const ROOM = PAGE_H - INSET - WORDMARK_H - 18 - INSET;
 
 export class CardFitError extends Error {}
 
@@ -112,10 +102,10 @@ function paragraphs(text) {
 }
 
 // Measure the back at a given body size. Returns the heights of each
-// part and whether the whole fits above the address lines (or, without
-// them, above the wordmark). The kicker and title sit beside the stamp
-// box, so the words below start under whichever is taller.
-function measureBack(doc, { kicker, title, body, note }, bodySize, withAddress) {
+// part and whether the whole fits above the wordmark. The kicker and
+// title sit beside the stamp box, so the words below start under
+// whichever is taller.
+function measureBack(doc, { kicker, title, body, note }, bodySize) {
   const h = {};
   doc.font('kicker').fontSize(TYPE.kicker);
   h.kicker = doc.heightOfString(kicker.toUpperCase(), { width: TITLE_W, characterSpacing: TYPE.kicker * 0.22 });
@@ -130,8 +120,7 @@ function measureBack(doc, { kicker, title, body, note }, bodySize, withAddress) 
     h.note = 16 + doc.heightOfString(paragraphs(note), { width: TEXT_W, lineGap: TYPE.note * 0.45 });
   }
   const total = h.head + 12 + h.body + h.note;
-  const room = withAddress ? ROOM_WITH_ADDRESS : ROOM_WITHOUT;
-  return { h, total, room, fits: total <= room, withAddress };
+  return { h, total, room: ROOM, fits: total <= ROOM };
 }
 
 function register(doc) {
@@ -155,20 +144,13 @@ export async function buildCardPdf({ image, kicker, title, body, note = '' }) {
   });
 
   // Find the largest body size that fits, stepping down by a quarter
-  // point to the floor. Long words first give up the address lines,
-  // which are ornament on a card that is shared rather than posted,
-  // before they are refused.
+  // point to the floor.
   const text = { kicker, title, body, note };
-  let bodySize;
-  let m;
-  for (const withAddress of [true, false]) {
-    bodySize = TYPE.body;
-    m = measureBack(doc, text, bodySize, withAddress);
-    while (!m.fits && bodySize > TYPE.bodyFloor) {
-      bodySize = Math.max(TYPE.bodyFloor, bodySize - 0.25);
-      m = measureBack(doc, text, bodySize, withAddress);
-    }
-    if (m.fits) break;
+  let bodySize = TYPE.body;
+  let m = measureBack(doc, text, bodySize);
+  while (!m.fits && bodySize > TYPE.bodyFloor) {
+    bodySize = Math.max(TYPE.bodyFloor, bodySize - 0.25);
+    m = measureBack(doc, text, bodySize);
   }
   if (!m.fits) {
     doc.end();
@@ -184,15 +166,13 @@ export async function buildCardPdf({ image, kicker, title, body, note = '' }) {
   doc.addPage();
   doc.rect(0, 0, PAGE_W, PAGE_H).fill(LACE);
 
-  // The stamp box: a hairline frame in the top corner, Hearth's mark
-  // quiet inside it where a stamp would go.
+  // The stamp box: an empty frame of short, soft dashes in the top
+  // corner, where a stamp would go.
   const stampX = PAGE_W - INSET - POSTCARD.stampW;
-  doc.rect(stampX, INSET, POSTCARD.stampW, POSTCARD.stampH).lineWidth(0.5).strokeColor(INK, 0.35).stroke();
-  doc.save().opacity(0.4);
-  doc.image(SYMBOL, stampX, INSET + POSTCARD.stampH * 0.3, {
-    fit: [POSTCARD.stampW, POSTCARD.stampH * 0.4], align: 'center', valign: 'center',
-  });
-  doc.restore();
+  doc.save();
+  doc.rect(stampX, INSET, POSTCARD.stampW, POSTCARD.stampH)
+    .dash(1.6, { space: 2.2 }).lineWidth(0.5).strokeColor(INK, 0.28).stroke();
+  doc.undash().restore();
 
   let y = INSET;
   doc.font('kicker').fontSize(TYPE.kicker).fillColor(KICKER_INK)
@@ -211,20 +191,6 @@ export async function buildCardPdf({ image, kicker, title, body, note = '' }) {
     doc.font('note').fontSize(TYPE.note).fillColor(INK)
       .text(paragraphs(note), INSET, y, { width: TEXT_W, lineGap: TYPE.note * 0.45 });
   }
-  // Ruled lines for an address, across the right of the card, with a
-  // small italic To. Left off when the words need the room.
-  if (m.withAddress) {
-    const lineW = TEXT_W * POSTCARD.lineShare;
-    const lineX = PAGE_W - INSET - lineW;
-    for (let i = 0; i < POSTCARD.lines; i += 1) {
-      const ly = FIRST_LINE + i * POSTCARD.lineGap;
-      doc.moveTo(lineX, ly).lineTo(lineX + lineW, ly).lineWidth(0.5).strokeColor(INK, 0.3).stroke();
-    }
-    doc.font('note').fontSize(8).fillColor(INK, 0.6)
-      .text('To', lineX - 16, FIRST_LINE - 9, { width: 14, lineBreak: false });
-    doc.fillOpacity(1);
-  }
-
   // The signature stays small: a card that works as an advertisement
   // stops working as a gift (BRAND_BRIEF §8.9).
   doc.image(WORDMARK, 0, PAGE_H - INSET - WORDMARK_H, { fit: [PAGE_W, WORDMARK_H], align: 'center', valign: 'center' });
