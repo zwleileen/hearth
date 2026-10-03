@@ -257,17 +257,19 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
 - **The keepsake card and the picture brief, v4** (2026-10-03). The
   card follows `carry_postcard/`: the front is the painting as a plate
   (paper margin, faint impression line) with the title in spaced
-  capitals and "Image No. 07" in gold, no logo; the back is centred:
-  kicker, italic title, gold diamond, the story, a closing line in
-  darker italic, For and From lines (typed names optional), and the arch
-  with its ember as a colophon. The card's words are set from the mirror
+  capitals and the card's date in gold (the reader's own calendar day),
+  no logo; the back is centred: kicker, italic title, gold diamond, the
+  story, a closing line in darker italic, For and From on one line (left
+  and right, typed names optional), and the arch with its ember as a
+  colophon. The card's words are set from the mirror
   by `lib/cardWords.js` (third person, nothing addressed to the reader,
   90 to 120 words, a closing line), alongside the painting, and kept on
-  the picture with its number. The picture brief (`lib/kindleImage.js`)
+  the picture. The picture brief (`lib/kindleImage.js`)
   now names the essence and the visual idea before the scene, and paints
   in soft watercolour with generous sky; v2's rules of restraint had cut
-  the meaning out (a river that parts became one stream). A picture can
-  be painted again twice. `/api/health` reports `imagePrompt`.
+  the meaning out (a river that parts became one stream). One painting
+  per session, no repainting (2026-10-04: every painting is paid for).
+  `/api/health` reports `imagePrompt`.
 - **Carry to Give.** The mail form asks who the card is for: someone
   else, or the reader. After sending, a card to someone turns to Give's
   colour and offers one tap to keep it in the meaning log with their

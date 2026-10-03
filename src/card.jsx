@@ -33,7 +33,7 @@ const L = {
   impression: 3.5,
   frontTitleY: 401,
   frontTitleSize: 6.3,
-  frontNoSize: 5,
+  frontDateSize: 5,
   column: { x: 40.3, w: 225.4 },
   kickerY: 58,
   kickerSize: 5.3,
@@ -42,14 +42,13 @@ const L = {
   bodyFloor: 7.4,
   bodyLeading: 1.53,
   closingStep: 1,
-  wordsBottom: 335,
-  ruleY: 353,
+  wordsBottom: 342,
+  ruleY: 360,
   ruleW: 19,
-  forY: 377,
-  fromY: 398,
-  lineX: 91,
-  lineW: 146,
-  labelX: 69,
+  inscriptionY: 389,
+  inscriptionGutter: 16,
+  labelSize: 7.5,
+  nameSize: 8.5,
   markBaseY: 424,
 };
 
@@ -111,6 +110,12 @@ function clearDraft(id) {
 }
 
 function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+// Today in the reader's own calendar, as YYYY-MM-DD, for the card's date.
+function localDate() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
 
 // The moment after sending. A card to someone else is a giving, so this
 // is where Carry hands over to Give: the colour turns to Give's, and the
@@ -231,7 +236,7 @@ function CardScreen({ go, payload, user }) {
       .catch(() => {
         if (!live) return;
         const m = mirrorWords(session);
-        setStart({ ...m, kicker: null, imageNo: null });
+        setStart({ ...m, kicker: null });
         setWords((w) => w || { ...m, ...blank });
       });
     return () => { live = false; };
@@ -311,7 +316,7 @@ function CardScreen({ go, payload, user }) {
   const postcard = React.useRef({ key: '', file: null });
   async function postcardFile() {
     if (postcard.current.key === wordsKey && postcard.current.file) return postcard.current.file;
-    const blob = await api.cards.printFile({ sessionId, ...w0 });
+    const blob = await api.cards.printFile({ sessionId, ...w0, date: localDate() });
     const file = new File([blob], 'hearth-keepsake.pdf', { type: 'application/pdf' });
     postcard.current = { key: wordsKey, file };
     return file;
@@ -451,6 +456,7 @@ function CardScreen({ go, payload, user }) {
       const data = await api.cards.send({
         sessionId,
         ...w0,
+        date: localDate(),
         recipient: address,
         forSelf,
       });
@@ -480,7 +486,9 @@ function CardScreen({ go, payload, user }) {
   }
 
   const k = (pt) => `${(pt / PAGE_W) * 100}cqw`;
-  const imageNo = start?.imageNo ? `Image No. ${String(start.imageNo).padStart(2, '0')}` : '';
+  // The card's date, in the reader's own calendar, as it reads on the
+  // front. The same date goes to the server for the PDF.
+  const cardDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
     <div className="fade-in" style={{ paddingBottom: 56 }}>
@@ -520,11 +528,9 @@ function CardScreen({ go, payload, user }) {
                 fontSize: k(L.frontTitleSize), letterSpacing: '0.25em', color: 'var(--hh-green)',
               }}>
                 {w0.title}
-                {imageNo && (
-                  <span style={{ display: 'block', marginTop: k(4), fontSize: k(L.frontNoSize), letterSpacing: '0.3em', color: 'var(--hh-ecru-deep)' }}>
-                    {imageNo}
-                  </span>
-                )}
+                <span style={{ display: 'block', marginTop: k(4), fontSize: k(L.frontDateSize), letterSpacing: '0.3em', color: 'var(--hh-ecru-deep)' }}>
+                  {cardDate}
+                </span>
               </div>
             </div>
             <figcaption className="card-caption">Front</figcaption>
@@ -577,21 +583,25 @@ function CardScreen({ go, payload, user }) {
                 </div>
               )}
 
-              {/* The inscription: a short rule, then For and From. Typed
-                  names are set on the lines; left empty, the lines wait
-                  for handwriting. */}
+              {/* The inscription: a short rule, then one line with For on
+                  the left and From on the right. Typed names are set on the
+                  hairlines; left empty, they wait for handwriting. */}
               <div aria-hidden="true" className="card-rule" style={{ top: k(L.ruleY), left: k(PAGE_W / 2 - L.ruleW / 2), width: k(L.ruleW) }}/>
-              {[['forName', 'For', L.forY], ['fromName', 'From', L.fromY]].map(([key, label, y]) => (
-                <React.Fragment key={key}>
-                  <label htmlFor={`card-${key}`} className="card-label" style={{ top: k(y - 9.5), left: k(L.labelX), fontSize: k(7.5) }}>{label}</label>
-                  <input
-                    id={`card-${key}`} className="card-name" value={w0[key]} maxLength={LIMIT[key]} disabled={!words}
-                    onChange={(e) => setWord(key, e.target.value)}
-                    aria-invalid={!!errors[key]}
-                    style={{ top: k(y - 12), left: k(L.lineX), width: k(L.lineW), height: k(12), paddingLeft: k(4), fontSize: k(8.5) }}
-                  />
-                </React.Fragment>
-              ))}
+              <div className="card-inscription" style={{
+                top: k(L.inscriptionY - 14), left: k(L.column.x), width: k(L.column.w), height: k(14), columnGap: k(L.inscriptionGutter),
+              }}>
+                {[['forName', 'For'], ['fromName', 'From']].map(([key, label]) => (
+                  <div key={key} className="card-inscription-half" style={{ gap: k(5) }}>
+                    <label htmlFor={`card-${key}`} className="card-label" style={{ fontSize: k(L.labelSize), paddingBottom: k(2) }}>{label}</label>
+                    <input
+                      id={`card-${key}`} className="card-name" value={w0[key]} maxLength={LIMIT[key]} disabled={!words}
+                      onChange={(e) => setWord(key, e.target.value)}
+                      aria-invalid={!!errors[key]}
+                      style={{ fontSize: k(L.nameSize), height: k(14) }}
+                    />
+                  </div>
+                ))}
+              </div>
 
               {/* The colophon: Hearth's arch and its ember. */}
               <svg aria-hidden="true" viewBox="40 120 160 84" className="card-colophon"

@@ -44,10 +44,6 @@ const kindleImageSchema = new mongoose.Schema(
     alt: { type: String, default: '' },
     imageModel: { type: String, default: '' },
     promptVersion: { type: Number, default: 1 },
-    // Its number in the reader's own series of pictures, printed on the
-    // front of the card as "Image No. 07". Given once and kept, so a
-    // repaint does not renumber it.
-    imageNo: { type: Number },
     // The words for the back of the card (lib/cardWords.js), set from the
     // mirror when the picture is made. A starting point the reader edits.
     cardWords: {
@@ -55,20 +51,14 @@ const kindleImageSchema = new mongoose.Schema(
       body: { type: String, default: '' },
       closing: { type: String, default: '' },
     },
-    // How many times the reader has asked for it to be painted again.
-    // Capped (REPAINT_LIMIT), because every painting is paid for.
-    repaints: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
-
-export const REPAINT_LIMIT = 2;
 
 kindleImageSchema.method('toClient', function () {
   return {
     image: `data:${this.contentType};base64,${this.data.toString('base64')}`,
     alt: this.alt || '',
-    repaintsLeft: Math.max(0, REPAINT_LIMIT - (this.repaints || 0)),
   };
 });
 

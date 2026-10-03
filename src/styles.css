@@ -1272,13 +1272,16 @@ html, body {
 }
 .card-diamond { background: var(--hh-ecru); transform: rotate(45deg); }
 .card-rule { position: absolute; height: 0; border-top: 1px solid rgba(31, 64, 69, 0.3); }
+.card-inscription { position: absolute; display: grid; grid-template-columns: 1fr 1fr; }
+.card-inscription-half { display: flex; align-items: flex-end; min-width: 0; }
 .card-label {
-  position: absolute; font-family: var(--serif); font-style: italic; line-height: 1;
-  color: var(--hh-green);
+  flex: 0 0 auto; font-family: var(--serif); font-style: italic; line-height: 1;
+  color: rgba(31, 64, 69, 0.75);
 }
 .card-name {
-  position: absolute; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(31, 64, 69, 0.28);
-  border-radius: 0; background: transparent; font-family: var(--serif); font-style: italic;
+  flex: 1 1 auto; min-width: 0; box-sizing: border-box; padding: 0; border: 0;
+  border-bottom: 1px solid rgba(31, 64, 69, 0.28); border-radius: 0; background: transparent;
+  font-family: var(--serif); font-style: italic; text-align: center; line-height: 1;
   color: var(--hh-green); outline: none;
 }
 .card-name:focus { background: rgba(242, 234, 232, 0.7); }

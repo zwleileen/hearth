@@ -4,7 +4,7 @@
 // the front, the mirror's words (as the reader left them) and their own
 // note on the back, posted to someone they choose, or to themselves.
 //
-//   GET    /api/cards/words/:sid          the card's starting words and its image number
+//   GET    /api/cards/words/:sid          the words a card starts from
 //   POST   /api/cards                     build the print files and send them to print
 //   GET    /api/cards                     the reader's cards, newest first
 //                                         (?sessionId= for one session's)
@@ -117,14 +117,14 @@ function readWords(b) {
   return { card, fields };
 }
 
-// The picture's number in the reader's own series, for "Image No. 07".
-// Pictures made before numbering get theirs from when they were made.
-async function ensureImageNo(image, userId) {
-  if (image.imageNo) return image.imageNo;
-  const n = await KindleImage.countDocuments({ userId, createdAt: { $lte: image.createdAt } });
-  image.imageNo = Math.max(1, n);
-  await KindleImage.updateOne({ _id: image._id }, { $set: { imageNo: image.imageNo } }).catch(() => {});
-  return image.imageNo;
+// The card's date, as it reads on the front: "4 October 2026". The page
+// sends the reader's own calendar date, so a card made late in the
+// evening carries that evening's date wherever the server is.
+function cardDate(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(typeof value === 'string' ? value : '');
+  const d = m ? new Date(Date.UTC(+m[1], +m[2] - 1, +m[3])) : new Date();
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
 }
 
 // The session and its picture, if both are this reader's.
@@ -186,12 +186,12 @@ cards.post('/', async (req, res) => {
   }
 
   card.kicker = kickerFor(session);
-  const imageNo = await ensureImageNo(image, userId);
+  const date = cardDate(b.date);
 
   let pdf;
   let front;
   try {
-    [pdf, front] = await Promise.all([buildCardPdf({ image: bestPicture(image), ...card, imageNo }), frontImage(image)]);
+    [pdf, front] = await Promise.all([buildCardPdf({ image: bestPicture(image), ...card, date }), frontImage(image)]);
   } catch (err) {
     if (err instanceof CardFitError) {
       return res.status(422).json({ error: err.message, fields: { body: err.message } });
@@ -339,8 +339,7 @@ cards.post('/print-file', async (req, res) => {
   if (!session) return res.status(404).json({ error: 'Session not found' });
   if (!image) return res.status(409).json({ error: 'This session has no picture yet.' });
   try {
-    const imageNo = await ensureImageNo(image, req.userId);
-    const pdf = await buildCardPdf({ image: bestPicture(image), kicker: kickerFor(session), ...card, imageNo });
+    const pdf = await buildCardPdf({ image: bestPicture(image), kicker: kickerFor(session), ...card, date: cardDate(b.date) });
     res.set('Content-Type', 'application/pdf');
     res.set('Content-Disposition', 'attachment; filename="hearth-keepsake.pdf"');
     res.send(pdf);
@@ -361,8 +360,7 @@ cards.get('/print-image/:sessionId', async (req, res) => {
   res.send(bestPicture(image));
 });
 
-// GET /api/cards/words/:sessionId: the words the card starts with, and
-// the picture's number. The words are set when the picture is painted;
+// GET /api/cards/words/:sessionId: the words the card starts with. The words are set when the picture is painted;
 // pictures made before that have theirs set now, once, and kept. If they
 // cannot be set, the card starts from the mirror's own words.
 cards.get('/words/:sessionId', async (req, res) => {
@@ -384,6 +382,5 @@ cards.get('/words/:sessionId', async (req, res) => {
     body: words.body || '',
     closing: words.closing || '',
     kicker: kickerFor(session),
-    imageNo: await ensureImageNo(image, req.userId),
   });
 });

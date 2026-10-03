@@ -8,14 +8,16 @@
 //
 //   Front. The painting as a plate: a paper margin all round and a faint
 //   impression line just outside it, like a print tipped into a book.
-//   Below it, the title in small spaced capitals and "Image No. 07" in
-//   gold. No logo, so it can stand on a shelf as a picture.
+//   Below it, the title in small spaced capitals and the card's date in
+//   gold, the way a print is titled and dated. No logo, so it can stand
+//   on a shelf as a picture.
 //
 //   Back. One centred page: a kicker, the title in italic, a small gold
 //   diamond, the mirror told in a few short lines, then its closing line
 //   in italic a shade darker. Lower down, a short rule and a flyleaf
-//   inscription, For and From, with room for handwriting or a typed
-//   name. Hearth's arch with its gold ember at the foot, as a colophon.
+//   inscription on one line: For on the left, From on the right, each
+//   with room for handwriting or a typed name. Hearth's arch with its
+//   gold ember at the foot, as a colophon.
 //
 // Everything sits on flat Old Lace, so the page can be printed at 4.25 x
 // 6.25 in, or trimmed to 4 x 6 with the outer eighth of an inch as bleed.
@@ -63,7 +65,7 @@ export const LAYOUT = {
   impression: 3.5, // the faint line sits this far outside the painting
   frontTitleY: 401, // top of the spaced-capital title
   frontTitleSize: 6.3,
-  frontNoSize: 5,
+  frontDateSize: 5,
   // Back
   column: { x: 40.3, w: 225.4 },
   kickerY: 58,
@@ -73,14 +75,15 @@ export const LAYOUT = {
   bodyFloor: 7.4,
   bodyLeading: 1.53,
   closingStep: 1, // the closing line is this much larger than the body
-  wordsBottom: 335, // the words must end above here
-  ruleY: 353,
+  wordsBottom: 342, // the words must end above here
+  ruleY: 360,
   ruleW: 19,
-  forY: 377, // the For line
-  fromY: 398, // the From line
-  lineX: 91,
-  lineW: 146,
-  labelX: 69,
+  // The inscription, one line: For in the left half of the column, From
+  // in the right, a gutter between.
+  inscriptionY: 389, // the baseline rule both names sit on
+  inscriptionGutter: 16,
+  labelSize: 7.5,
+  nameSize: 8.5,
   markBaseY: 424, // the colophon's floor
 };
 
@@ -151,6 +154,23 @@ function measureBack(doc, { kicker, title, body, closing }, size) {
   return { top, kickerH, titleH, gap, end, fits: end <= L.wordsBottom };
 }
 
+// The two halves of the inscription line: where each label sits and
+// where its hairline runs. The preview (src/card.jsx) lays them out the
+// same way.
+function inscriptionHalves(doc) {
+  const L = LAYOUT;
+  const halfW = (L.column.w - L.inscriptionGutter) / 2;
+  doc.font('note').fontSize(L.labelSize);
+  return [
+    { key: 'for', label: 'For', x: L.column.x },
+    { key: 'from', label: 'From', x: L.column.x + halfW + L.inscriptionGutter },
+  ].map((h) => {
+    const labelW = doc.widthOfString(h.label);
+    const lineX = h.x + labelW + 5;
+    return { ...h, lineX, lineW: h.x + halfW - lineX };
+  });
+}
+
 // The arch mark, drawn from public/brand/symbol-paper.svg: a floor, an
 // arched opening, and the gold ember inside it. Strokes are heavier than
 // the SVG's, because at colophon size its own would print as a hairline.
@@ -170,8 +190,8 @@ function drawMark(doc, cx, baseY, scale) {
 //   kicker    the mirror's label, e.g. "An image that meets you"
 //   title, body, closing   the words on the back
 //   forName, fromName      optional, set on the inscription lines
-//   imageNo   the picture's number in the reader's series
-export async function buildCardPdf({ image, kicker, title, body, closing = '', forName = '', fromName = '', imageNo = null }) {
+//   date      the card's date as it should read, e.g. "4 October 2026"
+export async function buildCardPdf({ image, kicker, title, body, closing = '', forName = '', fromName = '', date = '' }) {
   const L = LAYOUT;
   const doc = new PDFDocument({
     size: [PAGE_W, PAGE_H],
@@ -212,7 +232,7 @@ export async function buildCardPdf({ image, kicker, title, body, closing = '', f
   doc.restore();
 
   // The title in spaced capitals, stepping down if it is long, and the
-  // picture's number in gold.
+  // card's date in gold beneath it.
   const capsW = P.w + 2 * e;
   const capsOpts = (sz) => ({ width: capsW, align: 'center', characterSpacing: sz * 0.25 });
   let ts = L.frontTitleSize;
@@ -222,10 +242,9 @@ export async function buildCardPdf({ image, kicker, title, body, closing = '', f
     doc.fontSize(ts);
   }
   doc.fillColor(INK).text(title.toUpperCase(), P.x - e, L.frontTitleY, capsOpts(ts));
-  if (imageNo) {
-    const no = `IMAGE NO. ${String(imageNo).padStart(2, '0')}`;
-    doc.font('caps').fontSize(L.frontNoSize).fillColor(GOLD)
-      .text(no, P.x - e, doc.y + 4, { width: capsW, align: 'center', characterSpacing: L.frontNoSize * 0.3 });
+  if (date) {
+    doc.font('caps').fontSize(L.frontDateSize).fillColor(GOLD)
+      .text(date.toUpperCase(), P.x - e, doc.y + 4, { width: capsW, align: 'center', characterSpacing: L.frontDateSize * 0.3 });
   }
 
   // ── Back ───────────────────────────────────────────────────────────
@@ -260,16 +279,22 @@ export async function buildCardPdf({ image, kicker, title, body, closing = '', f
     doc.fillColor(INK).text(paragraphs(closing).join(' '), C.x, y, { width: C.w, lineGap: cgap });
   }
 
-  // The inscription: a short rule, then For and From, with room to write.
+  // The inscription: a short rule, then one line with For on the left
+  // and From on the right, each label in italic with a hairline after it
+  // to the edge of its half, waiting for a name.
   doc.moveTo(CENTRE - L.ruleW / 2, L.ruleY).lineTo(CENTRE + L.ruleW / 2, L.ruleY)
     .lineWidth(0.5).strokeColor(INK, 0.3).stroke();
-  for (const [label, lineY, name] of [['For', L.forY, forName], ['From', L.fromY, fromName]]) {
-    doc.font('note').fontSize(7.5).fillColor(INK)
-      .text(label, L.labelX, lineY - 9.5, { width: 30, lineBreak: false });
-    doc.moveTo(L.lineX, lineY).lineTo(L.lineX + L.lineW, lineY).lineWidth(0.5).strokeColor(INK, 0.28).stroke();
+  for (const half of inscriptionHalves(doc)) {
+    const name = half.key === 'for' ? forName : fromName;
+    // Label and name share one baseline, just above the hairline.
+    doc.font('note').fontSize(L.labelSize).fillColor(INK, 0.75)
+      .text(half.label, half.x, L.inscriptionY - 2, { lineBreak: false, baseline: 'alphabetic' });
+    doc.fillOpacity(1);
+    doc.moveTo(half.lineX, L.inscriptionY).lineTo(half.lineX + half.lineW, L.inscriptionY)
+      .lineWidth(0.5).strokeColor(INK, 0.28).stroke();
     if (name) {
-      doc.font('note').fontSize(8.5).fillColor(INK)
-        .text(name, L.lineX + 4, lineY - 11, { width: L.lineW - 8, lineBreak: false, ellipsis: true });
+      doc.font('note').fontSize(L.nameSize).fillColor(INK)
+        .text(name, half.lineX + 2, L.inscriptionY - 2, { width: half.lineW - 4, lineBreak: false, ellipsis: true, align: 'center', baseline: 'alphabetic' });
     }
   }
 
