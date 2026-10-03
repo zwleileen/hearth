@@ -211,7 +211,7 @@ export const api = {
     // The picture of a session's mirror. draw makes it (or returns the
     // one already made); picture reads it back. Both return
     // { image, alt }, where image is a data URL.
-    draw: (id) => request(`/kindle/${id}/image`, { method: 'POST' }),
+    draw: (id, { again = false } = {}) => request(`/kindle/${id}/image${again ? '?again=1' : ''}`, { method: 'POST' }),
     picture: (id) => request(`/kindle/${id}/image`),
     // Logbook: past sessions, reverse-chronological.
     log: ({ limit = 30, before = null } = {}) => {
@@ -228,8 +228,8 @@ export const api = {
   // Returns { id, ref, status }. A 400 carries `fields`, keyed by the
   // field each message belongs beside.
   cards: {
-    send: ({ sessionId, title, body, note, recipient, forSelf = false } = {}) =>
-      request('/cards', { method: 'POST', body: { sessionId, title, body, note, recipient, forSelf } }),
+    send: ({ sessionId, title, body, closing, forName, fromName, recipient, forSelf = false } = {}) =>
+      request('/cards', { method: 'POST', body: { sessionId, title, body, closing, forName, fromName, recipient, forSelf } }),
     // The reader's cards that reached the print room, newest first, each
     // with a small copy of its picture. Pass sessionId for one session's.
     list: ({ sessionId = null, limit = 10 } = {}) => {
@@ -239,8 +239,11 @@ export const api = {
     },
     // Print room accounts only (user.printRoom): the files a card is
     // printed from, as Blobs.
-    printFile: ({ sessionId, title, body, note } = {}) =>
-      requestFile('/cards/print-file', { method: 'POST', body: { sessionId, title, body, note } }),
+    printFile: ({ sessionId, title, body, closing, forName, fromName } = {}) =>
+      requestFile('/cards/print-file', { method: 'POST', body: { sessionId, title, body, closing, forName, fromName } }),
+    // The words a card starts from, and its picture's number:
+    // { title, body, closing, kicker, imageNo }.
+    words: (sessionId) => request(`/cards/words/${sessionId}`),
     printImage: (sessionId) => requestFile(`/cards/print-image/${sessionId}`),
   },
 

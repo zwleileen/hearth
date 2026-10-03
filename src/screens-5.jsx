@@ -70,16 +70,27 @@ function MirrorPicture({ sessionId, hasImage, onDrawn, onCard }) {
     return () => { live = false; };
   }, [sessionId]);
 
-  async function draw() {
+  // A repaint that fails leaves the picture as it was, and says so.
+  const [repaintError, setRepaintError] = React.useState(null);
+
+  async function draw({ again = false } = {}) {
     if (state === 'drawing') return;
+    const previous = picture;
     setState('drawing');
+    setRepaintError(null);
     try {
-      const data = await api.kindle.draw(sessionId);
+      const data = await api.kindle.draw(sessionId, { again });
       setPicture(data);
       setState('ready');
-      if (onDrawn) onDrawn();
-    } catch {
-      setState('failed');
+      if (!again && onDrawn) onDrawn();
+    } catch (err) {
+      if (again && previous) {
+        setPicture(previous);
+        setState('ready');
+        setRepaintError(err.data?.error || 'The new painting did not come. The picture is as it was.');
+      } else {
+        setState('failed');
+      }
     }
   }
 
@@ -96,9 +107,17 @@ function MirrorPicture({ sessionId, hasImage, onDrawn, onCard }) {
             ))}
           </div>
         )}
-        <button onClick={() => onCard(picture)} style={{ ...lineBtn, marginTop: 18 }}>
-          {sentCards.length ? 'Create another card' : 'Create a card'}
-        </button>
+        <div style={{ marginTop: 18, display: 'flex', gap: 18, alignItems: 'center', flexWrap: 'wrap' }}>
+          <button onClick={() => onCard(picture)} style={lineBtn}>
+            {sentCards.length ? 'Create another card' : 'Create a card'}
+          </button>
+          {picture.repaintsLeft > 0 && (
+            <button onClick={() => draw({ again: true })} style={quietLink}>Paint it again</button>
+          )}
+        </div>
+        {repaintError && (
+          <p className="body" style={{ margin: '12px 0 0', color: 'var(--paper-mute)' }}>{repaintError}</p>
+        )}
       </div>
     );
   }
@@ -118,7 +137,7 @@ function MirrorPicture({ sessionId, hasImage, onDrawn, onCard }) {
 
   return (
     <div style={{ marginTop: 28 }}>
-      <button onClick={draw} style={lineBtn}>Make a picture of this</button>
+      <button onClick={() => draw()} style={lineBtn}>Make a picture of this</button>
       {state === 'failed' && (
         <p className="body" style={{ margin: '14px 0 0', color: 'var(--paper-mute)' }}>
           The picture did not come. Try again in a moment.

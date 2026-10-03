@@ -254,6 +254,20 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
   an empty stamp box of soft dashes, the words, and the wordmark. No
   address lines: the reader's note is where a name goes. The print-room gate (`CARD_PRINT_ROOM`) is
   gone. The Carry to Give screens below apply again once mail is on.
+- **The keepsake card and the picture brief, v4** (2026-10-03). The
+  card follows `carry_postcard/`: the front is the painting as a plate
+  (paper margin, faint impression line) with the title in spaced
+  capitals and "Image No. 07" in gold, no logo; the back is centred:
+  kicker, italic title, gold diamond, the story, a closing line in
+  darker italic, For and From lines (typed names optional), and the arch
+  with its ember as a colophon. The card's words are set from the mirror
+  by `lib/cardWords.js` (third person, nothing addressed to the reader,
+  90 to 120 words, a closing line), alongside the painting, and kept on
+  the picture with its number. The picture brief (`lib/kindleImage.js`)
+  now names the essence and the visual idea before the scene, and paints
+  in soft watercolour with generous sky; v2's rules of restraint had cut
+  the meaning out (a river that parts became one stream). A picture can
+  be painted again twice. `/api/health` reports `imagePrompt`.
 - **Carry to Give.** The mail form asks who the card is for: someone
   else, or the reader. After sending, a card to someone turns to Give's
   colour and offers one tap to keep it in the meaning log with their

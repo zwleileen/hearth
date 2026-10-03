@@ -22,7 +22,7 @@ import { MODEL, IMAGE_MODEL } from './ai.js';
 
 // Bump when the scene brief or the style changes, so a picture can be
 // traced to the prompt that made it.
-export const KINDLE_IMAGE_PROMPT_VERSION = 2;
+export const KINDLE_IMAGE_PROMPT_VERSION = 4;
 
 // Made at print size. A 4 x 6 inch card with 0.125 in of bleed on every
 // side is 4.25 x 6.25 in, which at 300 dpi is 1275 x 1875 pixels. The
@@ -52,75 +52,101 @@ async function threeCopies(png) {
 
 const SCENE_TEMPERATURE = 0.8;
 
+// The art director thinks in order, and the schema holds it to that
+// order: first what the picture must make someone understand and feel,
+// then the one visual idea that carries it, and only then the scene.
+// Version 2 went straight to a scene under rules of restraint (one
+// subject, three things, no crowds, people tiny), and the restraint cut
+// out the meaning: a river that parts into two living channels became a
+// single quiet stream, and an architect watching the square she made
+// come alive became a bench with a sketchbook on it. Restraint now lives
+// in the paint, not in what the picture is allowed to show.
 const SCENE_SCHEMA = {
   type: 'object',
   properties: {
+    essence: {
+      type: 'string',
+      description: 'One sentence: what someone who has never read the story should understand and feel from the picture alone.',
+    },
+    idea: {
+      type: 'string',
+      description: 'The one visual idea that holds both the difficulty and the turning, as a relationship the eye takes in at a glance. For example: one river parting into two channels, both carrying life.',
+    },
     scene: {
       type: 'string',
-      description: 'The scene to paint, two or three plain sentences, 60 words at most. One concrete subject, where it is, the hour, and the one detail that carries the turning.',
+      description: 'The brief for the painter, 70 to 120 words: the viewpoint, what is near, in the middle and far, where the eye lands first, the hour and where the light falls, and the living details that bring warmth.',
     },
     alt: {
       type: 'string',
       description: 'One plain sentence describing the finished picture for someone who cannot see it. What is in it, nothing about what it means.',
     },
   },
-  required: ['scene', 'alt'],
+  required: ['essence', 'idea', 'scene', 'alt'],
   additionalProperties: false,
 };
 
-const SCENE_DIRECTOR = `You are the art director for Hearth, a quiet app that helps people find meaning in what they carry. In a session, Hearth offers the reader a mirror: a person, a figure from a story, an image from nature, or a small parable that held the same shape of difficulty and still carries light. Your job is to choose the one picture that will sit beside that mirror, and describe it for a painter.
+const SCENE_DIRECTOR = `You are the art director for Hearth, an app that helps people find meaning in what they carry. In a session, Hearth offers the reader a mirror: a person, a figure from a story, an image from nature, or a small parable that held the same shape of difficulty and found its way through. You choose the painting that will sit beside that mirror. The reader may keep it, print it, or give it to someone they love.
 
-The picture is there to bring warmth and comfort. It does that honestly: the hard thing stays in the picture, and the picture is about how it is held.
+The painting has one job: someone who looks at it, even without reading a word, should feel the mirror's meaning at once, and be comforted by it. It should be beautiful enough to keep.
 
-# How to choose the scene
+# Think in this order
 
-- One subject. A single thing, seen plainly, in a real place at a real hour. If you need the word "and" to name the subject, you have two pictures. Choose one.
-- Paint the moment after the turning has begun. The tree has already grown around the wound. The field has already been left fallow and the first green is in it. The wound, the gap, the weight is still visible. So is what answered it.
-- Give the scene one source of warm, low light and say where it comes from: a window, a lamp, early sun from one side. The light rests on the subject. Choose morning, daylight or a well-lit room over dusk and night. This is a picture someone keeps for comfort, so most of it is in the light.
-- At most three things in the picture: the subject, what it rests on or stands in, and one detail. No background traffic, crowds or scenery added for atmosphere.
-- Leave room. Say what is in the empty part of the picture: sky, a wall, still water, snow, air.
-- Concrete nouns. A painter cannot paint "resilience" or "hope". They can paint a mended fence, a kettle, a root across a stone.
+1. The essence. Read the mirror and say, in one sentence, what the picture must make someone understand and feel. This comes from the turning, not only from the difficulty.
 
-# The form of the mirror
+2. The idea. Find the one visual idea that holds both the difficulty and the turning, as a relationship the eye can take in at a glance. Meaning lives in relationships: one river parting into two channels, both alive; a square full of people living out a plan its maker is not credited for, and the maker at its edge, seeing it. Most mirrors are about how two things stand to each other, so the picture usually needs both of them. Never shrink the meaning into a small object or a clue that only someone who read the story would understand.
 
-- A real person: never paint them. No portrait, no figure, no likeness. Paint the object, the room, or the piece of work that carries what they did: the desk, the tool, the thing they made or kept. Do not name them in the scene.
-- A figure from a story: the same. Paint the thing or the place from the story that holds the turning, never the character's face.
-- An image from nature, a parable, or another image: paint that image itself, precisely, as it would really look.
-- If a human presence is truly needed, it is small and far off, or seen from behind, or only a pair of hands, or only what someone left: a coat on a chair, a light on in one window.
+3. The scene. Build the painting around that idea.
+- Choose the viewpoint that makes the idea visible. When the meaning is a shape on the land, look from above or from high ground. When it is a gesture, come close.
+- One clear place where the eye lands first, and a world around it: something near, something in the middle, something far. Full and alive, not empty.
+- Paint the moment after the turning has begun. The tree has already grown around the wound and is in leaf. The side stream already feeds the reeds and the birds. The difficulty is still there to see. So is what answered it, and the answer is where the light falls.
+- Gentle late-afternoon or early-morning light, falling across the scene and gathering on what matters. Most of the picture is in the light.
+- One or two living details bring the comfort, and they come from the story itself: a heron in the side stream's shallows, the few people the architect's square was made for. Not stock comforts brought in from elsewhere: no sleeping dogs or cats, café tables or bicycles unless the story has them.
+- Quiet. Generous empty sky or open water, so the picture breathes. Simple enough to read from across a room: the idea, the light, and very little else.
+- Concrete nouns. A painter cannot paint resilience. They can paint a root that has split a stone and holds it.
 
-# What to keep out
+4. Test it. Imagine someone who has never read the mirror seeing only this painting. Would they sense the essence within a few seconds? If the meaning depends on a small object or on knowing the story, go back to step 2.
 
-- No suffering shown directly. If the mirror's story holds violence, illness, a camp, a death, paint what was kept or made inside it, not what was done.
-- No stock symbols: no hearts, doves, butterflies, rainbows, lotus flowers, lighthouses, mended gold pottery, paths leading into the distance, lone figures on clifftops, rays of sun breaking through cloud.
-- No writing of any kind in the picture: no letters, pages of legible text, signs or numbers.
-- Nothing about the reader. You are painting the mirror.
-- Do not describe the medium, the colours or the style. Those are set elsewhere. Describe only what is there, where, and in what light.
+# People
 
-Write the scene as two or three plain sentences, 60 words at most, the way you would brief a painter you trust. Then write one sentence of alt text.`;
+- A real person: never their likeness. Paint what they made or kept, out in the world, doing its work, with people it reached present if they help.
+- A figure from a story or a parable: they may be in the painting, small within the scene, seen from behind or in profile at a distance, the face never detailed. Others in the story may be there too, the same way. People are often where the warmth is.
 
-// The fixed style. Everything here is Hearth's design system said in
-// paint: paper and ink, a little warm light, a great deal of room
-// (BRAND_BRIEF §8). The scene is the only part that changes.
+# Keep out
+
+- Suffering shown directly. If the story holds violence, illness, a camp or a death, paint what was kept or made inside it.
+- Stock symbols: hearts, doves, butterflies, rainbows, lotus flowers, lighthouses, mended gold pottery, lone figures on clifftops, beams of light through cloud.
+- Writing of any kind: no letters, legible pages, signs, plaques or numbers.
+- The reader. You are painting the mirror.
+- The medium and the style. Those are set elsewhere. Describe what is there, where, and in what light.`;
+
+// The fixed style. Hearth's design system said in paint: its colours,
+// warm light, room to breathe, nothing loud (BRAND_BRIEF §8). The scene
+// is the only part that changes. Version 2 asked for flat shapes, a
+// nearly empty upper third and a strict six-colour palette, which made
+// every picture quiet and some of them say nothing; the palette is now
+// a harmony to lean toward, and the composition follows the scene. The
+// medium follows the keepsake card's design (carry_postcard/): soft
+// watercolour, muted and warm, with generous sky.
 function buildImagePrompt(scene) {
-  return `A small painting to keep, in gouache and soft coloured pencil, in the manner of a quiet mid-century book illustration or a shin-hanga woodblock print: flat matte shapes, dry-brush edges, a fine paper grain showing through the paint, no outline heavier than a pencil line. Hand-made, a little imperfect, unhurried. Full bleed: the paint covers the whole image, out to all four edges.
+  return `Soft watercolour on cotton paper, a muted warm palette: a small painting to keep, in the tradition of a cherished book illustration. Transparent washes, gentle edges, the texture of the paper showing through, made by hand rather than by a machine. Full bleed: the paint covers the whole image, out to all four edges.
 
 THE SCENE
 ${scene}
 
 COMPOSITION
-One subject, seen plainly, from a calm eye level or slightly above. It sits in the lower two thirds of a tall portrait frame. The upper third is open and nearly empty, a wide still field of pale sky, wall or air, so the picture has room to breathe. Few elements. Nothing crowded, and nothing decorative that the scene does not need.
+A tall portrait frame. The composition serves the scene: whatever the picture is about can be seen at a glance, in where things are and how they stand to one another, not in small details. One clear place where the eye lands first. Depth, with something near, something in the middle and something far. Fewer, larger shapes, and generous empty sky or open water where the eye can rest, so the picture breathes. Simplified and considered, the way a good illustrator leaves things out. Quiet.
 
 LIGHT
-One source of low, warm light, the light of early morning or of a lamp left on for someone, coming from one side and resting on the subject. It is steady, not dramatic: no rays, no glow effects, no sparkle. The picture is light in key, more of it lit than in shadow. Shadows are soft and short, and they are tinted deep green, never black.
+Gentle, quiet late-afternoon or early-morning light, falling across the scene and gathering on what matters most. Soft and luminous, light in key, more of the picture lit than in shadow. Shadows are gentle and tinted green-blue, never black. No beams, no lens flare, no glow effects.
 
 COLOUR
-A limited palette, and only this. Warm cream (#F9F4E6) for the lightest tones. Deep midnight green (#1F4045) for the darkest. Between them, muted warm gold (#E1BE74), pale grey-blue (#C9D8DA), soft dusty pink (#EBCDC2) and a faint blush cream (#F2EAE8). The warm tones outweigh the cool ones. No pure black, no pure white, no saturated colour.
+A harmony that leans toward warm cream, deep midnight green, warm gold, pale grey-blue and soft dusty pink. The living colours of the scene, the green of reeds, the blue of water, the warmth of stone and skin, are softened toward that harmony, muted, like sunlight on old paper. Never garish, never sugary. No pure black, no pure white.
 
 FEELING
-Warmth and comfort without sweetness. Whatever is hard in the scene is visible, not hidden and not prettied, and the picture is about how it is held: tended, sheltered, still standing, lit. It should feel like being kept company in a quiet room. Tender, unhurried, grown-up.
+Someone who looks at it should feel, before they think about it, that it is going to be all right. Peace that was earned, not peace that pretends: whatever was hard is still there, and it has been met, held, grown around. Tender, generous and grown-up. Beautiful enough to keep on a shelf for years, and never the prettiness of a greeting card or a calendar print.
 
 WHAT IT MUST NOT HAVE
-No words, letters, numbers, signature or watermark anywhere. No recognisable face and no likeness of any real person. If a person is present they are small, seen from behind or far off, or shown only by their hands or by what they left. No frame, border, mat, vignette or unpainted margin of paper around the picture. Not a photograph, not a 3D render, not glossy digital art.`;
+No words, letters, numbers, signs, plaques, signature or watermark anywhere. No likeness of any real person, and no detailed faces: people are small within the scene, seen from behind or in profile at a distance. No frame, border, mat, vignette or unpainted margin. Not a photograph, not a 3D render, not glossy digital art.`;
 }
 
 function buildScenePrompt({ companion = {}, keepsake = '' } = {}) {
@@ -132,11 +158,11 @@ function buildScenePrompt({ companion = {}, keepsake = '' } = {}) {
     `How it turned: ${companion.turning || ''}`,
   ];
   if (keepsake) lines.push(`The line the reader was given to keep: ${keepsake}`);
-  return `Here is the mirror from one session.\n\n${lines.join('\n')}\n\nChoose the one picture that belongs beside it. Return JSON matching the schema.`;
+  return `Here is the mirror from one session.\n\n${lines.join('\n')}\n\nChoose the painting that belongs beside it, thinking in the order you were given. Return JSON matching the schema.`;
 }
 
 // Returns { print, data, thumb, printWidth, printHeight, contentType,
-// scene, alt, imageModel, promptVersion }.
+// essence, idea, scene, alt, imageModel, promptVersion }.
 export async function generateKindleImage(client, { session, replyTurning } = {}) {
   const companion = session?.companion || {};
   // The later keepsake is the one the reader arrived at, so it wins.
@@ -156,7 +182,7 @@ export async function generateKindleImage(client, { session, replyTurning } = {}
   });
   const text = completion.choices?.[0]?.message?.content;
   if (!text) throw new Error('Empty response from AI service');
-  const { scene, alt } = JSON.parse(text);
+  const { essence, idea, scene, alt } = JSON.parse(text);
   if (!scene?.trim()) throw new Error('No scene to paint');
 
   const result = await client.images.generate({
@@ -173,6 +199,8 @@ export async function generateKindleImage(client, { session, replyTurning } = {}
   return {
     ...(await threeCopies(Buffer.from(b64, 'base64'))),
     contentType: 'image/jpeg',
+    essence: (essence || '').trim(),
+    idea: (idea || '').trim(),
     scene: scene.trim(),
     alt: (alt || '').trim(),
     imageModel: IMAGE_MODEL,

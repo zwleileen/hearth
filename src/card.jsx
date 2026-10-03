@@ -24,15 +24,34 @@ import { Headline, Kicker, Rule, Icon } from './atoms.jsx';
 import { api } from './api.js';
 import { prefersShareSheet } from './share.jsx';
 
-// Card geometry in points, matching cardPdf.js.
-const TRIM_W = 288;
-const SAFE = 18;
-const TEXT_W = TRIM_W - 2 * SAFE;
-// The stamp box, matching POSTCARD in cardPdf.js.
-const POSTCARD = { stampW: 50, stampH: 60, stampGap: 14 };
-// How tall the words may run, from the top safe margin to the
-// wordmark's breathing room.
-const ROOM = 432 - 2 * SAFE - 9 - 18;
+// The keepsake card in points, matching LAYOUT in server/lib/cardPdf.js
+// (and the design in carry_postcard/). The preview is the full 4.25 x
+// 6.25 in page, so every point here is a fraction of PAGE_W.
+const PAGE_W = 306;
+const L = {
+  plate: { x: 40.3, y: 33.8, w: 225.4, h: 345.4 },
+  impression: 3.5,
+  frontTitleY: 401,
+  frontTitleSize: 6.3,
+  frontNoSize: 5,
+  column: { x: 40.3, w: 225.4 },
+  kickerY: 58,
+  kickerSize: 5.3,
+  titleSize: 15,
+  bodySize: 8.6,
+  bodyFloor: 7.4,
+  bodyLeading: 1.53,
+  closingStep: 1,
+  wordsBottom: 335,
+  ruleY: 353,
+  ruleW: 19,
+  forY: 377,
+  fromY: 398,
+  lineX: 91,
+  lineW: 146,
+  labelX: 69,
+  markBaseY: 424,
+};
 
 // Posting a printed card. Off for now: readers share the postcard
 // themselves. Turn it back on once the print room is connected and
@@ -43,10 +62,9 @@ const MAIL_ENABLED = false;
 // What a shared postcard says alongside it. Plain and first person, the
 // one place Hearth is not literary (BRAND_BRIEF §5.12).
 const SHARE_TEXT = 'I made this for you.';
-const TYPE = { kicker: 6.5, title: 17, body: 9, bodyFloor: 7.5, note: 9.5 };
 // Ceilings against abuse, as on the server. Fit is what really limits
 // the words, and the preview measures it.
-const LIMIT = { title: 90, body: 2000, note: 320 };
+const LIMIT = { title: 90, body: 2000, closing: 300, forName: 60, fromName: 60 };
 
 const MIRROR_LABEL = {
   person: 'Someone who stood here',
@@ -67,19 +85,21 @@ const ADDRESS_FIELDS = [
 ];
 const EMPTY_ADDRESS = { name: '', line1: '', line2: '', city: '', postalCode: '', region: '', country: '' };
 
-function originalWords(session) {
+// The mirror's own words, for when the card's words cannot be fetched.
+function mirrorWords(session) {
   const c = session?.session?.companion || {};
   return {
     title: c.name || '',
     body: [c.predicament, c.turning].filter(Boolean).join('\n\n'),
-    note: '',
+    closing: '',
   };
 }
 
 // The words survive leaving the page and coming back, on this device.
 // The address does not: it belongs to someone else and is only kept
 // with the order it was given for.
-function draftKey(id) { return `hearth.card.${id}`; }
+// Versioned: drafts from the postcard design held a note, not a closing.
+function draftKey(id) { return `hearth.keepsake.${id}`; }
 function readDraft(id) {
   try { return JSON.parse(localStorage.getItem(draftKey(id)) || 'null'); } catch { return null; }
 }
@@ -192,9 +212,31 @@ function CardScreen({ go, payload, user }) {
   const session = payload?.session;
   const sessionId = session?.id;
 
-  const original = React.useMemo(() => originalWords(session), [sessionId]);
-  const [words, setWords] = React.useState(() => ({ ...original, ...(sessionId ? readDraft(sessionId) : null) }));
-  const [fit, setFit] = React.useState({ fits: true, bodyPt: TYPE.body });
+  // The words the card starts from, set for a card from the mirror
+  // (server/lib/cardWords.js), with the picture's number. The reader's
+  // own draft, if they have been here before, wins.
+  const [start, setStart] = React.useState(null);
+  const [words, setWords] = React.useState(() => (sessionId ? readDraft(sessionId) : null));
+  const [fit, setFit] = React.useState({ fits: true, bodyPt: L.bodySize });
+  React.useEffect(() => {
+    if (!sessionId) return undefined;
+    let live = true;
+    const blank = { forName: '', fromName: '' };
+    api.cards.words(sessionId)
+      .then((d) => {
+        if (!live) return;
+        setStart(d);
+        setWords((w) => w || { title: d.title, body: d.body, closing: d.closing, ...blank });
+      })
+      .catch(() => {
+        if (!live) return;
+        const m = mirrorWords(session);
+        setStart({ ...m, kicker: null, imageNo: null });
+        setWords((w) => w || { ...m, ...blank });
+      });
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionId]);
 
   const [mailOpen, setMailOpen] = React.useState(false);
   // Who the card is for. Someone else is a giving; the reader themself is
@@ -212,26 +254,32 @@ function CardScreen({ go, payload, user }) {
   const bodyRef = React.useRef(null);
   const firstFieldRef = React.useRef(null);
 
-  React.useEffect(() => { if (sessionId) writeDraft(sessionId, words); }, [words, sessionId]);
+  React.useEffect(() => { if (sessionId && words) writeDraft(sessionId, words); }, [words, sessionId]);
 
   // Size every text box to its words, then step the body type down
-  // until the back fits, exactly as the print file does.
+  // until the words end above the inscription, exactly as the print file
+  // does. The closing line follows the body's size, a point larger.
   const fitBack = React.useCallback(() => {
     const back = backRef.current;
     const content = contentRef.current;
     const body = bodyRef.current;
     if (!back || !content || !body) return;
-    const k = back.clientWidth / TRIM_W; // px per point
-    const room = (ROOM + SAFE) * k; // the content box starts at the top safe margin
-    let pt = TYPE.body;
+    const k = back.clientWidth / PAGE_W; // px per point
+    const room = (L.wordsBottom - L.kickerY) * k;
+    const closing = content.querySelector('#card-closing');
+    let pt = L.bodySize;
     for (;;) {
       body.style.fontSize = `${pt * k}px`;
+      if (closing) {
+        closing.style.fontSize = `${(pt + L.closingStep) * k}px`;
+        closing.style.marginTop = `${pt * 1.2 * k}px`;
+      }
       for (const ta of content.querySelectorAll('textarea')) {
         ta.style.height = 'auto';
         ta.style.height = `${ta.scrollHeight}px`;
       }
-      if (content.scrollHeight <= room + 0.5 || pt <= TYPE.bodyFloor) break;
-      pt = Math.max(TYPE.bodyFloor, pt - 0.25);
+      if (content.scrollHeight <= room + 0.5 || pt <= L.bodyFloor) break;
+      pt = Math.max(L.bodyFloor, Math.round((pt - 0.2) * 100) / 100);
     }
     const fits = content.scrollHeight <= room + 0.5;
     setFit((f) => (f.fits === fits && f.bodyPt === pt ? f : { fits, bodyPt: pt }));
@@ -258,12 +306,13 @@ function CardScreen({ go, payload, user }) {
 
   // The postcard PDF for the words as they are now, made once and kept
   // until the words change, so sharing it can be instant.
-  const wordsKey = JSON.stringify([words.title, words.body, words.note]);
+  const w0 = words || { title: '', body: '', closing: '', forName: '', fromName: '' };
+  const wordsKey = JSON.stringify([w0.title, w0.body, w0.closing, w0.forName, w0.fromName]);
   const postcard = React.useRef({ key: '', file: null });
   async function postcardFile() {
     if (postcard.current.key === wordsKey && postcard.current.file) return postcard.current.file;
-    const blob = await api.cards.printFile({ sessionId, title: words.title, body: words.body, note: words.note });
-    const file = new File([blob], 'hearth-postcard.pdf', { type: 'application/pdf' });
+    const blob = await api.cards.printFile({ sessionId, ...w0 });
+    const file = new File([blob], 'hearth-keepsake.pdf', { type: 'application/pdf' });
     postcard.current = { key: wordsKey, file };
     return file;
   }
@@ -282,7 +331,7 @@ function CardScreen({ go, payload, user }) {
   // A share sheet only opens straight after a tap, and making the PDF
   // takes a moment, so it is made ahead, quietly, once the words settle.
   React.useEffect(() => {
-    if (!canShareFiles || !sessionId || !fit.fits || !words.title.trim() || !words.body.trim()) return undefined;
+    if (!canShareFiles || !sessionId || !fit.fits || !w0.title.trim() || !w0.body.trim()) return undefined;
     const t = setTimeout(() => { postcardFile().catch(() => {}); }, 900);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -293,8 +342,8 @@ function CardScreen({ go, payload, user }) {
 
   function readyToMake() {
     const e = {};
-    if (!words.title.trim()) e.title = 'The card needs a title.';
-    if (!words.body.trim()) e.body = 'The card needs some words on the back.';
+    if (!w0.title.trim()) e.title = 'The card needs a title.';
+    if (!w0.body.trim()) e.body = 'The card needs some words on the back.';
     if (!fit.fits) e.body = 'The words run past the edge of the card. Shorten them a little.';
     setErrors((prev) => ({ ...prev, ...e }));
     return !Object.keys(e).length;
@@ -307,7 +356,7 @@ function CardScreen({ go, payload, user }) {
     if (!file) {
       setShareState('making');
       try { file = await postcardFile(); } catch (err) {
-        setShareState(err.data?.error || 'Could not make the postcard.');
+        setShareState(err.data?.error || 'Could not make the card.');
         return;
       }
     }
@@ -329,9 +378,9 @@ function CardScreen({ go, payload, user }) {
     setDownload(kind);
     try {
       if (kind === 'pdf') {
-        saveBlob(await postcardFile(), 'hearth-postcard.pdf');
+        saveBlob(await postcardFile(), 'hearth-keepsake.pdf');
       } else {
-        saveBlob(await api.cards.printImage(sessionId), 'hearth-postcard-picture.jpg');
+        saveBlob(await api.cards.printImage(sessionId), 'hearth-painting.jpg');
       }
       setDownload(null);
     } catch (err) {
@@ -357,8 +406,8 @@ function CardScreen({ go, payload, user }) {
     );
   }
 
-  const kicker = MIRROR_LABEL[session.session?.companion?.kind] || MIRROR_LABEL.image;
-  const changed = words.title !== original.title || words.body !== original.body || words.note !== '';
+  const kicker = start?.kicker || MIRROR_LABEL[session.session?.companion?.kind] || MIRROR_LABEL.image;
+  const changed = !!(start && words) && (words.title !== start.title || words.body !== start.body || words.closing !== start.closing);
 
   function setWord(key, value) {
     setWords((w) => ({ ...w, [key]: value }));
@@ -371,10 +420,10 @@ function CardScreen({ go, payload, user }) {
 
   function validate() {
     const e = {};
-    if (!words.title.trim()) e.title = 'The card needs a title.';
-    if (!words.body.trim()) e.body = 'The card needs some words on the back.';
-    for (const key of ['title', 'body', 'note']) {
-      if (words[key].length > LIMIT[key]) e[key] = `Keep this under ${LIMIT[key]} characters.`;
+    if (!w0.title.trim()) e.title = 'The card needs a title.';
+    if (!w0.body.trim()) e.body = 'The card needs some words on the back.';
+    for (const key of Object.keys(LIMIT)) {
+      if ((w0[key] || '').length > LIMIT[key]) e[key] = `Keep this under ${LIMIT[key]} characters.`;
     }
     if (!fit.fits) e.body = 'The words run past the edge of the card. Shorten them a little.';
     for (const f of ADDRESS_FIELDS) {
@@ -401,14 +450,12 @@ function CardScreen({ go, payload, user }) {
     try {
       const data = await api.cards.send({
         sessionId,
-        title: words.title,
-        body: words.body,
-        note: words.note,
+        ...w0,
         recipient: address,
         forSelf,
       });
       clearDraft(sessionId);
-      setSent({ ...data, forSelf, title: words.title.trim(), name: address.name.trim(), city: address.city.trim() });
+      setSent({ ...data, forSelf, title: w0.title.trim(), name: address.name.trim(), city: address.city.trim() });
       // On a phone the page itself scrolls, on a wide screen the panel.
       document.getElementById('hearth-scroll')?.scrollTo({ top: 0, behavior: 'instant' });
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -432,7 +479,8 @@ function CardScreen({ go, payload, user }) {
     return <SentCard go={go} sent={sent} picture={picture} onBack={backToSession}/>;
   }
 
-  const k = (pt) => `${(pt / TRIM_W) * 100}cqw`;
+  const k = (pt) => `${(pt / PAGE_W) * 100}cqw`;
+  const imageNo = start?.imageNo ? `Image No. ${String(start.imageNo).padStart(2, '0')}` : '';
 
   return (
     <div className="fade-in" style={{ paddingBottom: 56 }}>
@@ -445,78 +493,113 @@ function CardScreen({ go, payload, user }) {
       <section style={{ padding: '24px 22px 0' }}>
         <Kicker>Carry</Kicker>
         <Headline size="display" style={{ marginTop: 14 }}>
-          Make it<br/><span style={{ fontStyle: 'italic' }}>a postcard.</span>
+          Make it<br/><span style={{ fontStyle: 'italic' }}>a keepsake.</span>
         </Headline>
         <p className="body" style={{ margin: '18px 0 0', maxWidth: 440 }}>
-          The picture on the front. On the back, the words that came with it, yours to change, and room for a note of your own.
+          The painting on the front, as a plate. On the back, its story and the line to keep, yours to change, and who it is for.
         </p>
       </section>
 
-      {/* The card, both sides, at print proportions */}
+      {/* The keepsake, both sides, drawn to the print file's numbers */}
       <section style={{ padding: '32px 22px 0' }}>
         <div className="card-sides">
           <figure className="card-side">
-            <div className="card-face">
-              <img src={picture.image} alt={picture.alt || ''} style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}/>
+            <div className="card-face card-page">
+              {/* The plate: the painting with a faint impression line
+                  just outside it, on a paper margin. */}
+              <div aria-hidden="true" className="card-impression" style={{
+                left: k(L.plate.x - L.impression), top: k(L.plate.y - L.impression),
+                width: k(L.plate.w + 2 * L.impression), height: k(L.plate.h + 2 * L.impression),
+              }}/>
+              <img src={picture.image} alt={picture.alt || ''} style={{
+                position: 'absolute', left: k(L.plate.x), top: k(L.plate.y), width: k(L.plate.w), height: k(L.plate.h),
+                objectFit: 'cover', display: 'block',
+              }}/>
+              <div className="card-caps" style={{
+                left: k(L.plate.x - L.impression), width: k(L.plate.w + 2 * L.impression), top: k(L.frontTitleY),
+                fontSize: k(L.frontTitleSize), letterSpacing: '0.25em', color: 'var(--hh-green)',
+              }}>
+                {w0.title}
+                {imageNo && (
+                  <span style={{ display: 'block', marginTop: k(4), fontSize: k(L.frontNoSize), letterSpacing: '0.3em', color: 'var(--hh-ecru-deep)' }}>
+                    {imageNo}
+                  </span>
+                )}
+              </div>
             </div>
             <figcaption className="card-caption">Front</figcaption>
           </figure>
 
           <figure className="card-side">
-            {/* The back is the query container and carries no padding, so
-                every cqw below is a fraction of the card's full width, as
-                every point in the print file is. */}
-            <div ref={backRef} className="card-face card-back">
-              {/* The stamp box: an empty frame of soft dashes, where a
-                  stamp would go. */}
-              <div aria-hidden="true" className="card-stamp" style={{
-                top: k(SAFE), right: k(SAFE), width: k(POSTCARD.stampW), height: k(POSTCARD.stampH),
-              }}/>
-              <div ref={contentRef} style={{ padding: `${k(SAFE)} ${k(SAFE)} 0` }}>
-                {/* The kicker and title sit beside the stamp; the words
-                    start under whichever is taller. */}
-                <div style={{ minHeight: k(POSTCARD.stampH), paddingRight: k(POSTCARD.stampW + POSTCARD.stampGap) }}>
-                <div style={{
-                  fontFamily: 'var(--sans)', fontWeight: 500, fontSize: k(TYPE.kicker), letterSpacing: '0.22em',
-                  textTransform: 'uppercase', color: 'var(--hh-ecru-deep)', lineHeight: 1.4,
-                }}>
-                  {kicker}
+            {/* The page is the query container, so every cqw is a fraction
+                of the page's width, as every point in the print file is. */}
+            <div ref={backRef} className="card-face card-page">
+              {!words ? (
+                <p className="card-setting" style={{ top: k(L.kickerY), left: k(L.column.x), width: k(L.column.w), fontSize: k(9) }}>
+                  Setting the words…
+                </p>
+              ) : (
+                <div ref={contentRef} style={{ position: 'absolute', top: k(L.kickerY), left: k(L.column.x), width: k(L.column.w) }}>
+                  <div className="card-caps" style={{
+                    position: 'static', fontSize: k(L.kickerSize), letterSpacing: '0.3em', color: 'var(--hh-ecru-deep)',
+                  }}>
+                    {kicker}
+                  </div>
+                  <textarea
+                    id="card-title" className="card-edit" rows={1} value={words.title} maxLength={LIMIT.title}
+                    onChange={(e) => setWord('title', e.target.value.replace(/\n/g, ' '))}
+                    aria-label="Title of the card" aria-invalid={!!errors.title}
+                    style={{
+                      marginTop: k(9), textAlign: 'center', fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 340,
+                      fontVariationSettings: "'opsz' 72", fontSize: k(L.titleSize), lineHeight: 1.2, color: 'var(--hh-green)',
+                    }}
+                  />
+                  <div aria-hidden="true" className="card-diamond" style={{ width: k(3.2), height: k(3.2), margin: `${k(14)} auto ${k(18)}` }}/>
+                  <textarea
+                    id="card-body" ref={bodyRef} className="card-edit" rows={4} value={words.body} maxLength={LIMIT.body}
+                    onChange={(e) => setWord('body', e.target.value)}
+                    aria-label="The story on the back of the card" aria-invalid={!!errors.body}
+                    style={{
+                      fontFamily: 'var(--serif)', fontWeight: 380, fontVariationSettings: "'opsz' 9",
+                      lineHeight: L.bodyLeading, color: '#3F5F64',
+                    }}
+                  />
+                  <textarea
+                    id="card-closing" className="card-edit" rows={1} value={words.closing} maxLength={LIMIT.closing}
+                    onChange={(e) => setWord('closing', e.target.value)}
+                    placeholder="A line to keep, if you like."
+                    aria-label="The closing line of the card" aria-invalid={!!errors.closing}
+                    style={{
+                      fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 380, fontVariationSettings: "'opsz' 9",
+                      lineHeight: 1.45, color: 'var(--hh-green)',
+                    }}
+                  />
                 </div>
-                <textarea
-                  id="card-title" className="card-edit" rows={1} value={words.title} maxLength={LIMIT.title}
-                  onChange={(e) => setWord('title', e.target.value.replace(/\n/g, ' '))}
-                  aria-label="Title on the back of the card" aria-invalid={!!errors.title}
-                  style={{
-                    marginTop: k(12), fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 340,
-                    fontVariationSettings: "'opsz' 72", fontSize: k(TYPE.title), lineHeight: 1.25, color: 'var(--hh-green)',
-                  }}
-                />
-                </div>
-                <textarea
-                  id="card-body" ref={bodyRef} className="card-edit" rows={4} value={words.body} maxLength={LIMIT.body}
-                  onChange={(e) => setWord('body', e.target.value)}
-                  aria-label="Words on the back of the card" aria-invalid={!!errors.body}
-                  style={{
-                    marginTop: k(12), fontFamily: 'var(--serif)', fontWeight: 380,
-                    fontVariationSettings: "'opsz' 9", lineHeight: 1.75, color: 'var(--paper-2, #486A6E)',
-                  }}
-                />
-                {words.note.trim() && (
-                  <div style={{ width: k(24), height: 1, background: 'rgba(31, 64, 69, 0.3)', marginTop: k(8) }}/>
-                )}
-                <textarea
-                  id="card-note" className="card-edit" rows={1} value={words.note} maxLength={LIMIT.note}
-                  onChange={(e) => setWord('note', e.target.value)}
-                  placeholder="Add a note of your own, if you like."
-                  aria-label="Your note on the back of the card" aria-invalid={!!errors.note}
-                  style={{
-                    marginTop: k(8), fontFamily: 'var(--serif)', fontStyle: 'italic', fontWeight: 380,
-                    fontVariationSettings: "'opsz' 9", fontSize: k(TYPE.note), lineHeight: 1.65, color: 'var(--hh-green)',
-                  }}
-                />
-              </div>
-              <img src="/brand/wordmark-paper.svg" alt="" aria-hidden="true" className="card-mark"
-                style={{ height: k(9), bottom: k(SAFE) }}/>
+              )}
+
+              {/* The inscription: a short rule, then For and From. Typed
+                  names are set on the lines; left empty, the lines wait
+                  for handwriting. */}
+              <div aria-hidden="true" className="card-rule" style={{ top: k(L.ruleY), left: k(PAGE_W / 2 - L.ruleW / 2), width: k(L.ruleW) }}/>
+              {[['forName', 'For', L.forY], ['fromName', 'From', L.fromY]].map(([key, label, y]) => (
+                <React.Fragment key={key}>
+                  <label htmlFor={`card-${key}`} className="card-label" style={{ top: k(y - 9.5), left: k(L.labelX), fontSize: k(7.5) }}>{label}</label>
+                  <input
+                    id={`card-${key}`} className="card-name" value={w0[key]} maxLength={LIMIT[key]} disabled={!words}
+                    onChange={(e) => setWord(key, e.target.value)}
+                    aria-invalid={!!errors[key]}
+                    style={{ top: k(y - 12), left: k(L.lineX), width: k(L.lineW), height: k(12), paddingLeft: k(4), fontSize: k(8.5) }}
+                  />
+                </React.Fragment>
+              ))}
+
+              {/* The colophon: Hearth's arch and its ember. */}
+              <svg aria-hidden="true" viewBox="40 120 160 84" className="card-colophon"
+                style={{ left: k(PAGE_W / 2 - 9.6), top: k(L.markBaseY - 9.1), width: k(19.2) }}>
+                <line x1="52" y1="196" x2="188" y2="196" stroke="#1F4045" strokeWidth="5"/>
+                <path d="M 76 196 L 76 132 A 44 44 0 0 1 164 132 L 164 196" stroke="#1F4045" strokeWidth="5.5" fill="none" strokeLinecap="square"/>
+                <circle cx="120" cy="178" r="10" fill="#E1BE74"/>
+              </svg>
             </div>
             <figcaption className="card-caption">Back</figcaption>
           </figure>
@@ -525,12 +608,14 @@ function CardScreen({ go, payload, user }) {
         <div style={{ marginTop: 16, display: 'flex', gap: 18, flexWrap: 'wrap', alignItems: 'baseline' }}>
           <span className="mono" style={monoNote}>Tap the words on the back to change them</span>
           {changed && (
-            <button onClick={() => setWords({ ...original })} style={quietLink}>Put the original words back</button>
+            <button onClick={() => setWords((w) => ({ ...w, title: start.title, body: start.body, closing: start.closing }))} style={quietLink}>
+              Put the original words back
+            </button>
           )}
         </div>
-        {(errors.title || errors.body || errors.note || !fit.fits) && (
+        {(errors.title || errors.body || errors.closing || errors.forName || errors.fromName || !fit.fits) && (
           <p role="alert" className="body" style={{ margin: '12px 0 0', color: 'var(--hh-dogwood-deep)' }}>
-            {errors.title || errors.body || errors.note || 'The words run past the edge of the card. Shorten them a little.'}
+            {errors.title || errors.body || errors.closing || errors.forName || errors.fromName || 'The words run past the edge of the card. Shorten them a little.'}
           </p>
         )}
       </section>
@@ -540,34 +625,34 @@ function CardScreen({ go, payload, user }) {
         <Rule/>
         <Kicker accent="dogwood" style={{ marginTop: 28 }}>Share it</Kicker>
         <p className="body" style={{ margin: '12px 0 22px', maxWidth: 440 }}>
-          Both sides as a postcard, to keep, to print, or to pass on to someone it might meet too.
+          Both sides as a keepsake card, to keep, to print, or to pass on to someone it might meet too.
         </p>
         <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
           {canShareFiles && (
             <button onClick={sharePostcard} disabled={shareState === 'making'}
               style={shareState === 'making' ? ghostBtn : solidBtn}>
-              <span>{shareState === 'making' ? 'Making it…' : shareState === 'ready' ? 'Ready. Tap to share' : 'Share the postcard'}</span>
+              <span>{shareState === 'making' ? 'Making it…' : shareState === 'ready' ? 'Ready. Tap to share' : 'Share the card'}</span>
               {shareState !== 'making' && <span style={{ width: 28, height: 1, background: 'currentColor' }}/>}
             </button>
           )}
           <button onClick={() => downloadFile('pdf')} disabled={download === 'pdf'}
             style={canShareFiles ? lineBtn : (download === 'pdf' ? ghostBtn : solidBtn)}>
-            {download === 'pdf' ? 'Making it…' : 'Download the postcard'}
+            {download === 'pdf' ? 'Making it…' : 'Download the card'}
           </button>
           <button onClick={() => downloadFile('image')} disabled={download === 'image'} style={{ ...quietLink, padding: '8px 0' }}>
-            {download === 'image' ? 'Making it…' : 'Download the picture, full size'}
+            {download === 'image' ? 'Making it…' : 'Download the painting, full size'}
           </button>
         </div>
         {(shareState === 'failed' || (shareState && !['idle', 'making', 'ready', 'failed'].includes(shareState))) && (
           <p role="alert" className="body" style={{ margin: '14px 0 0', color: 'var(--hh-dogwood-deep)' }}>
-            {shareState === 'failed' ? 'Could not open sharing. Download the postcard and send it from there.' : shareState}
+            {shareState === 'failed' ? 'Could not open sharing. Download the card and send it from there.' : shareState}
           </p>
         )}
         {download && download !== 'pdf' && download !== 'image' && (
           <p role="alert" className="body" style={{ margin: '14px 0 0', color: 'var(--hh-dogwood-deep)' }}>{download}</p>
         )}
         <p className="mono" style={{ ...monoNote, margin: '18px 0 0' }}>
-          PDF, 4 × 6 in, both sides
+          PDF, 4.25 × 6.25 in, both sides
         </p>
       </section>
 

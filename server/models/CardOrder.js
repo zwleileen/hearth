@@ -40,7 +40,10 @@ const cardOrderSchema = new mongoose.Schema(
       kicker: { type: String, default: '' },
       title: { type: String, default: '' },
       body: { type: String, default: '' },
-      note: { type: String, default: '' },
+      closing: { type: String, default: '' },
+      forName: { type: String, default: '' },
+      fromName: { type: String, default: '' },
+      note: { type: String, default: '' }, // orders made before the keepsake design
     },
     format: { type: String, default: 'flat-4x6' },
     recipient: { type: recipientSchema, required: true },

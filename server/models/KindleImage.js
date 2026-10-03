@@ -34,20 +34,41 @@ const kindleImageSchema = new mongoose.Schema(
     // A small copy for lists, made lazily for older pictures.
     thumb: { type: Buffer },
     contentType: { type: String, default: 'image/jpeg' },
-    // The scene the text model wrote for the painter, and one sentence
-    // describing the result for a reader who cannot see it.
+    // What the art director decided (lib/kindleImage.js): the essence the
+    // picture must carry, the visual idea that carries it, the scene it
+    // wrote for the painter, and one sentence describing the result for a
+    // reader who cannot see it.
+    essence: { type: String, default: '' },
+    idea: { type: String, default: '' },
     scene: { type: String, default: '' },
     alt: { type: String, default: '' },
     imageModel: { type: String, default: '' },
     promptVersion: { type: Number, default: 1 },
+    // Its number in the reader's own series of pictures, printed on the
+    // front of the card as "Image No. 07". Given once and kept, so a
+    // repaint does not renumber it.
+    imageNo: { type: Number },
+    // The words for the back of the card (lib/cardWords.js), set from the
+    // mirror when the picture is made. A starting point the reader edits.
+    cardWords: {
+      title: { type: String, default: '' },
+      body: { type: String, default: '' },
+      closing: { type: String, default: '' },
+    },
+    // How many times the reader has asked for it to be painted again.
+    // Capped (REPAINT_LIMIT), because every painting is paid for.
+    repaints: { type: Number, default: 0 },
   },
   { timestamps: true },
 );
+
+export const REPAINT_LIMIT = 2;
 
 kindleImageSchema.method('toClient', function () {
   return {
     image: `data:${this.contentType};base64,${this.data.toString('base64')}`,
     alt: this.alt || '',
+    repaintsLeft: Math.max(0, REPAINT_LIMIT - (this.repaints || 0)),
   };
 });
 

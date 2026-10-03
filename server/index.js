@@ -15,6 +15,7 @@ import { encounter } from './routes/encounter.js';
 import { narrative } from './routes/narrative.js';
 import { cards } from './routes/cards.js';
 import { mailStatus } from './lib/mailer.js';
+import { KINDLE_IMAGE_PROMPT_VERSION } from './lib/kindleImage.js';
 
 const app = express();
 
@@ -47,7 +48,9 @@ app.use(
 );
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, time: new Date().toISOString() });
+  // imagePrompt: which version of the picture brief this deploy runs, so
+  // a deploy can be confirmed from outside before relying on it.
+  res.json({ ok: true, time: new Date().toISOString(), imagePrompt: KINDLE_IMAGE_PROMPT_VERSION });
 });
 
 app.use('/api/auth', auth);

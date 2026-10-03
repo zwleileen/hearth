@@ -8,7 +8,7 @@
 //   POST   /api/kindle              generate the opening session
 //   POST   /api/kindle/:id/reply    answer the question, get the turning
 //   POST   /api/kindle/:id/reseen   say the seeing missed, get seen again
-//   POST   /api/kindle/:id/image    make the picture of the mirror
+//   POST   /api/kindle/:id/image    make the picture of the mirror (?again=1 to repaint it)
 //   GET    /api/kindle/:id/image    read the picture back
 //   GET    /api/kindle/log          past sessions, reverse-chronological
 //   DELETE /api/kindle/log/:id      remove a session from the logbook
@@ -23,8 +23,9 @@ import {
 } from '../lib/kindleRunner.js';
 import { detectDistress, careBlockFor, regionFromTimeZone } from '../lib/care.js';
 import { generateKindleImage } from '../lib/kindleImage.js';
+import { generateCardWords } from '../lib/cardWords.js';
 import { KindleSession } from '../models/KindleSession.js';
-import { KindleImage } from '../models/KindleImage.js';
+import { KindleImage, REPAINT_LIMIT } from '../models/KindleImage.js';
 import { CardOrder } from '../models/CardOrder.js';
 import { MeaningNarrative } from '../models/MeaningNarrative.js';
 
@@ -304,8 +305,13 @@ kindle.post('/:id/image', async (req, res) => {
   const record = await KindleSession.findOne({ _id: id, userId });
   if (!record) return res.status(404).json({ error: 'Session not found' });
 
+  // Painting it again replaces the picture, a limited number of times.
+  const again = req.query.again === '1';
   const existing = await KindleImage.findOne({ sessionId: record._id, userId });
-  if (existing) return res.json(existing.toClient());
+  if (existing && !again) return res.json(existing.toClient());
+  if (existing && (existing.repaints || 0) >= REPAINT_LIMIT) {
+    return res.status(429).json({ error: 'This picture has been painted as many times as it can be.' });
+  }
 
   let client;
   try {
@@ -318,15 +324,37 @@ kindle.post('/:id/image', async (req, res) => {
   let work = drawing.get(key);
   if (!work) {
     work = (async () => {
-      const made = await generateKindleImage(client, {
-        session: record.session,
-        replyTurning: record.replyTurning,
-      });
-      const saved = await KindleImage.findOneAndUpdate(
-        { sessionId: record._id },
-        { $setOnInsert: { sessionId: record._id, userId, ...made } },
-        { upsert: true, new: true },
-      );
+      // The card's words are set alongside the painting, once; a repaint
+      // keeps them. A failure here costs only the head start: the card
+      // page sets them when it opens.
+      const [made, cardWords] = await Promise.all([
+        generateKindleImage(client, { session: record.session, replyTurning: record.replyTurning }),
+        existing?.cardWords?.body
+          ? null
+          : generateCardWords(client, { session: record.session, replyTurning: record.replyTurning }).catch((err) => {
+            console.warn('[kindle/image] card words failed:', err.message);
+            return null;
+          }),
+      ]);
+      if (cardWords) made.cardWords = cardWords;
+      if (!existing) {
+        const [count, last] = await Promise.all([
+          KindleImage.countDocuments({ userId }),
+          KindleImage.findOne({ userId, imageNo: { $exists: true } }).sort({ imageNo: -1 }).select('imageNo').lean(),
+        ]);
+        made.imageNo = Math.max(count, last?.imageNo || 0) + 1;
+      }
+      const saved = existing
+        ? await KindleImage.findOneAndUpdate(
+          { _id: existing._id },
+          { $set: made, $inc: { repaints: 1 } },
+          { new: true },
+        )
+        : await KindleImage.findOneAndUpdate(
+          { sessionId: record._id },
+          { $setOnInsert: { sessionId: record._id, userId, ...made } },
+          { upsert: true, new: true },
+        );
       await KindleSession.updateOne({ _id: record._id }, { $set: { hasImage: true } });
       return saved;
     })().finally(() => drawing.delete(key));
@@ -348,7 +376,7 @@ kindle.get('/:id/image', async (req, res) => {
   const { id } = req.params;
   try {
     // The screen copy only: the print master stays in the database.
-    const found = await KindleImage.findOne({ sessionId: id, userId }).select('data contentType alt');
+    const found = await KindleImage.findOne({ sessionId: id, userId }).select('data contentType alt repaints');
     if (!found) return res.status(404).json({ error: 'No picture for this session' });
     res.json(found.toClient());
   } catch (err) {

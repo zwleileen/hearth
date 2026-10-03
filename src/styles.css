@@ -1246,8 +1246,7 @@ html, body {
    sized in points against the card's own width. */
 .card-sides { display: flex; flex-wrap: wrap; gap: 22px; }
 .card-side { margin: 0; flex: 1 1 250px; max-width: 340px; }
-.card-face { position: relative; aspect-ratio: 2 / 3; overflow: hidden; background: var(--hh-lace); }
-.card-back { container-type: inline-size; box-sizing: border-box; border: 1px solid var(--paper-line); }
+.card-face { position: relative; aspect-ratio: 306 / 450; overflow: hidden; background: var(--hh-lace); }
 .card-caption {
   margin-top: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.18em;
   text-transform: uppercase; color: var(--paper-mute);
@@ -1263,8 +1262,25 @@ html, body {
 .card-edit:focus { outline-color: rgba(31, 64, 69, 0.4); background: rgba(242, 234, 232, 0.7); }
 .card-edit::placeholder { color: var(--paper-faint); font-style: italic; }
 .card-edit[aria-invalid="true"] { outline-color: var(--hh-dogwood-deep); }
-/* The stamp box on the back: an empty frame of soft dashes, positioned
-   in card points (src/card.jsx), matching the PDF. */
-.card-stamp {
-  position: absolute; box-sizing: border-box; border: 1px dashed rgba(31, 64, 69, 0.26);
+/* The keepsake card's furniture (src/card.jsx), positioned in card
+   points against the page, matching server/lib/cardPdf.js. */
+.card-page { container-type: inline-size; box-sizing: border-box; border: 1px solid var(--paper-line); }
+.card-impression { position: absolute; box-sizing: border-box; border: 1px solid rgba(31, 64, 69, 0.12); }
+.card-caps {
+  position: absolute; text-align: center; text-transform: uppercase; line-height: 1.35;
+  font-family: var(--serif); font-weight: 560; font-variation-settings: 'opsz' 9;
 }
+.card-diamond { background: var(--hh-ecru); transform: rotate(45deg); }
+.card-rule { position: absolute; height: 0; border-top: 1px solid rgba(31, 64, 69, 0.3); }
+.card-label {
+  position: absolute; font-family: var(--serif); font-style: italic; line-height: 1;
+  color: var(--hh-green);
+}
+.card-name {
+  position: absolute; box-sizing: border-box; border: 0; border-bottom: 1px solid rgba(31, 64, 69, 0.28);
+  border-radius: 0; background: transparent; font-family: var(--serif); font-style: italic;
+  color: var(--hh-green); outline: none;
+}
+.card-name:focus { background: rgba(242, 234, 232, 0.7); }
+.card-colophon { position: absolute; height: auto; overflow: visible; }
+.card-setting { position: absolute; margin: 0; text-align: center; font-family: var(--serif); font-style: italic; color: var(--paper-mute); }

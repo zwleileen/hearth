@@ -4,6 +4,7 @@
 // the front, the mirror's words (as the reader left them) and their own
 // note on the back, posted to someone they choose, or to themselves.
 //
+//   GET    /api/cards/words/:sid          the card's starting words and its image number
 //   POST   /api/cards                     build the print files and send them to print
 //   GET    /api/cards                     the reader's cards, newest first
 //                                         (?sessionId= for one session's)
@@ -20,6 +21,8 @@ import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 import { buildCardPdf, missingCharacters, CardFitError } from '../lib/cardPdf.js';
 import { bestPicture, frontImage, thumbFor } from '../lib/cardFiles.js';
+import { generateCardWords } from '../lib/cardWords.js';
+import { getOpenAI } from '../lib/ai.js';
 import { mailConfigured, sendMail } from '../lib/mailer.js';
 import { KindleSession } from '../models/KindleSession.js';
 import { KindleImage } from '../models/KindleImage.js';
@@ -53,7 +56,9 @@ const MIRROR_LABEL = {
 const LIMITS = {
   title: 90,
   body: 2000,
-  note: 320,
+  closing: 300,
+  forName: 60,
+  fromName: 60,
   name: 100,
   line1: 120,
   line2: 120,
@@ -87,24 +92,39 @@ function addressLines(r) {
 
 // The words of a card from a request, checked. Returns { card, fields },
 // where fields holds a message for each field that needs another look.
+// Each field is checked against the fonts it is set in: the title is set
+// twice, in italic on the back and in spaced capitals on the front.
+const FONTS_FOR = { title: ['title', 'caps'], body: ['body'], closing: ['note'], forName: ['note'], fromName: ['note'] };
 function readWords(b) {
   const card = {
     title: clean(b.title),
     body: clean(b.body, { multiline: true }),
-    note: clean(b.note, { multiline: true }),
+    closing: clean(b.closing, { multiline: true }),
+    forName: clean(b.forName),
+    fromName: clean(b.fromName),
   };
   const fields = {};
   if (!card.title) fields.title = 'The card needs a title.';
   if (!card.body) fields.body = 'The card needs some words on the back.';
-  for (const k of ['title', 'body', 'note']) {
+  for (const k of Object.keys(card)) {
     if (card[k].length > LIMITS[k]) fields[k] = `Keep this under ${LIMITS[k]} characters.`;
   }
-  for (const k of ['title', 'body', 'note']) {
+  for (const k of Object.keys(card)) {
     if (fields[k] || !card[k]) continue;
-    const missing = missingCharacters(card[k], k);
+    const missing = [...new Set(FONTS_FOR[k].flatMap((f) => missingCharacters(card[k], f)))];
     if (missing.length) fields[k] = `The card cannot print ${missing.slice(0, 5).join(' ')} yet.`;
   }
   return { card, fields };
+}
+
+// The picture's number in the reader's own series, for "Image No. 07".
+// Pictures made before numbering get theirs from when they were made.
+async function ensureImageNo(image, userId) {
+  if (image.imageNo) return image.imageNo;
+  const n = await KindleImage.countDocuments({ userId, createdAt: { $lte: image.createdAt } });
+  image.imageNo = Math.max(1, n);
+  await KindleImage.updateOne({ _id: image._id }, { $set: { imageNo: image.imageNo } }).catch(() => {});
+  return image.imageNo;
 }
 
 // The session and its picture, if both are this reader's.
@@ -166,11 +186,12 @@ cards.post('/', async (req, res) => {
   }
 
   card.kicker = kickerFor(session);
+  const imageNo = await ensureImageNo(image, userId);
 
   let pdf;
   let front;
   try {
-    [pdf, front] = await Promise.all([buildCardPdf({ image: bestPicture(image), ...card }), frontImage(image)]);
+    [pdf, front] = await Promise.all([buildCardPdf({ image: bestPicture(image), ...card, imageNo }), frontImage(image)]);
   } catch (err) {
     if (err instanceof CardFitError) {
       return res.status(422).json({ error: err.message, fields: { body: err.message } });
@@ -194,7 +215,10 @@ cards.post('/', async (req, res) => {
   const lines = addressLines(recipient);
   const sender = `${user?.name ? `${user.name}, ` : ''}${user?.email || 'unknown'}`;
   const resolution = `${front.width} x ${front.height} px, which is 4.25 x 6.25 in at ${front.dpi} dpi${front.dpi < 300 ? ' (below 300 dpi: an older, smaller picture)' : ''}`;
-  const words = [card.kicker.toUpperCase(), '', card.title, '', card.body, ...(card.note ? ['', card.note] : [])]
+  const words = [card.kicker.toUpperCase(), '', card.title, '', card.body,
+    ...(card.closing ? ['', card.closing] : []),
+    ...(card.forName ? ['', `For ${card.forName}`] : []),
+    ...(card.fromName ? [`From ${card.fromName}`] : [])]
     .flatMap((l) => l.split('\n'));
 
   const text = [
@@ -230,7 +254,8 @@ cards.post('/', async (req, res) => {
 <p style="margin:0 0 6px;font-family:Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#A8893E">${escapeHtml(card.kicker)}</p>
 <p style="margin:0 0 10px;font-size:19px;font-style:italic">${escapeHtml(card.title)}</p>
 ${card.body.split(/\n\s*\n|\n/).map((p) => `<p style="margin:0 0 8px;color:#486A6E">${escapeHtml(p)}</p>`).join('')}
-${card.note ? `<p style="margin:14px 0 0;font-style:italic">${escapeHtml(card.note).replace(/\n/g, '<br>')}</p>` : ''}
+${card.closing ? `<p style="margin:14px 0 0;font-style:italic">${escapeHtml(card.closing)}</p>` : ''}
+${card.forName || card.fromName ? `<p style="margin:14px 0 0;font-style:italic;color:#6e8489">${[card.forName && `For ${escapeHtml(card.forName)}`, card.fromName && `From ${escapeHtml(card.fromName)}`].filter(Boolean).join('<br>')}</p>` : ''}
 </div>
 <p style="color:#6e8489;font-size:13px">From ${escapeHtml(sender)}<br>Order ${order._id}<br>Payment: not required (test)</p>
 </div>`;
@@ -314,9 +339,10 @@ cards.post('/print-file', async (req, res) => {
   if (!session) return res.status(404).json({ error: 'Session not found' });
   if (!image) return res.status(409).json({ error: 'This session has no picture yet.' });
   try {
-    const pdf = await buildCardPdf({ image: bestPicture(image), kicker: kickerFor(session), ...card });
+    const imageNo = await ensureImageNo(image, req.userId);
+    const pdf = await buildCardPdf({ image: bestPicture(image), kicker: kickerFor(session), ...card, imageNo });
     res.set('Content-Type', 'application/pdf');
-    res.set('Content-Disposition', 'attachment; filename="hearth-postcard.pdf"');
+    res.set('Content-Disposition', 'attachment; filename="hearth-keepsake.pdf"');
     res.send(pdf);
   } catch (err) {
     if (err instanceof CardFitError) return res.status(422).json({ error: err.message, fields: { body: err.message } });
@@ -325,18 +351,39 @@ cards.post('/print-file', async (req, res) => {
   }
 });
 
-// GET /api/cards/print-image/:sessionId: the front at full resolution,
-// cropped to the card with its bleed.
+// GET /api/cards/print-image/:sessionId: the painting itself, whole and
+// at full resolution, for keeping or printing on its own.
 cards.get('/print-image/:sessionId', async (req, res) => {
   const { session, image } = await sessionAndPicture(req.params.sessionId, req.userId);
   if (!session || !image) return res.status(404).json({ error: 'No picture for this session' });
-  try {
-    const front = await frontImage(image);
-    res.set('Content-Type', 'image/jpeg');
-    res.set('Content-Disposition', 'attachment; filename="hearth-postcard-picture.jpg"');
-    res.send(front.buffer);
-  } catch (err) {
-    console.error('[cards] print-image failed:', err);
-    res.status(500).json({ error: 'Failed to make the image' });
+  res.set('Content-Type', 'image/jpeg');
+  res.set('Content-Disposition', 'attachment; filename="hearth-painting.jpg"');
+  res.send(bestPicture(image));
+});
+
+// GET /api/cards/words/:sessionId: the words the card starts with, and
+// the picture's number. The words are set when the picture is painted;
+// pictures made before that have theirs set now, once, and kept. If they
+// cannot be set, the card starts from the mirror's own words.
+cards.get('/words/:sessionId', async (req, res) => {
+  const { session, image } = await sessionAndPicture(req.params.sessionId, req.userId);
+  if (!session || !image) return res.status(404).json({ error: 'No picture for this session' });
+  let words = image.cardWords?.body ? image.cardWords : null;
+  if (!words) {
+    try {
+      words = await generateCardWords(getOpenAI(), { session: session.session, replyTurning: session.replyTurning });
+      await KindleImage.updateOne({ _id: image._id }, { $set: { cardWords: words } });
+    } catch (err) {
+      console.warn('[cards] card words failed:', err.message);
+      const c = session.session?.companion || {};
+      words = { title: c.name || '', body: [c.predicament, c.turning].filter(Boolean).join('\n\n'), closing: '' };
+    }
   }
+  res.json({
+    title: words.title || '',
+    body: words.body || '',
+    closing: words.closing || '',
+    kicker: kickerFor(session),
+    imageNo: await ensureImageNo(image, req.userId),
+  });
 });
