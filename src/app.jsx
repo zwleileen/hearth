@@ -13,6 +13,7 @@ import {
   OnboardingScreen, AuthScreen, LandingScreen, SettingsScreen, ProfileScreen,
 } from './screens-3.jsx';
 import { KindleScreen } from './screens-5.jsx';
+import { CardScreen } from './card.jsx';
 import { LetterScreen } from './letter.jsx';
 import { EncounterScreen } from './encounter.jsx';
 import {
@@ -172,7 +173,7 @@ function App() {
   // transient detail screens (e.g. ritual-detail) highlight nothing.
   const tab =
       route === 'home' ? 'today'
-    : route === 'kindle' ? 'carry'
+    : (route === 'kindle' || route === 'card') ? 'carry'
     : (route === 'give' || route === 'letter') ? 'give'
     : (route === 'receive' || route === 'attune' || route === 'encounter') ? 'receive'
     : (route === 'yours' || route === 'meaning' || route === 'meaning-log' || route.startsWith('journal') || route === 'entry-detail' || route === 'bookmarks') ? 'yours'
@@ -202,7 +203,8 @@ function App() {
       {route === 'entry-detail' && <EntryDetailScreen go={go} payload={payload}/>}
       {route === 'bookmarks' && <BookmarksScreen go={go}/>}
       {route === 'attune' && <AttuneScreen go={go}/>}
-      {route === 'kindle' && <KindleScreen go={go}/>}
+      {route === 'kindle' && <KindleScreen go={go} payload={payload}/>}
+      {route === 'card' && <CardScreen go={go} payload={payload}/>}
       {route === 'letter' && <LetterScreen go={go} user={user}/>}
       {route === 'encounter' && <EncounterScreen go={go}/>}
       {route === 'ritual-detail' && <RitualDetailScreen go={go} payload={payload}/>}

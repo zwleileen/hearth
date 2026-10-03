@@ -227,8 +227,19 @@ proposals, is in `docs/DOCTRINE_AUDIT.md`; this is the shipping record.
   (`lib/kindleImage.js`, model `KindleImage`). Two calls: the text model
   writes one scene from the mirror alone (never the reader's feeling,
   never a likeness of a real person), then `gpt-image-1.5` paints it
-  inside a fixed style built from the design system. Not yet looked at
-  in a browser.
+  inside a fixed style built from the design system.
+- **A card from a session** (`src/card.jsx`, `POST /api/cards`). Under
+  the picture, Create a card opens a page with both sides of a flat
+  4 x 6 card: the picture on the front, the mirror's words on the back,
+  editable in place, plus the reader's note. The preview is drawn to the
+  print file's numbers and steps the body type down as the PDF does.
+  Mail it opens the address form; Send builds the print PDF
+  (`lib/cardPdf.js`, 0.125 in bleed) and emails it with the address to
+  `CARD_PRINT_TO` (default zwleileen@gmail.com) through SMTP
+  (`lib/mailer.js`). Free while printing is tested, ten a day per
+  reader; `models/CardOrder.js` notes where Stripe goes. Needs
+  `SMTP_URL` (or `SMTP_HOST`/`PORT`/`USER`/`PASS`) and `MAIL_FROM` on
+  Render, or Send answers that the print room is not connected.
 - **Continuity** — `buildKnowingBlock` passes the meaning narrative plus
   the reader's own recent words into a session. Never the mirrors or
   turnings Hearth itself offered them, and never to be performed back.

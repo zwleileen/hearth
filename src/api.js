@@ -205,6 +205,14 @@ export const api = {
     deleteEntry: (id) => request(`/kindle/log/${id}`, { method: 'DELETE' }),
   },
 
+  // A printed card from a Carry session's picture, posted to someone.
+  // Returns { id, ref, status }. A 400 carries `fields`, keyed by the
+  // field each message belongs beside.
+  cards: {
+    send: ({ sessionId, title, body, note, recipient } = {}) =>
+      request('/cards', { method: 'POST', body: { sessionId, title, body, note, recipient } }),
+  },
+
   meaning: {
     // The Meaning Log: lines kept in answer to "the meaning of this
     // moment" on Home. Persisted to the account, so it follows the

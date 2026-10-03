@@ -1239,3 +1239,27 @@ html, body {
   padding: 10px;
   display: block;
 }
+
+/* ─── A card from a Carry session (src/card.jsx) ───────── */
+/* Both sides at print proportions, 4 x 6. Side by side when there is
+   room, stacked on a phone. The back is a container so its type can be
+   sized in points against the card's own width. */
+.card-sides { display: flex; flex-wrap: wrap; gap: 22px; }
+.card-side { margin: 0; flex: 1 1 250px; max-width: 340px; }
+.card-face { position: relative; aspect-ratio: 2 / 3; overflow: hidden; background: var(--hh-lace); }
+.card-back { container-type: inline-size; box-sizing: border-box; border: 1px solid var(--paper-line); }
+.card-caption {
+  margin-top: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--paper-mute);
+}
+.card-mark { position: absolute; left: 50%; transform: translateX(-50%); width: auto; }
+.card-edit {
+  display: block; width: 100%; box-sizing: border-box; margin: 0; padding: 0;
+  border: 0; border-radius: 0; background: transparent; resize: none; overflow: hidden;
+  outline: 1px dashed transparent; outline-offset: 3px;
+  transition: outline-color 0.3s cubic-bezier(.22, 1, .36, 1), background-color 0.3s cubic-bezier(.22, 1, .36, 1);
+}
+.card-edit:hover { outline-color: rgba(31, 64, 69, 0.22); }
+.card-edit:focus { outline-color: rgba(31, 64, 69, 0.4); background: rgba(242, 234, 232, 0.7); }
+.card-edit::placeholder { color: var(--paper-faint); font-style: italic; }
+.card-edit[aria-invalid="true"] { outline-color: var(--hh-dogwood-deep); }

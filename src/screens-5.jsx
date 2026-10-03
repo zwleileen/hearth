@@ -45,7 +45,7 @@ function Movement({ label, accent = 'green', children, style = {} }) {
 // once per session, and kept with it. While it is being made the space
 // it will fill is held by a calm field of Carry's own colour, so nothing
 // jumps when it arrives.
-function MirrorPicture({ sessionId, hasImage, onDrawn }) {
+function MirrorPicture({ sessionId, hasImage, onDrawn, onCard }) {
   const [picture, setPicture] = React.useState(null);
   const [state, setState] = React.useState(hasImage ? 'loading' : 'idle');
 
@@ -75,9 +75,7 @@ function MirrorPicture({ sessionId, hasImage, onDrawn }) {
     return (
       <div style={{ marginTop: 28, maxWidth: 460 }}>
         <img src={picture.image} alt={picture.alt || ''} style={{ display: 'block', width: '100%', height: 'auto' }}/>
-        <a href={picture.image} download="hearth-picture.jpg" style={{ ...quietLink, display: 'inline-block', marginTop: 14, textDecoration: 'none' }}>
-          Save the picture
-        </a>
+        <button onClick={() => onCard(picture)} style={{ ...lineBtn, marginTop: 18 }}>Create a card</button>
       </div>
     );
   }
@@ -107,18 +105,20 @@ function MirrorPicture({ sessionId, hasImage, onDrawn }) {
   );
 }
 
-function KindleScreen({ go }) {
+function KindleScreen({ go, payload }) {
   const D = HEARTH_DATA;
+  // Coming back from making a card reopens the session it was made from.
+  const reopen = payload?.reopen || null;
   // input → typing; session → reading a session (live or from logbook);
   // logbook → browsing past sessions.
-  const [view, setView] = useState5('input');
+  const [view, setView] = useState5(reopen ? 'session' : 'input');
   const [text, setText] = useState5('');
   const [busy, setBusy] = useState5(false);
   const [error, setError] = useState5(null);
 
   // The session currently on screen. Shape:
   //   { id, session, care, reply, replyTurning, fromLogbook, createdAt }
-  const [current, setCurrent] = useState5(null);
+  const [current, setCurrent] = useState5(reopen);
   const [reply, setReply] = useState5('');
   const [replyBusy, setReplyBusy] = useState5(false);
   const [replyError, setReplyError] = useState5(null);
@@ -449,6 +449,7 @@ function KindleScreen({ go }) {
               sessionId={current.id}
               hasImage={!!current.hasImage}
               onDrawn={markDrawn}
+              onCard={(picture) => go('card', { picture, session: current })}
             />
           )}
         </Movement>

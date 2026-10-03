@@ -13,6 +13,7 @@ import { kindle } from './routes/kindle.js';
 import { meaning } from './routes/meaning.js';
 import { encounter } from './routes/encounter.js';
 import { narrative } from './routes/narrative.js';
+import { cards } from './routes/cards.js';
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/kindle', kindle);
 app.use('/api/meaning', meaning);
 app.use('/api/encounter', encounter);
 app.use('/api/narrative', narrative);
+app.use('/api/cards', cards);
 
 app.use((err, req, res, _next) => {
   console.error('[server error]', err);
