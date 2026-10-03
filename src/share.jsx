@@ -297,9 +297,9 @@ export async function shareLetter({ to, body, from, plain }) {
   }
 }
 
-// Hand the card to the reader's own share sheet. Falls back, in order,
-// to downloading the image and then to copying the text, so this always
-// does something useful on every browser.
+// Hand the card to the reader's own share sheet. Where there is no share
+// sheet, falls back to downloading the image and then to copying the
+// text, so this always does something useful on every browser.
 //
 // Returns a short status string so the caller can say what happened.
 export async function shareCard({ text, attribution, footer, shareText, quoted = false }) {
@@ -312,26 +312,29 @@ export async function shareCard({ text, attribution, footer, shareText, quoted =
 
   const file = blob ? new File([blob], 'hearth.png', { type: 'image/png' }) : null;
 
-  // 1. Native share with the image.
-  try {
-    if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], text: shareText || undefined });
-      return 'shared';
-    }
-  } catch (err) {
-    // A user cancelling the sheet throws AbortError. That is not a
-    // failure and must not cascade into a download they did not ask for.
-    if (err && err.name === 'AbortError') return 'cancelled';
+  // 1. Native share with the image, or 2. text only where files cannot
+  // be shared.
+  //
+  // Once the share sheet has been asked for, what happened in it is the
+  // answer, whatever the promise says. Some sheets reject even after the
+  // reader has saved or sent the image, and this used to read that as
+  // "nothing happened" and fall through to downloading the image too, so
+  // one tap left two copies. Only a TypeError, the browser refusing the
+  // data before showing anything, may fall through to the next way.
+  const payloads = [];
+  if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+    payloads.push({ files: [file], text: shareText || undefined });
+  } else if (navigator.share) {
+    payloads.push({ text: shareText || text });
   }
-
-  // 2. Native share, text only.
-  try {
-    if (navigator.share) {
-      await navigator.share({ text: shareText || text });
+  for (const payload of payloads) {
+    try {
+      await navigator.share(payload);
       return 'shared';
+    } catch (err) {
+      if (err && err.name === 'AbortError') return 'cancelled';
+      if (!(err instanceof TypeError)) return 'failed';
     }
-  } catch (err) {
-    if (err && err.name === 'AbortError') return 'cancelled';
   }
 
   // 3. Save the image.
@@ -485,7 +488,10 @@ function ShareLink({
             text, attribution, quoted,
             shareText: composeCardMessage(message),
           });
-      if (SHARE_RESULT_MESSAGE[result]) {
+      if (result === 'failed') {
+        setState('failed');
+        setTimeout(() => setState('idle'), 2200);
+      } else if (SHARE_RESULT_MESSAGE[result]) {
         setState('done');
         setTimeout(() => setState('idle'), 2200);
       } else {
@@ -502,7 +508,7 @@ function ShareLink({
       color: 'var(--paper-mute)', fontFamily: 'var(--mono)', fontSize: 9.5,
       letterSpacing: '0.16em', textTransform: 'uppercase', ...style,
     }}>
-      {state === 'busy' ? busyLabel : state === 'done' ? 'Done' : label}
+      {state === 'busy' ? busyLabel : state === 'done' ? 'Done' : state === 'failed' ? 'Could not share' : label}
     </button>
   );
 }
